@@ -1,0 +1,1148 @@
+{
+  "repository": "https://github.com/sakami0000/child-mind-institute-detect-sleep-states-1st-place",
+  "commit": "d50865a396c466281c1853f893da4c18005e08a3",
+  "complete_tree_scanned": true,
+  "license_files": [],
+  "python_file_count": 90,
+  "files": [
+    {
+      "path": "kami/run/cv_inference.py",
+      "git_blob": "8c454975e1d60748e84cdf587746bfc35c3db0b5",
+      "sha256": "b4f2ad659dcba2c41f848fabaf533d75eb038793f3c329d653f1d0b85531e693",
+      "definitions": [
+        "load_model",
+        "get_valid_dataloader",
+        "get_test_dataloader",
+        "inference",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/run/cv_train.py",
+      "git_blob": "4ccd873cb48077e98e376380fc37a316a014d49d",
+      "sha256": "16d1ef2a1ca4776586a9d074e5658ae4747224617ed0f70e0203eeb5b5452465",
+      "definitions": [
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/run/prepare_data.py",
+      "git_blob": "38dd2f0f6991795c52915f0560fbced340b9dcea",
+      "sha256": "7d2d44081ae202d0da7830b2739a68c40a4aa6e4d543eb40e7a4a14414e1d0aa",
+      "definitions": [
+        "to_coord",
+        "add_feature",
+        "save_each_series",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/run/split_folds.py",
+      "git_blob": "de47caa4421cafb0e0fcd9f490b58489aab8737e",
+      "sha256": "d18406b492bcebbc5d9f22b94482fd5f73204723ffeaf97c402f6a99f69441eb",
+      "definitions": [
+        "make_fold",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/augmentation/cutmix.py",
+      "git_blob": "986ad2f35e4e36da6327b2974c03c7635b30d7a5",
+      "sha256": "eac1e78f77035f8048cd324e1e126d9186face7e3bef2c2167bb331f57b19e24",
+      "definitions": [
+        "get_rand_1dbbox",
+        "Cutmix"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/augmentation/mixup.py",
+      "git_blob": "9d503661e91f5966a82c0f7f9f976925ed0cf64f",
+      "sha256": "d2bef92a1e223e534aab02bef9fcebe9a901ca1105b200a1ddc6bcff3e8a95ee",
+      "definitions": [
+        "Mixup"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/datamodule/centernet.py",
+      "git_blob": "579671c19a54900dd11094d22bc40602f28a284c",
+      "sha256": "9505c4729446655fb3e694949db431e4adb3601d82c22ecc019f8226cc5c09df",
+      "definitions": [
+        "load_features",
+        "load_chunk_features",
+        "get_centernet_label",
+        "TrainDataset",
+        "ValidDataset",
+        "CenterNetTestDataset",
+        "CenterNetDataModule"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/datamodule/seg.py",
+      "git_blob": "c56c40f2dbd913ea7513932777ad982e377256b2",
+      "sha256": "c0ad52669bb839e96d586e7e5d3eddbc30b83efdee07537d21b76876a26997ad",
+      "definitions": [
+        "load_features",
+        "load_chunk_features",
+        "random_crop",
+        "get_label",
+        "gaussian_kernel",
+        "gaussian_label",
+        "negative_sampling",
+        "nearest_valid_size",
+        "TrainDataset",
+        "ValidDataset",
+        "TestDataset",
+        "SegDataModule"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/datamodule/seg2day.py",
+      "git_blob": "a1e5954aa970106ceda332dbe543a66a1b0ff583",
+      "sha256": "252df5902d9bc0d64433fe9c82e1b17c449a7b0836cc743785466a1f8d3cf10e",
+      "definitions": [
+        "load_features",
+        "load_chunk_features",
+        "random_crop",
+        "get_label",
+        "gaussian_kernel",
+        "gaussian_label",
+        "negative_sampling",
+        "nearest_valid_size",
+        "TrainDataset",
+        "ValidDataset",
+        "TestDataset",
+        "SegDataModule"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/datamodule/seg_cat.py",
+      "git_blob": "dc0579b0aaee1d75aa19b2e54d6aa06a41bf568e",
+      "sha256": "4e6e8be2fd1ed1f121d997b226bdf9e19698b314f40c5107c71f375c5d31b88e",
+      "definitions": [
+        "load_features",
+        "load_chunk_features",
+        "random_crop",
+        "get_label",
+        "gaussian_kernel",
+        "gaussian_label",
+        "negative_sampling",
+        "nearest_valid_size",
+        "TrainDataset",
+        "ValidDataset",
+        "TestDataset",
+        "SegDataModule"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/datamodule/seg_overlap.py",
+      "git_blob": "6544f535eba69e4d0bead0a07e8cfa9d55c694bd",
+      "sha256": "20f621a3e57d084ab8bcd4468d1b53bd14353c5044db81c62c4c0b7c60f7b8e2",
+      "definitions": [
+        "load_features",
+        "load_chunk_features",
+        "random_crop",
+        "get_label",
+        "gaussian_kernel",
+        "gaussian_label",
+        "negative_sampling",
+        "nearest_valid_size",
+        "TrainDataset",
+        "ValidDataset",
+        "TestDataset",
+        "SegDataModule"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/datamodule/seg_stride.py",
+      "git_blob": "bf20a0fcb31c94fd91310b7c5cc092046f814d86",
+      "sha256": "8e7b69a1752ec54612786e1eff5bc03850b688fbe0a8cd765a051c9b6b2adb91",
+      "definitions": [
+        "load_features",
+        "split_chunk_features_stride",
+        "load_chunk_features",
+        "random_crop",
+        "get_label",
+        "gaussian_kernel",
+        "gaussian_label",
+        "negative_sampling",
+        "nearest_valid_size",
+        "TrainDataset",
+        "ValidDataset",
+        "TestDataset",
+        "SegDataModule"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/modelmodule/seg.py",
+      "git_blob": "ba06c27a47b6b28364928b05f76a8166acfe79cb",
+      "sha256": "02e922766f35b2a064aebd5e121fa3408d9a68e09e367ad7c879524e44e896fc",
+      "definitions": [
+        "get_train_dataloader",
+        "inference",
+        "SegModel"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/modelmodule/seg_cat.py",
+      "git_blob": "00577317aeb68c41229fd258b74aba0981cb674f",
+      "sha256": "3239ddb46aa1a9b896f2a2b8205c85922123b7d30354905999ba167d6b276d44",
+      "definitions": [
+        "get_train_dataloader",
+        "inference",
+        "SegModel"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/centernet.py",
+      "git_blob": "c6aff1f225db34e9bc6af9357779a700cd342419",
+      "sha256": "26620afbcf6de8e447244c1c5d3a8fb36ac7bafd7623adb82a4cf35eb532b0e6",
+      "definitions": [
+        "ModelOutput",
+        "BaseModel",
+        "CenterNetLoss",
+        "CenterNet",
+        "np_groupby_max"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/common.py",
+      "git_blob": "8794872da9cacf92b2832e7f040f876bf3c7d15d",
+      "sha256": "cb21500221a6f4783cd5d0ba81876fb0e20ed45b8b9bcb9aebfe3eabd3a6fdc2",
+      "definitions": [
+        "get_feature_extractor",
+        "get_decoder",
+        "get_model"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/decoder/lstmdecoder.py",
+      "git_blob": "5d62cd49a48211d439ef44a90d258d7e54f27978",
+      "sha256": "520f37c1283780c5450c52c4491f2e1902e25246dc7ab0f9e460b06c81a2184e",
+      "definitions": [
+        "LSTMDecoder"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/decoder/mlpdecoder.py",
+      "git_blob": "5092cc17b82e6f86ac86949032b532a62952d98e",
+      "sha256": "62940bc67842c74e980dda0cb255fc8f370d61787361765649e6820b0d18e1dd",
+      "definitions": [
+        "MLPDecoder"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/decoder/transformerdecoder.py",
+      "git_blob": "c48b7b97049603820b30a36c4a6164c22e4f8326",
+      "sha256": "17a58eb2f54c5a99055459fe66da8364a2f59b9f8aac043b04ff7120d6800903",
+      "definitions": [
+        "TransformerDecoder"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/decoder/unet1ddecoder.py",
+      "git_blob": "169f0c0e2ac7ffdc720a7788892c33dad03fee25",
+      "sha256": "22c6a917dbb146c7748b68086229881f6bca2bf20fffa1ca411c999d07461e2a",
+      "definitions": [
+        "SEModule",
+        "DoubleConv",
+        "Down",
+        "Up",
+        "create_layer_norm",
+        "UNet1DDecoder"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/feature_extractor/cnn.py",
+      "git_blob": "ce397d3ee71abf45bb30d8a2b621cf22f996907f",
+      "sha256": "2e8f89795881d7f57bb5ed21dd7fbd978eac20a5439cf3b594fde82901b09388",
+      "definitions": [
+        "CNNSpectrogram"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/feature_extractor/lstm.py",
+      "git_blob": "0b841ce02a2329ced504a2e48717989777d655bb",
+      "sha256": "923d15a97264bae4da96eee87b6d58a2a3f988c6819a6500ab0904fde44d6213",
+      "definitions": [
+        "LSTMFeatureExtractor"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/feature_extractor/panns.py",
+      "git_blob": "a3e4e68c5c8a60bcb5da8ca783fd915602a6fda3",
+      "sha256": "648060c9634a2c90247ae930aa847b43f5955ad331f486e2e692f17a2601e5da",
+      "definitions": [
+        "PANNsFeatureExtractor"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/feature_extractor/spectrogram.py",
+      "git_blob": "d3e7273eceaaa8f7a7321c7e339821ee3a4a1a6a",
+      "sha256": "55d673ccfeba4524cc9fd1a92606fde50ea0a2f186a128eb0e26bf27bb2268d2",
+      "definitions": [
+        "SpecNormalize",
+        "SpecFeatureExtractor"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/bce.py",
+      "git_blob": "817232ec4cbeb0198e1bf7a4642dbe2df976adc4",
+      "sha256": "01598929ff7792c3f7c8614102f299b19cd9fb7944dffeced40e164b4f6beb38",
+      "definitions": [
+        "BCEWithLogitsLoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/bi_tempered.py",
+      "git_blob": "702c255eabc10be337afed2a0701f2182369bed9",
+      "sha256": "a51a4bc51fd5beba9f8f82e0cab0fb41cd27fdc2963d830f97ac037d6e4e4e8c",
+      "definitions": [
+        "BiTemperedLogisticLoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/focal.py",
+      "git_blob": "4b385b34856d63403463cc6473c84004c443380a",
+      "sha256": "e9325dfe5ac71b20acb01989771c713c52031a87680b48e865680b4e0a109eaa",
+      "definitions": [
+        "FocalLoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/focal_bce.py",
+      "git_blob": "b13810a3e3cbff466f21f251814d526a7426d0c8",
+      "sha256": "61cd2dcde94fe8a7424af9203514d28369e3d197d3d2f0d4d20f1ba02ddbca35",
+      "definitions": [
+        "FocalBCELoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/tolerance.py",
+      "git_blob": "52bac3dd9de9b71999508b94ed8de04f1d776a50",
+      "sha256": "c818ad324579b672bb1502387db86685b554abf4b763c5542606440f1d286ea3",
+      "definitions": [
+        "ToleranceLoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/tolerance_mse.py",
+      "git_blob": "07fe085691fab1acb9db1a78244b0bada7a1a893",
+      "sha256": "7317fa8076bd0f266e885a01794d2f4524089dbd300530b906ac83446daa6474",
+      "definitions": [
+        "ToleranceMSELoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/loss/tolerance_nonzero.py",
+      "git_blob": "10a7142e6998eea01b564165836869c3cf5e8001",
+      "sha256": "73cd3be53637413383839b3fbde49a436ab98924d62cd65051e7aeb154103271",
+      "definitions": [
+        "ToleranceNonZeroLoss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec1D.py",
+      "git_blob": "883bc91f22140dd22bb3a00c088e11b1bddf3b51",
+      "sha256": "78e7edee7d539c0aa7ebe2a2b346e19f01a5f0bd34146e495a786a8545611806",
+      "definitions": [
+        "Spec1D"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2Dcnn.py",
+      "git_blob": "5f1574cb1bdeccbbf6ccbc8497597f94b544d49b",
+      "sha256": "4c3eb82f294467778eacd1b6f98cd11e219d9973b8b229e391c083af4df8e753",
+      "definitions": [
+        "Spec2DCNN"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2Dcnn2Day.py",
+      "git_blob": "e836ee67ba0a8530abeb6e26e621e9287854deac",
+      "sha256": "640e85b19393cb5c2396d7e6dc14c1461827fba12103cb4bffadb7e09c69a0b6",
+      "definitions": [
+        "Spec2DCNN2Day"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2Dcnn2DayV2.py",
+      "git_blob": "8f0efb85d37c9601ed44cc68ab2ab13324cc7411",
+      "sha256": "2c7615cac686e5e11f29dec0a1fb22d4f61757548c0652b32890f8ef05dd4415",
+      "definitions": [
+        "Spec2DCNN2DayV2"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2DcnnAffine.py",
+      "git_blob": "3919dfd33466acfb02863e75e240aa38538cef71",
+      "sha256": "c382cc40b8c89df588b83eb619d07d66610c0aa61e78125f4f715a95d121497a",
+      "definitions": [
+        "Spec2DCNNAffine"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2DcnnMinMax.py",
+      "git_blob": "954babf4c59d8a769d5baf7648aec359dfaca869",
+      "sha256": "38e8578f1e351e0f04abba004661e24d0024f4356c0d286e63ea317134997e85",
+      "definitions": [
+        "Spec2DCNNMinMax"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2DcnnOverlap.py",
+      "git_blob": "9ae108138324118582c316f42e92a34c8a3e800d",
+      "sha256": "c0a39a8e9182c46176c6c812de37c07a8044a2051bce4d2e87e37aef4b1accd9",
+      "definitions": [
+        "Spec2DCNNOverlap"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2DcnnSplit.py",
+      "git_blob": "9704b6e733533676813d0bef7afc7c18b986af67",
+      "sha256": "a1c57db6042ef4b6982d73cc2d4b39b0b356eae726406882934364d2da1bd294",
+      "definitions": [
+        "Spec2DCNNSplit"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/spec2DcnnSplitCat.py",
+      "git_blob": "407e84d8723b767bdb7693126f874103b8cfe0ae",
+      "sha256": "cc32010c99d5e6a0712f633e1dfeb8835c0d8604e68fa2e09fd2aa3f2dfe4421",
+      "definitions": [
+        "Spec2DCNNSplitCat"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/models/specWeightAvg.py",
+      "git_blob": "43a67b68f148a23212fe09783574bde9917890ee",
+      "sha256": "df7578afe548921dad66b510b32f4bb50527f3cf26b22972f0c44b058f506077",
+      "definitions": [
+        "CNN",
+        "SpecWeightAvg"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/chokudai_search.py",
+      "git_blob": "075d4ce40989958b6eeae317119b8fe45c2e0f48",
+      "sha256": "6c8137e74535d7379af68e28499e24d31fccb6d02821fa951f76eeaa8df09473",
+      "definitions": [
+        "chokudai_search_from_2nd",
+        "State",
+        "update_state",
+        "chokudai_search_for_one_day"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/common.py",
+      "git_blob": "3589d5f4e0542fd8dde358067d9deaf54c9ef95e",
+      "sha256": "096ad654b863161cd9b0ced261bf8304c71d68f0925e4a8754af8a5318375b3d",
+      "definitions": [
+        "trace",
+        "pad_if_needed",
+        "nearest_valid_size",
+        "random_crop",
+        "negative_sampling",
+        "gaussian_kernel",
+        "gaussian_label"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/detect_peak.py",
+      "git_blob": "fafca532b44221c951e79abcff15297ed10c6bc3",
+      "sha256": "4ebe9ff605255039d3d682b7d9b0c64e01f682fac97af31da6e59b058fcae9fe",
+      "definitions": [
+        "post_process_from_2nd",
+        "detect_events_for_serie",
+        "remove_periodicity",
+        "post_process"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/metrics.py",
+      "git_blob": "b5a980eb48bb603087efa9bd652918a99f8f7c15",
+      "sha256": "7435ea8906523667b333fcb3670438b01e69efce4bb80b55955eb4e055a906b9",
+      "definitions": [
+        "ParticipantVisibleError",
+        "score",
+        "event_detection_ap",
+        "find_nearest_time_idx",
+        "match_detections",
+        "precision_recall_curve",
+        "average_precision_score",
+        "average_precision_score_with"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/periodicity.py",
+      "git_blob": "3c321d3bd63b3ddd9c79a7342d7adfeda5b06e8c",
+      "sha256": "136fe349d140714e307de87aaf32eaa94c5864f35645c5102f3c36f29f3a4718",
+      "definitions": [
+        "downsample",
+        "resize_1d_array",
+        "compare_rows_floating",
+        "predict_periodicity",
+        "predict_periodicity_v2",
+        "get_periodicity_dict"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/post_process.py",
+      "git_blob": "29df3ba1d7ddd806458bac56560ef0cf016c5b0e",
+      "sha256": "5f1aa2e2112d82db56d01c901f200e9f7b901b5cc9e498d82eb19fabdcc30bc2",
+      "definitions": [
+        "post_process_for_seg_group_by_day",
+        "post_process_for_seg",
+        "post_process_find_peaks",
+        "post_process_event_score_normalize_by_day",
+        "make_submission"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "kami/src/utils/score.py",
+      "git_blob": "41bf1d650d74d9005d7723b86b15ba1337130cff",
+      "sha256": "73b2a0cc2f7a8b84123289e5c98d2f6de33eb6293ad629c948cc3c68abb74ae1",
+      "definitions": [
+        "score_group_by_day",
+        "score_ternary_search_distance",
+        "score_ternary_search_th"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/exp/148_gru_scale_factor.py",
+      "git_blob": "a9f4b2649da752ee3ac9e6592d2a4493118ee857",
+      "sha256": "64b822b1eae476a7a00d5fc465684c75f6f8cccd0dbb3e14610813db8e9d9f4d",
+      "definitions": [
+        "config",
+        "SleepDataset",
+        "SEScale",
+        "ResidualGRU",
+        "SleepModel",
+        "predict",
+        "make_submission",
+        "main",
+        "run"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/exp/156_gru_transformer_residual.py",
+      "git_blob": "378db8ec6af7ea2aad25952153850d9bcf9bf420",
+      "sha256": "5cee1f431b42cec984c66dc0a1fd5611aa3265da0c3066eda7ffaa1350f4fa32",
+      "definitions": [
+        "config",
+        "SleepDataset",
+        "SEScale",
+        "ResidualGRU",
+        "SleepModel",
+        "predict",
+        "make_submission",
+        "main",
+        "run"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/exp/163_gru_sleep_target.py",
+      "git_blob": "1903d10eefcf70006682268c3c079acfe19678d7",
+      "sha256": "fc9b41a3e04233ec5bbc19505a366c4b46f618ae524457ec524620ad6eb84c57",
+      "definitions": [
+        "config",
+        "SleepDataset",
+        "SEScale",
+        "ResidualGRU",
+        "SleepModel",
+        "predict",
+        "make_submission",
+        "main",
+        "run"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/exp/179_gru_minute_embedding_sync.py",
+      "git_blob": "9a43c9e987573a0ee12a5312359975dbc29d435a",
+      "sha256": "60ac45373357d0b02f24d3ca7121c7fc07c97c2512e2e40e2a539c1ae71e592b",
+      "definitions": [
+        "config",
+        "SleepDataset",
+        "SEScale",
+        "ResidualGRU",
+        "SleepModel",
+        "predict",
+        "make_submission",
+        "main",
+        "run"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/src/__init__.py",
+      "git_blob": "0c93ac93760538fd59fecbd2ef6c7868e15fa037",
+      "sha256": "db41779b679b0d0e41bd29f2b5e1a0b413af4d95fc6fd2327a52f793f355070e",
+      "definitions": [],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/src/config.py",
+      "git_blob": "5579638e9fa70427032a5e7f2697f11be20f6a75",
+      "sha256": "9709b8bedf2e358757a6d3526fe904fd703a967d348c52a7ccdba993700d6e5c",
+      "definitions": [
+        "Config"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/src/detect_peak.py",
+      "git_blob": "fe15641f830d0054e41dc9517db94c4ebb9d8954",
+      "sha256": "acb3e8c0d97dc5d4989943384ae83a68741c613cce699ef2363fcbc35ffdbe7c",
+      "definitions": [
+        "post_process_from_2nd",
+        "detect_events_for_serie",
+        "remove_periodicity",
+        "post_process"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/src/metric.py",
+      "git_blob": "67727a0e384421385843e17508b835968889e36b",
+      "sha256": "b7566c83a77285dae965def864e085da054fc733e7f2b8f05adc3f6a65f76381",
+      "definitions": [
+        "ParticipantVisibleError",
+        "score",
+        "filter_detections",
+        "find_nearest_time_idx",
+        "match_detections",
+        "precision_recall_curve",
+        "average_precision_score",
+        "event_detection_ap"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/src/utils.py",
+      "git_blob": "d7c12bb1826e487ebf62bc279d2bd126c42806b5",
+      "sha256": "b6cb880966839f4863a69ea544eca07958f143564cc4c8c84dc7c04e8fe8b1e0",
+      "definitions": [
+        "set_seed",
+        "freeze",
+        "timer",
+        "clear_memory"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/stacking/004_transformer_category_padding_idx.py",
+      "git_blob": "5417e4e16ff0872208b4c72b6251d1c4a5c3719e",
+      "sha256": "8c403ba991de33fbcd1392829e1c7d6816ccbaa22a28bf3cc4580dd82e5cf42f",
+      "definitions": [
+        "config",
+        "SleepDataset",
+        "pad_sequence",
+        "SEScale",
+        "SleepModel",
+        "predict",
+        "main",
+        "run"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "sakami/stacking/011_cnn_embedding_sync.py",
+      "git_blob": "217e4b14b22a6f525f262c713d056c0849666d48",
+      "sha256": "29ededcc84702edb87ca61f3a6dfde2f4ff1c19ef9fd104c169b97f19552aa30",
+      "definitions": [
+        "config",
+        "SleepDataset",
+        "pad_sequence",
+        "SEScale",
+        "SleepModel",
+        "predict",
+        "main",
+        "run"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "definitions": [],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/__init__.py",
+      "git_blob": "868f718701407aeb007d0e8d038d5e2ff8a947c6",
+      "sha256": "920bf5b23940e46e3e92f10434b8f802f780f5dfa5db4fe3a5a98d22348f323c",
+      "definitions": [],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/callback_factory.py",
+      "git_blob": "b1facfa34e33036f10a6efc4af946c564294eb66",
+      "sha256": "c480f0c23c90696a786d5ec621d2cb24bf50554bdc5552d594c3d2ec58855315",
+      "definitions": [
+        "MyCallback",
+        "MyProgressBar"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/collate_factory.py",
+      "git_blob": "c6adc5a83bd4b449e0e6f78efefa18632e633ae9",
+      "sha256": "98309812ea534121e31976255080e9d0d35ee3258f9d111735a047a65491097b",
+      "definitions": [
+        "text_collate"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/dataset_factory.py",
+      "git_blob": "986b9b4f6210758eea70bd789f59d38e60ede8b6",
+      "sha256": "ce11ca22c5d1c5dd281bc1e69d800b035de81eac84ce9f3b08f7242e5a12c471",
+      "definitions": [
+        "SleepDataset",
+        "SleepDatasetV2",
+        "MultiLabelSleepDataset",
+        "StackingDataset",
+        "get_dataset"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/detector_factory.py",
+      "git_blob": "2d00574c0e635eeb2f1797a47eb1896f4beadefa",
+      "sha256": "a939569ba87dc09fd3ab4723c64d06c7e8617c699a15721b3fe24ae05127df3f",
+      "definitions": [
+        "Detector"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/loss_factory.py",
+      "git_blob": "83734f961e081d0f3b6968353ddb4aaee236ac7e",
+      "sha256": "204fdfdbad8decdce45cf19f652c52f35acb17291215c2276ee66acc2743e8df",
+      "definitions": [
+        "ohem_loss",
+        "ArcMarginProduct",
+        "AdaCos",
+        "FocalLoss",
+        "NormalizedMAE",
+        "RSNALoss",
+        "RSNASplitLoss",
+        "RSNASplitClassLoss",
+        "NormalRSNALoss",
+        "ClassificationLoss",
+        "get_weighted_binary_cross_entropy",
+        "get_focalloss",
+        "get_adacos",
+        "get_arcface",
+        "get_binary_cross_entropy",
+        "get_any_binary_cross_entropy",
+        "get_weighted_cross_entropy",
+        "get_classification_loss",
+        "get_cross_entropy",
+        "get_rsna_loss",
+        "get_rsna_split_loss",
+        "get_rsna_split_class_loss",
+        "get_mse",
+        "get_loss"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/model_factory.py",
+      "git_blob": "9e540f26afb021696968364d9e43f59d1750798e",
+      "sha256": "6403e414a87cb15d6679488b708773dd74e549fe1b2d1b57492f73bf2122c17d",
+      "definitions": [
+        "CatEncoder",
+        "OneHotEncoder",
+        "MLP",
+        "Swish",
+        "Swish_module",
+        "ResNet",
+        "ArcMarginProduct",
+        "CNN2D",
+        "MultiCNN2D",
+        "CNNBert",
+        "SEScale",
+        "SleepTransformer",
+        "DownSampleBlock",
+        "UpSampleBlock",
+        "UpsampleBlock",
+        "SleepHuggingTransformer",
+        "SakamiTransformer",
+        "ResidualGRU",
+        "CNNRNN",
+        "CNNRNNWoDownSample",
+        "CNNRNNTransformer",
+        "get_model"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/module.py",
+      "git_blob": "c322172002ed2d01adfeed9f9a1ec161e1d270ad",
+      "sha256": "964457ef2aff70d69582d9d53196afbc0625d9c07c21e08fe3c4eda25fa46431",
+      "definitions": [
+        "conv3x3",
+        "conv3x3_1d",
+        "conv1x1",
+        "conv1x1_1d",
+        "SpatioTemporalConv",
+        "BasicBlock2plus1D",
+        "BasicBlock3D",
+        "BasicBlock1D",
+        "RadixSoftmax",
+        "SplitAttnConv1d",
+        "replace_batchnorm",
+        "replace_conv",
+        "replace_ada_avg_pool",
+        "replace_max_pool",
+        "replace_avg_pool",
+        "GeM",
+        "replace_conv2d_to_1d",
+        "replace_conv2d_to_2plus1d",
+        "replace_adaptive_avg_pool2d_to_1d",
+        "replace_max_pool2d_to_1d",
+        "replace_avg_pool2d_to_1d",
+        "replace_batchnorm2d_to_3d",
+        "replace_conv2d_to_3d",
+        "replace_adaptive_avg_pool2d_to_3d",
+        "replace_max_pool2d_to_3d",
+        "replace_avg_pool2d_to_3d",
+        "ResNet",
+        "RNNResNet"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/optimizer_factory.py",
+      "git_blob": "fbb158e36808793dfb703f3e3c6d4d18db158859",
+      "sha256": "b2726af446435da3d715a968ec65c14e2ea60fa881308b54ae224205b82aa0d3",
+      "definitions": [
+        "RAdam",
+        "get_adam",
+        "get_adamw",
+        "get_sgd",
+        "get_radam",
+        "get_optimizer"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/sampler_factory.py",
+      "git_blob": "aacfe3af65b73e8484a94ed99ce56cd85d65f5cf",
+      "sha256": "36a245028bce25bc68a83a07e9f54b218c7d0fa416e8e470f90757b52510f0ac",
+      "definitions": [
+        "WeightedDistributedSampler",
+        "BalancedDistributedSampler",
+        "get_weighted_sampler",
+        "get_sampler"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/scheduler_factory.py",
+      "git_blob": "7b27fdd719366f406319a221b0a93884a6940fb4",
+      "sha256": "2402f7f91cbb19f737351240e96ef3c8581b42b159c95e6e6895f98e2b490995",
+      "definitions": [
+        "GradualWarmupScheduler",
+        "get_warmup_scheduler",
+        "get_plateau_scheduler",
+        "get_scheduler"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/factories/tree_factory.py",
+      "git_blob": "7916e2ce435b00b3d5635e066e1b7576dd8670fc",
+      "sha256": "ca4a8e3f4e2b369b35a8d82e44ff91ba9d32ce2581103941c540232dce61ed27",
+      "definitions": [
+        "LGBMModel",
+        "XGBModel",
+        "CatModel"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/fast_metrics.py",
+      "git_blob": "573425511447b3a969c86788b6559aa527bd8a86",
+      "sha256": "6538b5b64fb4bb7e2e72c46a58bd3abf3abdbee101fcc50124fed4109ef6d443",
+      "definitions": [
+        "ParticipantVisibleError",
+        "score",
+        "event_detection_ap",
+        "find_nearest_time_idx",
+        "match_detections",
+        "precision_recall_curve",
+        "average_precision_score",
+        "average_precision_score_with"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/metrics.py",
+      "git_blob": "e7a365f1953f2ee0184aeceed956cc4881c3e66a",
+      "sha256": "82c1d6f06ded6c1b4cd252d62c6f17f425f908d58ba3d5f6e89bc745260c387d",
+      "definitions": [
+        "ParticipantVisibleError",
+        "score",
+        "filter_detections",
+        "find_nearest_time_idx",
+        "match_detections",
+        "precision_recall_curve",
+        "average_precision_score",
+        "event_detection_ap"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/preprocess/feature_creator.py",
+      "git_blob": "70c5c979e9a1093094204041f4bffb30849db021",
+      "sha256": "afdb3c1b21e0c0684a3761ac6350a5862a00da6ca3ce9acc78f21cb589916faf",
+      "definitions": [
+        "FeatureCreator",
+        "LIDFeatureCreator",
+        "TimeSeriesStatsFeatureCreator",
+        "TimeSeriesStatsDiffFeatureCreator",
+        "TimeSeriesDiffFeatureCreator",
+        "TimeFeatureCreator"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/preprocess/make_fold_v2.py",
+      "git_blob": "1d0ebf3562bddd73580f7b5a09438b657cc30b2d",
+      "sha256": "9c2307fe5722678da4262e36788c79ba8379851b2f88a42734980aa1d50553a4",
+      "definitions": [
+        "load_data",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/009.py",
+      "git_blob": "299ab946ac37593ca5c0feaec000ad6678e842a3",
+      "sha256": "df1ee38978f00721a0dca5268046f816869002cbb0d8c8f7a0a66efe1db3d5b6",
+      "definitions": [
+        "timer",
+        "load_data",
+        "make_chunk_data",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/030_truncate.py",
+      "git_blob": "0953a0d0129ab1c0ea10b9394beb859106123eb5",
+      "sha256": "435dbc48ac99da7409420e3725a92e6ff1cf42d803ae1f626c4821e3cbd3e0f3",
+      "definitions": [
+        "timer",
+        "load_data",
+        "make_chunk_data",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/io.py",
+      "git_blob": "990bf71af521132d095b7170be5cdd804a7f0a78",
+      "sha256": "d16bb5b248e90c5ede06d2156ab996fee465d06f00bbbc49e5103d4fe6dcc56e",
+      "definitions": [
+        "load_sakami_data",
+        "load_kami_data",
+        "load_shimacos_data"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/main_cat.py",
+      "git_blob": "40d86f3068112427696bb09727b5d4ca8beadf0f",
+      "sha256": "fc756f24f49084fc3da9ede7e3a66e95f6c1a7749a29eca2fd5aa256b4efdde4",
+      "definitions": [
+        "make_submission",
+        "prepair_dir",
+        "set_seed",
+        "upload_directory",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/main_lgbm.py",
+      "git_blob": "5ebc9ee678b35886736b103e1cd0bd6fb43b7140",
+      "sha256": "4b45f0503de8c01f514c399ce92ea46789be5400f996647f569e0052174b5c29",
+      "definitions": [
+        "make_submission",
+        "prepair_dir",
+        "set_seed",
+        "upload_directory",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/main_nn.py",
+      "git_blob": "92df0c066c01095c74f327226636b783e816b30b",
+      "sha256": "be3637e48032acdfead8a945b649e54e456f211bcdc913fa7c8b531d942a54ad",
+      "definitions": [
+        "set_seed",
+        "prepair_dir",
+        "set_up",
+        "main"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/runner.py",
+      "git_blob": "d7318c442b5af47756381f6f5b0122650aa16452",
+      "sha256": "b9a7ba19baab6687721eae9e6fd1744d65e669b17229fcbb301243bad81cecba",
+      "definitions": [
+        "BaseRunner",
+        "ClassificationRunner"
+      ],
+      "license_headers": []
+    },
+    {
+      "path": "shimacos/components/stacking/sync_batchnorm/__init__.py",
+      "git_blob": "a10989fbef38485841fdbd1af72f53062a7b556d",
+      "sha256": "50083d11a5c9710f9b7dbd4ca012f8e3721fd0c78f63a36a6a0a1a0d82a13ede",
+      "definitions": [],
+      "license_headers": [
+        "# Distributed under MIT License."
+      ]
+    },
+    {
+      "path": "shimacos/components/stacking/sync_batchnorm/batchnorm.py",
+      "git_blob": "24c0950707d07102d06b5fdf64c74a347ec3186c",
+      "sha256": "6adf98c0161fc4ffca3d2525ed9855a3fac473f345f8381e1fdc68db6bf1bb6e",
+      "definitions": [
+        "_sum_ft",
+        "_unsqueeze_ft",
+        "_SynchronizedBatchNorm",
+        "SynchronizedBatchNorm1d",
+        "SynchronizedBatchNorm2d",
+        "SynchronizedBatchNorm3d",
+        "patch_sync_batchnorm",
+        "convert_model"
+      ],
+      "license_headers": [
+        "# Distributed under MIT License."
+      ]
+    },
+    {
+      "path": "shimacos/components/stacking/sync_batchnorm/batchnorm_reimpl.py",
+      "git_blob": "c2bbeab36a4c22748bf758f1f63f6366ba6fd5b3",
+      "sha256": "3d808924d653a0d7983b417fc7483f9f0788cc94f63f1b2bc6b0bea19a733edb",
+      "definitions": [
+        "BatchNorm2dReimpl"
+      ],
+      "license_headers": [
+        "# Distributed under MIT License."
+      ]
+    },
+    {
+      "path": "shimacos/components/stacking/sync_batchnorm/comm.py",
+      "git_blob": "922f8c4a3adaa9b32fdcaef09583be03b0d7eb2b",
+      "sha256": "9d2e776a0398e5ac29ce13d43b7475300f70f409e56f3c38428029000557a57a",
+      "definitions": [
+        "FutureResult",
+        "SlavePipe",
+        "SyncMaster"
+      ],
+      "license_headers": [
+        "# Distributed under MIT License."
+      ]
+    },
+    {
+      "path": "shimacos/components/stacking/sync_batchnorm/replicate.py",
+      "git_blob": "b71c7b8ed51a1d6c55b1f753bdd8d90bad79bd06",
+      "sha256": "4498b873404fce05202d4f891262e249a95733816d3877e3aee3d2401138a6af",
+      "definitions": [
+        "CallbackContext",
+        "execute_replication_callbacks",
+        "DataParallelWithCallback",
+        "patch_replication_callback"
+      ],
+      "license_headers": [
+        "# Distributed under MIT License."
+      ]
+    },
+    {
+      "path": "shimacos/components/stacking/sync_batchnorm/unittest.py",
+      "git_blob": "bed56f1caa929ac3e9a57c583f8d3e42624f58be",
+      "sha256": "7f0fdfb71efe0458707a66525e932af4cd58d2c65e8cab42b26ded60a451abb2",
+      "definitions": [
+        "TorchTestCase"
+      ],
+      "license_headers": [
+        "# Distributed under MIT License."
+      ]
+    },
+    {
+      "path": "shimacos/components/utils.py",
+      "git_blob": "c57e537e24fbf46a269df69a8ab4848be6792be2",
+      "sha256": "75fc98c8aaa385c6adf7b5b376e567260ae60a55e92f58f2dd0c82b38a902535",
+      "definitions": [
+        "load_periodicity",
+        "make_submission",
+        "post_process_from_2nd",
+        "detect_events_for_serie",
+        "remove_periodicity",
+        "post_process"
+      ],
+      "license_headers": []
+    }
+  ],
+  "scope": "Public Python software only; data, fold assignments, weights, notebook outputs and other inputs excluded.",
+  "approved": false
+}

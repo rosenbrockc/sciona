@@ -1,0 +1,25 @@
+{
+  "format": "physical_operator-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "calibration_leakage",
+    "missing_oof_validation",
+    "query_population_leakage",
+    "missing_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_physical_operator_execution.py": "0f0d2e5a1dd7ad8686f640c010fe01f96152bbcd54b77456e1a79fa0a145edfc",
+    "scripts/validate_physical_operator_review_gates.py": "52d83f5a1aa1f93cbf0c86b71b5761ee2a20dd536a62e3c3f348f73e5aa234fe"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

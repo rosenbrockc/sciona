@@ -1,0 +1,23 @@
+{
+  "status": "source_recovery_pending",
+  "catalog_mutations": 0,
+  "intake_repository": "https://github.com/tascj/kaggle-google-smartphone-decimeter-challenge",
+  "intake_repository_probe": "HTTP 404 via web open",
+  "primary_paper": "https://www.ion.org/publications/abstract.cfm?articleID=18109",
+  "findings": [
+    "The author publication identifies Taro Suzuki and a 2021 winning factor-graph optimization method using accumulated delta range and reference-corrected pseudorange constraints.",
+    "The intake repository URL did not resolve. A guessed taroz/gsdc2021 URL also returned HTTP 404; this does not prove that source code is unavailable elsewhere.",
+    "Search exposed a 2023 repository, but it is a different competition edition and must not substitute for the 2021 implementation.",
+    "Recovered canonical winner writeup: jointly optimized position, velocity and signal clock states with switchable observation constraints and a switch anchor; ADR with Doppler fallback, differenced pseudorange, motion and selective pseudo-position factors.",
+    "Intake five-stage filter/smoother/snapping description does not faithfully represent the recovered winner method. No historical source code link recovered from the writeup.",
+    "Author publication index confirms the 2021 paper, but offers no linked full method/source on the inspected page."
+  ],
+  "next_steps": [
+    "Recover complete 2021 factor definitions, observation preprocessing and noise/initialization controls before implementing a corrected full reconstruction. Other years and generic filtering cannot be treated as source-equivalent.",
+    "Continue independent uncovered candidates while 2021 source recovery remains incomplete."
+  ],
+  "scope": "Source provenance triage only. No datasets or weights fetched, no implementation or accuracy claim.",
+  "source_version_id": "171ea899-008e-5a42-aeb7-455be3c7f3e5",
+  "source_content_hash": "8ba952c6fe0a4ff18254a74914be1a8af9dddaf0fe71fa7154b23dee6a4f91ce",
+  "winner_writeup": "https://www.kaggle.com/competitions/google-smartphone-decimeter-challenge/writeups/taro-1st-place-solution"
+}

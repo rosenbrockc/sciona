@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 2,
+  "native_models_fitted": 1440,
+  "elapsed_seconds": 95.42,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "720-model native CPU lifecycle for each architecture",
+    "Five excluding-fold 120-model bags and full-training 120-model query bag",
+    "Exact reference features, labels and heldout populations captured",
+    "Synthetic OOF and query nine-class learning"
+  ],
+  "sha256": {
+    "sciona/otto_lasagne_120_crossfit.py": "1df31fcf0bcc4d35b9d84cf1b83551aa007a47698172ca1253cbcbf5ae82d94d",
+    "tests/test_otto_lasagne_120_crossfit.py": "5dcdc9768e354a2e59771d2fa1209f514b143267638f8873080547ac00aa1d13",
+    "sciona/otto_lasagne_120.py": "8050c83e838da8b600c461dc7bb41ca35b185dc9aff5fcaee99aa2fe0093f0bb",
+    "sciona/otto_lasagne_120_worker.py": "9d266086caa634d0fa394141f1774a04cd2515a7b164a39698df4a98b8b7e836",
+    "sciona/otto_lasagne_worker.py": "f2d8519cd416816300377db90181bcc3161fbda184244f55406d2e032b014489"
+  },
+  "limitations": [
+    "Historical GPU execution and layer-count convention remain unverified.",
+    "Historical input transforms, controls and member schedules unresolved.",
+    "Whole-stack meta-learning, source-entry-ten output interpretation and publication gates remain pending."
+  ],
+  "catalog_read_only_recheck": {
+    "served_cdgs": 96,
+    "competition_intakes": 142,
+    "mandatory_provenance_covered_intakes": 29
+  },
+  "catalog_mutations": 0
+}

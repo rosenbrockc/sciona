@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "variant": "default",
+      "seeds": 12,
+      "exact_source_match": true,
+      "exact_rng_resume": true
+    },
+    {
+      "variant": "background",
+      "seeds": 12,
+      "exact_source_match": true,
+      "exact_rng_resume": true
+    }
+  ],
+  "invalid_noise_banks_rejected": 5,
+  "runtime_sha256": "6bbf78731304a7e0ff71acc8d2c8c50f0a6c82433c423939efd455f38e175141",
+  "validator_sha256": "b29b2f39f43be271f66d368a0a8b63804ec09d0d19a57dd35044013018e8e017",
+  "reference_validator_sha256": "fbbc606a8ba784fcf2c24249dee9714bd3ae10ee8605c510ee263d20413d5d38",
+  "scope": "Synthetic in-memory banks at32kHz; exact source recipes and RNG continuation. Runtime guards invalid banks; no resampling or complete model-training claim."
+}

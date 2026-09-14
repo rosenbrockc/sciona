@@ -1,0 +1,88 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "wavelet_coeff": "64a3d71d6c12630876b219dc4916dda9f6949805d2f7ee1c035c8fb1e41ba94a",
+    "daub": "8c3357cb5a1126f5c1cbb0a59c50782802b3015aa0ff18856a2e0e3d052447cf",
+    "wt": "be08acb8f24af22ac69da3aa05e9af1040c35da5ed7424b65d80b916e75b156a",
+    "sub_pos": "157a9d307277916894bca539e526c8842417552f0ca7fecce1f5c9713e7a19c1",
+    "extract_subbands": "fdde1cd2e9bf5a568fd4ba27a8be64f2f34216d94bdd604ccb77ba2deb48910b",
+    "trigpol": "1e86a896b05bfc3e953f5a8c456985b1bd7fef40c99be7b52e09ddcd40c1af8b",
+    "rh2rg": "7fcc10b0832eee9421a46a50a455da51f0ed005ea1b43ebedcc6c864ede70a95",
+    "wtcenter": "2f12e2e179cfea0b163dc7e84f5b9525f5815e9cfbdd40ade0131f31ad5e6b34",
+    "center": "dc6dd1b7bea6f19e38b17bf40266bc264ed56f41bce3c044c5a654184d259442",
+    "numcomb": "33b89a5e705036bb8dc8e05e362e4e29705da14227d607a06f3a9346d4257a3e",
+    "fact": "f39453a0484209e4e31d6e495080241242ee3a2e7d287861333b93e87697f934"
+  },
+  "provider_sha256": "c0272d9d3db4a195c46e320f6fa3f43ea1e4e334a26c7adee3600705b64db53b",
+  "validation_sha256": "8e873c9a7a539c8d85a9263416cad858549b76a3fd9821c40279621cbb297272",
+  "test_sha256": "b6a589c9528a84da9be79c44efeeae89b88f7d972b228e2165529f9d0b91eca9",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 128,
+      "maximum_absolute_error": 1.1213252548714081e-14
+    },
+    {
+      "seed": 10211,
+      "samples": 129,
+      "maximum_absolute_error": 8.826273045769994e-15
+    },
+    {
+      "seed": 10211,
+      "samples": 257,
+      "maximum_absolute_error": 7.549516567451064e-15
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 7.993605777301127e-15
+    },
+    {
+      "seed": 10212,
+      "samples": 128,
+      "maximum_absolute_error": 1.1102230246251565e-14
+    },
+    {
+      "seed": 10212,
+      "samples": 129,
+      "maximum_absolute_error": 7.993605777301127e-15
+    },
+    {
+      "seed": 10212,
+      "samples": 257,
+      "maximum_absolute_error": 7.882583474838611e-15
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 7.549516567451064e-15
+    },
+    {
+      "seed": 10213,
+      "samples": 128,
+      "maximum_absolute_error": 1.9317880628477724e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 129,
+      "maximum_absolute_error": 1.3988810110276972e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 257,
+      "maximum_absolute_error": 1.0325074129013956e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 7.882583474838611e-15
+    }
+  ],
+  "limitations": [
+    "Unmodified numerical source helpers in current Octave; no original MATLAB runtime claim.",
+    "One helper output only; full feature ordering, masking and model execution remain separate.",
+    "Standard db4 coefficients replace source polynomial root construction; numerical agreement is tolerance-based, not bitwise."
+  ]
+}

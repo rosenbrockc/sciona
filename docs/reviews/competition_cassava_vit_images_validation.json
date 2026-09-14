@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "source_transform_comparisons": 41,
+  "configuration_match": true,
+  "validation_stochasticity_verified": true,
+  "inference_crop_scalar_oracle": true,
+  "scope": "Reference transform parity; historical augmentation version and complete ViT fold remain unqualified.",
+  "sha256": {
+    "sciona/cassava_vit_images.py": "e61d4cfd1f622e5763cdb5074248e54ccd262b8240a6c7423a88f54b9c81668c",
+    "scripts/validate_cassava_vit_images.py": "a281965040c90a3bd5015c2a7044c9661c13e8ffdce5a5468021b60e82b33529",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

@@ -1,0 +1,386 @@
+[
+  {
+    "wheel": "audiomentations-0.11.0-py3-none-any.whl",
+    "sha256": "2fa7fa8d55f1fdfb9da6ebee19d30bdeda1c3b4ab34e4247e41eb0a5046cbcf7",
+    "pins": [
+      {
+        "software_path": "audiomentations/__init__.py",
+        "sha256": "95828d5d9774a3e77a76e48d344085f5e09bf58b7f5640768b92effcf17c105c"
+      },
+      {
+        "software_path": "audiomentations/augmentations/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "software_path": "audiomentations/augmentations/transforms.py",
+        "sha256": "658763b186ad9d519e19b706b05db03b26ebcee7d71c6b6037c4beffa138e041"
+      },
+      {
+        "software_path": "audiomentations/core/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "software_path": "audiomentations/core/composition.py",
+        "sha256": "6409367d20fbfd3e2e53b55b9c0445bf16271accc0acf87c35f23f859f3c0de0"
+      },
+      {
+        "software_path": "audiomentations/core/transforms_interface.py",
+        "sha256": "172ea9957be3fb7dd8160cd251bf421ab54b8a5ffc2cacf351990ed1f5d1b500"
+      },
+      {
+        "software_path": "audiomentations/core/utils.py",
+        "sha256": "49b94d2dc56c7c51f26002cfd75cfd7f00fa2656bc981a35edf90f9154473b1c"
+      },
+      {
+        "software_path": "audiomentations-0.11.0.dist-info/LICENSE",
+        "sha256": "fa815dc89b64faa17dbdedc372da7b14eb534eaccdeebc39ca3c6a5413e585e7"
+      },
+      {
+        "software_path": "audiomentations-0.11.0.dist-info/METADATA",
+        "sha256": "30f79493d44cd75f29bf1fd479f6297c7382c8adfb34aa2aff4c7a47c51f7940"
+      }
+    ]
+  },
+  {
+    "wheel": "pytorch_ignite-0.4.0.post1-py2.py3-none-any.whl",
+    "sha256": "88ef5d7d082212699720f3700a7ca2af550b7b424a4ea7ed4b6d91a24fc42e1e",
+    "pins": [
+      {
+        "software_path": "ignite/__init__.py",
+        "sha256": "9b5d36e2cb5e1f3dbd6751cce523b544b1fbdddf0708c93cd61a0d8f884b6c32"
+      },
+      {
+        "software_path": "ignite/_utils.py",
+        "sha256": "55be027ee7508629cae358f5ca165d1adf8e0348c822d5cc1c1fbf11ea67e5e3"
+      },
+      {
+        "software_path": "ignite/exceptions.py",
+        "sha256": "e5958254b3c2f6b8285bcb7ce03f9578495eab3e4eed7a4018fa42754f2b29dd"
+      },
+      {
+        "software_path": "ignite/utils.py",
+        "sha256": "b60c3ac6611824e1024b80e3dd48aa62943eea08aa1a245b5a9d385c95374184"
+      },
+      {
+        "software_path": "ignite/base/__init__.py",
+        "sha256": "cb683d7a08ee542611b5a8fee207b4f35cbef1c8c85ecc3f66067a05182e1e2d"
+      },
+      {
+        "software_path": "ignite/base/mixins.py",
+        "sha256": "a4f76db9de88ad09cbd4f40b20e0d2d3f984c8e526d93b3e98ffe7eb832df665"
+      },
+      {
+        "software_path": "ignite/contrib/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "software_path": "ignite/contrib/engines/__init__.py",
+        "sha256": "b9d9e88daa5c197c5920080a8009413d8b14c12bc305de351de67cb084d1e883"
+      },
+      {
+        "software_path": "ignite/contrib/engines/common.py",
+        "sha256": "b00b7e2d15ed7b1f331a8d3b4bddacd8751ef622253ea4f29a8dd868aaca8b16"
+      },
+      {
+        "software_path": "ignite/contrib/engines/tbptt.py",
+        "sha256": "0a1572ca77aa1e3aa55958848ef00e6866eabe30b387f17471699580474045a8"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/__init__.py",
+        "sha256": "21e28a17d77f253fe87144e8e46bfbece105340d077492b6788bebd3dbc9ad24"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/base_logger.py",
+        "sha256": "6fc81a5063cddbe6cbb7609bad1c559d0cf6f92840bdcac632a897e6e4116a7f"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/custom_events.py",
+        "sha256": "39768d4f20941a9fcbbb2334f00ef906dae33e197da6da9a43203a6aa6008806"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/lr_finder.py",
+        "sha256": "fb6cfb4c4a7cf29ca332cb289c7b51ad30d908e5a5a2afa6070e5ba1e6f90c2f"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/mlflow_logger.py",
+        "sha256": "e68e33df4b7281e2c0c5811bf136ebab7c76df539f77ee0c830b45401ae4e471"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/neptune_logger.py",
+        "sha256": "8b63faef3bbae64070f4df0d6fbe3132ba8dbdbf1045aa3ac1b4252f630dd2d3"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/param_scheduler.py",
+        "sha256": "131e6d9694580cf9d6b2b0296e762a47a5ce7760a9d133938f2fe88ecd340a66"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/polyaxon_logger.py",
+        "sha256": "95e9e168a7931095ea965bdf67e555e642157abf768bf699be08117ce2e5bfc5"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/tensorboard_logger.py",
+        "sha256": "f01a5707db7634472c13cbd5f95932e47d7b4104d86f0053b937cf26b99fe57e"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/time_profilers.py",
+        "sha256": "de6d28955aada6297a68e6c932a196cc4c0278f595334160b09a9b7e1e9633ba"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/tqdm_logger.py",
+        "sha256": "23b601d77b54ed7b8fa3b5e6d084f2b5c2e062fa152dea392e611d28989a5313"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/trains_logger.py",
+        "sha256": "a67d6f03e04747e5d083e1a76d2b5857c63afcc4d303768d6626cedf7b332962"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/visdom_logger.py",
+        "sha256": "e773aea7c3aec9e948138957757c0be1d0ee4407c1f97f336f139ce8e7fcb0ac"
+      },
+      {
+        "software_path": "ignite/contrib/handlers/wandb_logger.py",
+        "sha256": "5e534fbe453102f613ace3335dc64d9e38107b192fe7d1e9178903165d8e49a9"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/__init__.py",
+        "sha256": "f91e1545b72fcc62dd8a4ec30624b13bda4c73469de076b74f45dc7bd72fc914"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/average_precision.py",
+        "sha256": "d75d4e6fac9d49ff80ae4b73d090677aba63fab95155c945f9146cb6f7375613"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/gpu_info.py",
+        "sha256": "c06029b45e0c2fa12b10111ec7d84fa311f565dd46462d2e25e468af1718e8fb"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/precision_recall_curve.py",
+        "sha256": "9e791cda1f4363e83161e598dab759f29ae45aefe9d2f7ce0a169aaca85f77a8"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/roc_auc.py",
+        "sha256": "1e13b8a0b499b87eae9007252bf376211507140a96d87edcb3ca6056612a499a"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/__init__.py",
+        "sha256": "978fe0a19985b2d27a03f5b2486a3d7f0bd9c9a30873262cf5a7130e1d5781d0"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/_base.py",
+        "sha256": "6d2be7eb152936274e906f3270d1eb4f655b27bb81cd3b8d167c8bc619ef82e7"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/canberra_metric.py",
+        "sha256": "86aed9a380400af2681dd8b6200a2ef214fbd06accaef7d3d1f15fdf8dedce59"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/fractional_absolute_error.py",
+        "sha256": "1c4475f862f6aee8ecf2c3311084e9540a5de0ae9c286178cf5f237985ec3348"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/fractional_bias.py",
+        "sha256": "0ae53c8fd50a984d4b475609853e89456f45a93e2b593309369cd752c52c53f4"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/geometric_mean_absolute_error.py",
+        "sha256": "410d179edb77ed4237d114675b5a4263de40ef47050c5819d5149b141b46db7a"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/geometric_mean_relative_absolute_error.py",
+        "sha256": "973a19a6617a99cbb9efdad3eb8e349b2d1faa50a5cd61ddfd69d5d2c3ea2f0f"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/manhattan_distance.py",
+        "sha256": "84f3fca3205adc3c4f99d40a6c836f62be4f20b779a64086934a7ab4570fa231"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/maximum_absolute_error.py",
+        "sha256": "12302927a0af2de9cec45cf1e48da928e9657b3fd3ea189a789f8f8c60ab60a8"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/mean_absolute_relative_error.py",
+        "sha256": "aae76f657af76fef06ae8e9513a621a8df75a32551e47367d21b6a3a92f664b1"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/mean_error.py",
+        "sha256": "1c17f44f6dee5a3c49ab5617ef0e992d67b8a9fbc8bbb0db16076300aedf0102"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/mean_normalized_bias.py",
+        "sha256": "db8c2ede0b79a39d5aa17e15a81a0500741de29a241cc5fd1d7217f41258a928"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/median_absolute_error.py",
+        "sha256": "808f578559b02fe4c2ccded92510b0e9f0406a5d86bdb5c969c96fefc70849c9"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/median_absolute_percentage_error.py",
+        "sha256": "8978abebbc1d5bebafb918aa32110e735e5a3a8b8e9bba1436a2edcb80002e54"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/median_relative_absolute_error.py",
+        "sha256": "761a2e0f64ca51c104876fc946ad0696d72d45787f53ed6bcd04d2cde5e10b2f"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/r2_score.py",
+        "sha256": "a2529a42cf946d23ae715a53b1e60e31d3010f399c69073df3e42f2b253e38b1"
+      },
+      {
+        "software_path": "ignite/contrib/metrics/regression/wave_hedges_distance.py",
+        "sha256": "91687a2c2f5d09469a932b9cdeb54d46b0a94dc3ecbd69ca501809151e0d5bde"
+      },
+      {
+        "software_path": "ignite/distributed/__init__.py",
+        "sha256": "a82dbca24f571d625ac197d047632a59fe9cb60812e2b518f4f89326338236f2"
+      },
+      {
+        "software_path": "ignite/distributed/auto.py",
+        "sha256": "34d1c677653c0acfa9b2fe6b0be461f9c163f3613ba5168e8cce6fe4335a08c5"
+      },
+      {
+        "software_path": "ignite/distributed/launcher.py",
+        "sha256": "71c8682affa32e081eca0d58798f1c1894b6d9c16f7c2e757bbfb280bc776a8e"
+      },
+      {
+        "software_path": "ignite/distributed/utils.py",
+        "sha256": "fb8926643819330e2cc4eaf99585d6b52caf6e5a7746bc3c5f9ac4c47f9e6fec"
+      },
+      {
+        "software_path": "ignite/distributed/comp_models/__init__.py",
+        "sha256": "430f79fb2e8a86de684ca1f10b83d8e94f8f3fe1e2f79c17424e625b771075e1"
+      },
+      {
+        "software_path": "ignite/distributed/comp_models/base.py",
+        "sha256": "5b27c0c416f673176350b636f26b6ddac93020f474de12b8eebb87e68c800cdb"
+      },
+      {
+        "software_path": "ignite/distributed/comp_models/native.py",
+        "sha256": "39c8ce926205acdacc5aac222695596b6c0f1cbf77f85d2607d36be29039f694"
+      },
+      {
+        "software_path": "ignite/distributed/comp_models/xla.py",
+        "sha256": "a3402e002f856c7ad48a55d81dccfc19eec5e5fc4688b54b2dd16d2d2da55402"
+      },
+      {
+        "software_path": "ignite/engine/__init__.py",
+        "sha256": "5d1e78fc4675442b54b3cd1fa8323d227cab71b39bd45a1d294ddd16b965ac0e"
+      },
+      {
+        "software_path": "ignite/engine/deterministic.py",
+        "sha256": "c17427314318b292427a852065a4da460984e408aab69dfc8e2e0d3624d18242"
+      },
+      {
+        "software_path": "ignite/engine/engine.py",
+        "sha256": "74299da4978bce710c73897bca09948d2dc35a787f4240d27f8a3a9e22bb3474"
+      },
+      {
+        "software_path": "ignite/engine/events.py",
+        "sha256": "3d4dbfc1df26d722a64d5527da5c0cb415107ab7f3d85c4ec2649520186cc4cd"
+      },
+      {
+        "software_path": "ignite/engine/utils.py",
+        "sha256": "7b813e645f658c03117841b0ca91e173094d2085b8433a2f658ed60ff912720b"
+      },
+      {
+        "software_path": "ignite/handlers/__init__.py",
+        "sha256": "c74114e592d249c5753c8d9e970f2a744f277a0fb765242649691c33d592fd3f"
+      },
+      {
+        "software_path": "ignite/handlers/checkpoint.py",
+        "sha256": "ea9143d12f7aaeb98dd867e370c2078ad5020f2b454f4c5056091624886498b3"
+      },
+      {
+        "software_path": "ignite/handlers/early_stopping.py",
+        "sha256": "45a3578c3e69df39748835a361364f6c7d97ceb6a5964df9c2640330af09bed3"
+      },
+      {
+        "software_path": "ignite/handlers/terminate_on_nan.py",
+        "sha256": "d1a846adf8bd9bc8da3b4dae93725e7a3f2815fc2a8c2d91b77dc9e2d195cb36"
+      },
+      {
+        "software_path": "ignite/handlers/timing.py",
+        "sha256": "443ae617d45a3c8c98ed20687a5ba7b918080fb4df98e0bf1f5d9fd431208b50"
+      },
+      {
+        "software_path": "ignite/metrics/__init__.py",
+        "sha256": "64c278400adf5dbec87a0ec1c97b3f6665fe62dedb5c8778e268ca5b054ee8e4"
+      },
+      {
+        "software_path": "ignite/metrics/accumulation.py",
+        "sha256": "e0f1bee6832832a353cdf2b7243339767c00a7151367794ea0871acb2747616c"
+      },
+      {
+        "software_path": "ignite/metrics/accuracy.py",
+        "sha256": "538ceaffebf24f177e2ba74ee7684dc3ae3682a58c91ec2ec33dd8c669b77d53"
+      },
+      {
+        "software_path": "ignite/metrics/confusion_matrix.py",
+        "sha256": "c53f023c9ddbdce174453175d59b0316cc7b3b47bda8bf705977d3a9cf538e01"
+      },
+      {
+        "software_path": "ignite/metrics/epoch_metric.py",
+        "sha256": "6ddc94be89ce46b8af7e43ece45e7db7a291084a81feade0916e5924355d2c56"
+      },
+      {
+        "software_path": "ignite/metrics/fbeta.py",
+        "sha256": "5aa89d4820508f73b8a8ff27ec7148f89e406e8e8464648e0a4ee7637c3ab043"
+      },
+      {
+        "software_path": "ignite/metrics/frequency.py",
+        "sha256": "00bee077aba84dae620b5876005563b3ac734545d9a178738044db5b0076a1e0"
+      },
+      {
+        "software_path": "ignite/metrics/loss.py",
+        "sha256": "674ae6fea4c84d1cfdac220dc01dd8bc0f7a9653de78a9d8382e11bb78875875"
+      },
+      {
+        "software_path": "ignite/metrics/mean_absolute_error.py",
+        "sha256": "0557d57589443ddb26a5349fb2099c51cc0de4e4f1a2c8d42e9d94079d4a4c2d"
+      },
+      {
+        "software_path": "ignite/metrics/mean_pairwise_distance.py",
+        "sha256": "013418558a8b1c080a6ddc002b2467701a1799f938f70d17361492c601e86df0"
+      },
+      {
+        "software_path": "ignite/metrics/mean_squared_error.py",
+        "sha256": "23104093a3e43d7f0f99c784a92f82b570252fee8566a7d582381c0f9d227788"
+      },
+      {
+        "software_path": "ignite/metrics/metric.py",
+        "sha256": "450c254cd57d9accc70906ed7500c157b3216377eb9483835ee1fdf65aff0c01"
+      },
+      {
+        "software_path": "ignite/metrics/metrics_lambda.py",
+        "sha256": "76232ec325cd3a343ca41835b18991e14d76a264d5561a8227da013be0b38f45"
+      },
+      {
+        "software_path": "ignite/metrics/precision.py",
+        "sha256": "d6b37843a717e94abc3f0d108dead35fffcef536c99a30933be1f72bf2712d10"
+      },
+      {
+        "software_path": "ignite/metrics/recall.py",
+        "sha256": "9b393851cb1edb279abd59ffca93272a68dcc495c256e629452b28c0554d35d2"
+      },
+      {
+        "software_path": "ignite/metrics/root_mean_squared_error.py",
+        "sha256": "1227cff236b745de6e551eec38026a45f01a91275bb153e2376cb2bee5235e8e"
+      },
+      {
+        "software_path": "ignite/metrics/running_average.py",
+        "sha256": "fdd6c8cff73a51b788267eb83cb707642ba60649aece922b35861224ad999df0"
+      },
+      {
+        "software_path": "ignite/metrics/top_k_categorical_accuracy.py",
+        "sha256": "83c04c9d67da7a026a77fe0fa50af2ad6839a45f32fbd46e93b03e629bf9099d"
+      },
+      {
+        "software_path": "pytorch_ignite-0.4.0.post1.dist-info/LICENSE",
+        "sha256": "cd5a9e502d3bfebca09cd056d642bde731ae5b30920722081efccb46c89a53ef"
+      },
+      {
+        "software_path": "pytorch_ignite-0.4.0.post1.dist-info/METADATA",
+        "sha256": "d4e1fa6505c0b3a536b0e73a6126a0a57b64421e1a799349212770150d66f55f"
+      }
+    ]
+  }
+]

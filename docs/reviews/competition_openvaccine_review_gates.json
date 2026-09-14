@@ -1,0 +1,28 @@
+{
+  "format": "openvaccine-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 13,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_commit",
+    "wrong_license",
+    "wrong_source_output",
+    "masked_gradient",
+    "exception_state_loss",
+    "missing_clipping_fix",
+    "missing_masked_validation",
+    "missing_member",
+    "wrong_binary",
+    "wrong_parameters",
+    "wrong_provider",
+    "reduced_models",
+    "wrong_dependency"
+  ],
+  "sha256": {
+    "scripts/review_openvaccine_execution.py": "8b441dcb69427a7c0fbcc941a3227149ef83f6a61e0506fdfe6c472107c2df56",
+    "scripts/validate_openvaccine_review_gates.py": "b3a00fcfda6c958ee5682222d9c63a7118751218034f7329d97e4bfbd42df29b"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

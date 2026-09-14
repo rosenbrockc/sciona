@@ -1,0 +1,35 @@
+{
+  "intake_version_id": "05034555-4e75-5240-8333-747cfcb96895",
+  "intake_content_hash": "5efaa7cfc530f2cbabe1f19498a5de4a5013e26d815750a28ab89e2ef00441c0",
+  "status": "deferred_complete_source_and_license_unresolved",
+  "primary_intake_reference": "https://www.kaggle.com/c/cdiscount-image-classification-challenge/discussion/45863",
+  "writeup_result": "No readable body in current browser fetch.",
+  "candidate_repository": "bestfitting/kaggle",
+  "commit": "fd2ac94fba182182fd86b8e8d6afec9b4a0408e3",
+  "tree_truncated": false,
+  "pins": [
+    {
+      "software_path": "cdiscount/inception_resnet_v2.py",
+      "git_blob_sha1": "55aae6392fcbd6098176b3295fa3a8b7723a6fb4",
+      "sha256": "066994ae9763b049fdc14ea69cd34966bec593c56e159cf4c58782f1e4b98c19"
+    },
+    {
+      "software_path": "cdiscount/resnet.py",
+      "git_blob_sha1": "4b0ce37bb0538a57608d870a43f2e6f4c4f07550",
+      "sha256": "f710345c85175bb3ed81551895e443533ebbdbe62858587d13d711b27a7c69a3"
+    }
+  ],
+  "findings": [
+    "Candidate cdiscount subtree contains two network modules and three image files; only software modules fetched.",
+    "No full training, BSON/LMDB preparation, distributed loading or final ensemble lifecycle in this subtree.",
+    "Repository API license is null; module-specific notices require further review.",
+    "Winner attribution currently supported by another participant discussion referring to bestfitting; original winner writeup remains unreadable.",
+    "Both inspected candidate modules expose a flat final Linear classifier; a hierarchical category/subcategory head is not established. Inception candidate is Inception-ResNet-v2, not plain InceptionV3.",
+    "Neither inspected network module contains a copyright/license grant. Upstream pretrained model URLs do not establish permission for competition modifications."
+  ],
+  "next_steps": [
+    "Resolve primary winning writeup and complete executable source/license.",
+    "Compare exact backbone/head topology before accepting intake hierarchical-softmax claims."
+  ],
+  "catalog_mutations": 0
+}

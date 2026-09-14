@@ -1,0 +1,39 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "cases": [
+    {
+      "start_epoch": 49,
+      "end_epoch": 51,
+      "freeze_batchnorm": false,
+      "exact_model_optimizer_rng_checkpoint_and_validation": true,
+      "validation_passes": 9
+    },
+    {
+      "start_epoch": 159,
+      "end_epoch": 161,
+      "freeze_batchnorm": true,
+      "exact_model_optimizer_rng_checkpoint_and_validation": true,
+      "validation_passes": 7
+    }
+  ],
+  "limitations": [
+    "Synthetic batches supplied directly; raw input preparation and serialized runner are not compared here.",
+    "Historical CPU/CUDA, Variable and zero_grad adaptations match earlier source validators.",
+    "Source logging and checkpoint file IO omitted; final checkpoint tensors compared directly."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_training.py": "7ad662bd73073152f8d0e582ee2a86d6c6fc7a75816343f13ba729eadf448524",
+    "sciona/dsb_training_range.py": "2df3498bfe6dfa16fe4caefaa76a4d04466d4e85a2aee705470679529cc820d4",
+    "sciona/dsb_network.py": "32a897938064b21e0ba0fee037159cb59befa750e21eba1dd721de8388724efc",
+    "sciona/dsb_losses.py": "1dfa838a4bbc0fb7b272b107de269347fc5182113497f419f159fed2918a9d47",
+    "sciona/dsb_validation.py": "3ccc70d9bae179083e77644d0901783fc5f5809b7ea95bc646c10cb8183463d1",
+    "sciona/dsb_schedule.py": "242cffebbd6829eefc3138314cec8806ae7e6d7dfcda350c7b64a277019e9c1a",
+    "sciona/dsb_checkpoint.py": "3d9a8bb416c3055fad1a3c2627eafbab49627e2c0ec903747ed5a4724a00406f",
+    "scripts/validate_dsb_epoch.py": "8225a79e5da04d8f1b0d312072efdda4d023c46f09f67631cc09000e9696122c",
+    "scripts/validate_dsb_validation.py": "cb446b7d0e3c89e9ea950b425f78e402e60380d073f4606d26800a9fb467eac6",
+    "scripts/validate_dsb_network.py": "b6c6439053fe3f9a1375a44e5dba397deb613f600041649f95ee406c1314acaa",
+    "scripts/validate_dsb_source_lifecycle.py": "1872a54e5bc71b09c857fca970fdea31e673c483cfbbd8221f6a78579bc16200"
+  }
+}

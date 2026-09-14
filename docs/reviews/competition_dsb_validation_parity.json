@@ -1,0 +1,18 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "exact_detector_and_classifier_metric_cases": 4,
+  "unequal_batch_sizes_verified": true,
+  "model_buffers_unchanged": true,
+  "limitations": [
+    "Source printing removed; CUDA/volatile adapted to CPU inference mode and scalar diagnostics ported.",
+    "Undefined source classification rates represented as null, tested separately.",
+    "Model/data quality and historic runtime fidelity are not established."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_validation.py": "3ccc70d9bae179083e77644d0901783fc5f5809b7ea95bc646c10cb8183463d1",
+    "tests/test_dsb_lifecycle.py": "6d8f7f2f20e5ac5429eb4412a27dd28165e640a1ed48d5e6677c4e6f301afe1c",
+    "scripts/validate_dsb_validation.py": "cb446b7d0e3c89e9ea950b425f78e402e60380d073f4606d26800a9fb467eac6"
+  }
+}

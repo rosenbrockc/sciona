@@ -1,0 +1,27 @@
+{
+  "applied": false,
+  "new_approval_evidence": 0,
+  "served_provider_versions": 59,
+  "newly_approved_adapter_versions": 7,
+  "served_component_cdgs": 1,
+  "trust_tier": 3,
+  "total_distinct_served_cdgs": 26,
+  "cdg_status_counts": [
+    {
+      "status": "approved",
+      "is_publishable": true,
+      "count": 26
+    },
+    {
+      "status": "draft",
+      "is_publishable": false,
+      "count": 238
+    }
+  ],
+  "ensemble_version": {
+    "status": "approved",
+    "is_publishable": true,
+    "trust_tier": 3,
+    "is_latest": true
+  }
+}

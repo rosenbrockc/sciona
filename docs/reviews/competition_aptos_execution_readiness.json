@@ -1,0 +1,57 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "target_tier": 3,
+  "source_version_id": "94df8d52-0272-5d0b-b84f-1f150d8e11f0",
+  "source_content_hash": "02129e9c5bef75cf05490e52f2291f5d336d70a92e114d022a1b635ad35b3f58",
+  "structural_status": "pass",
+  "runtime_status": "pass",
+  "semantic_status": "pending_final_review",
+  "developer_semantics_status": "pending_final_review",
+  "stage_mapping": {
+    "image_standardization": "Plain full-image resizing replaces unsupported retinal cropping/local-color subtraction. Reference augmentation and publisher normalization are explicit choices.",
+    "cnn_backbone": "Eight models: two each of Inception-ResNet-v2, Inception-v4, SE-ResNeXt-50 and SE-ResNeXt-101, with trainable GeM and scalar regression head. EfficientNet substitution excluded.",
+    "quadratic_weighted_kappa_qwk_loss": "Smooth-L1 regression replaces unsupported differentiable-QWK training loss. QWK motivates final fixed ordinal thresholds, not the training objective.",
+    "pre_training_fine_tuning": "All pretrained backbone parameters train in stage one; an ensemble teacher builds three added target roles, and each own model continues ten epochs. Four-level grouping differs from five-level averaging labels.",
+    "threshold_calibration": "Fixed manually selected cuts 0.7,1.5,2.5,3.5 replace unsupported Nelder-Mead optimization. Equality convention is explicit."
+  },
+  "limitations": [
+    "Automated Community Tier 3 reference; no human-reviewed Tier 1 or usage-qualified Tier 2 designation.",
+    "Corrected eight-model CPU reconstruction; original winner runtime, artifact identity and leaderboard equivalence remain unproven.",
+    "First-stage budgets in five-epoch increments, Adam settings, ensemble teacher and fresh second-stage optimizer are explicit reference choices.",
+    "Augmentation units/distributions/order, bilinear resize, publisher normalization, scalar head and single-view inference are explicit choices.",
+    "Symmetric group bounds and threshold equality convention are explicit; the source establishes only the demonstrated lower-bound example.",
+    "Caller establishes population-role provenance and physical-image identity; supplied-label queries reject, while pseudo-label queries are deliberately transductive.",
+    "Synthetic full-resolution execution uses five first-stage and ten second-stage epochs per model; original population-scale performance is unproven.",
+    "Local external model artifacts require caller use rights. Each call retrains; temporary checkpoints are verified and removed."
+  ],
+  "reference_conditions": [
+    "Retain pooling, upstream, dependency and supplemental notices with the reconstruction.",
+    "Caller supplies model artifacts they are entitled to use; integrity and source correspondence checks do not establish usage rights.",
+    "Smp-hub cards declare license other; no independent model-weight grant or redistribution permission is inferred.",
+    "Review future distribution of external model artifacts or dependency wheels separately.",
+    "Pinned maintainer mirror identity is established; exact winner artifact/runtime identity and competitive accuracy remain unproven."
+  ],
+  "required_actions": [
+    "Bind conditions into a final semantic review and deterministic publication plan",
+    "Pass transactional publication gates and verify served execution"
+  ],
+  "trained_execution_evidence": {
+    "pipeline_validation": "c8e637ff35a18fc3804e6f2cb94a2c446c0d8b3404594af5c986398603e80e0a",
+    "graph_pipeline_validation": "12ad66a23d6b6b342f26b0d48262d31611f196296536c9cabe2fdf64fb8a5e4d"
+  },
+  "provider_sha256": "97953529d448b804912e47eee127293094de60fc63f12ecf05dfacab15c966ab",
+  "serialized_graph_sha256": "5d81a258553ad5e1737ee9ec38799315a20ee1bde92e67fa986f2902ca9ffebe",
+  "sha256": {
+    "scripts/review_aptos_execution.py": "df3153b9fc103363e12ea86166ed34b6925e601bd257461700482e0a933791cf",
+    "docs/reviews/competition_aptos_source_review.json": "dc769b2b88a724831047d93fcdf2008e0f3fe374268f476cf922fb9de3629f60",
+    "docs/reviews/competition_aptos_provider_structure.json": "a2ba3fd8af47e7c93c335560846278ec9921ab29f6f190f72c46bffcce5e930d",
+    "docs/reviews/competition_aptos_provider_contract_validation.json": "afe6244e141125208dc51e8be50687972f05213a18f32a755dc41ff17848968e",
+    "docs/reviews/competition_aptos_duplication_review.json": "1115828188ae592b559349561ec41af68e3d582a2ecc709203221c846a26bef6",
+    "docs/reviews/competition_aptos_reference_scope_review.json": "048431a20e8dc2d68aa08a833c1c95ac20c430a9c15c078ea5ae77d8a0ca6d47",
+    "docs/reviews/competition_aptos_publisher_payload_validation.json": "b0871ae38826082bf76a269010604b418f3ac6bafe157b456b5b339f3a5d9353",
+    "docs/reviews/competition_aptos_environment_audit.json": "f83ddac26fc89a276d13c210c18e4ca6400ad4f556b04c17b0dc709a8c15fd58",
+    "docs/reviews/competition_aptos_package_file_audit.json": "255479df6d310bea6d84728c7e56e4980eaba7a69f3d299723ba5f9fec3aca11",
+    "docs/reviews/competition_aptos_pretrainedmodels_source_origin.json": "c7e407080e6698c72c215bb12b1d7c5f2f173db8d595eb0bdd14f69298713ab8"
+  }
+}

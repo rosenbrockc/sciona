@@ -1,0 +1,182 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": {
+    "models/detection/transform.py": "46024143aa8d85210135e659fc6487b642cd5d8b0296cc4b7f29f1a329a836aa",
+    "torch14_functional.py": "45d25e49078f0c00bd559d3d7ff412d9250d6f4ad1faf406bb4abab968db4cfb"
+  },
+  "cases": [
+    {
+      "training": true,
+      "dtype": "torch.float32",
+      "input_shapes": [
+        [
+          1024,
+          1024
+        ],
+        [
+          375,
+          1001
+        ],
+        [
+          701,
+          431
+        ]
+      ],
+      "resized_shapes": [
+        [
+          800,
+          800
+        ],
+        [
+          499,
+          1333
+        ],
+        [
+          1301,
+          800
+        ]
+      ],
+      "padded_shape": [
+        3,
+        3,
+        1312,
+        1344
+      ],
+      "images_targets_postprocessing_and_rng_exact": true,
+      "normalization_resize_gradients_exact": true
+    },
+    {
+      "training": true,
+      "dtype": "torch.float64",
+      "input_shapes": [
+        [
+          1024,
+          1024
+        ],
+        [
+          375,
+          1001
+        ],
+        [
+          701,
+          431
+        ]
+      ],
+      "resized_shapes": [
+        [
+          800,
+          800
+        ],
+        [
+          499,
+          1333
+        ],
+        [
+          1301,
+          800
+        ]
+      ],
+      "padded_shape": [
+        3,
+        3,
+        1312,
+        1344
+      ],
+      "images_targets_postprocessing_and_rng_exact": true,
+      "normalization_resize_gradients_exact": true
+    },
+    {
+      "training": false,
+      "dtype": "torch.float32",
+      "input_shapes": [
+        [
+          1024,
+          1024
+        ],
+        [
+          375,
+          1001
+        ],
+        [
+          701,
+          431
+        ]
+      ],
+      "resized_shapes": [
+        [
+          800,
+          800
+        ],
+        [
+          499,
+          1333
+        ],
+        [
+          1301,
+          800
+        ]
+      ],
+      "padded_shape": [
+        3,
+        3,
+        1312,
+        1344
+      ],
+      "images_targets_postprocessing_and_rng_exact": true,
+      "normalization_resize_gradients_exact": true
+    },
+    {
+      "training": false,
+      "dtype": "torch.float64",
+      "input_shapes": [
+        [
+          1024,
+          1024
+        ],
+        [
+          375,
+          1001
+        ],
+        [
+          701,
+          431
+        ]
+      ],
+      "resized_shapes": [
+        [
+          800,
+          800
+        ],
+        [
+          499,
+          1333
+        ],
+        [
+          1301,
+          800
+        ]
+      ],
+      "padded_shape": [
+        3,
+        3,
+        1312,
+        1344
+      ],
+      "images_targets_postprocessing_and_rng_exact": true,
+      "normalization_resize_gradients_exact": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/wheat_image_transform.py": "7bc66b3939b5c02c37d85273c485ccadedd1434bb26cdb0d16d31d4673697e5f",
+    "scripts/validate_wheat_image_transform.py": "5bb41542ab34dc0f0343c20868744c15fecbdaa03947f1fb5cf2bb7d5adb3cb7"
+  },
+  "limits": [
+    "Bounding-box detector only; masks and keypoints are outside this competition implementation.",
+    "Historical interpolate dispatch calls installed native kernels with explicit output size; old native-kernel parity is not claimed.",
+    "Historical batch-padding iterator rejects autograd on modern Torch; padding values and normalization/resize gradients are qualified separately.",
+    "Full detector execution and ROI pooling remain pending."
+  ]
+}

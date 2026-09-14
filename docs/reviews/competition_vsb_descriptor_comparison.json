@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_version_id": "d79e40e4-45b0-5e74-a83c-c68c91f12afb",
+  "source_content_hash": "565e511ee8d20ce0b32adf5c8cc726150f235b1f97d5502d62c96cfe339f5ac1",
+  "source_code_cells_sha256": "ee289da71520cfa781723070f5face629c962e9430fd06bb4f2069a3b72a83b9",
+  "checks": {
+    "descriptor_cases": 16,
+    "source_length_exercised": true,
+    "unaligned_maximum_rejected_by_both": true,
+    "missing_neighbor_nan_preserved": true
+  },
+  "sha256": {
+    "sciona/vsb_descriptors.py": "381df7f3a2f41d688144d8c292d045e3aeff469b3ae74cead48ecd7ebe2cba4c",
+    "tests/test_vsb_descriptors.py": "73f27c54061d53c2915ee664c48d804f28bb74dcc357c65651269af07dc52754",
+    "scripts/validate_vsb_descriptor_comparison.py": "18844bcb3ffb36f514a142c974c273989564659be2e05bd0a356b25362ea077b"
+  },
+  "limits": [
+    "Fixed-length synthetic numerical source comparison only; no native Numba or historical precision qualification.",
+    "Independent descriptor windows clip to actual input length; nominal small radius subtraction retained at boundaries.",
+    "Neighbor NaN values require explicit downstream handling. No whole measurement, trainer or publication qualification."
+  ]
+}

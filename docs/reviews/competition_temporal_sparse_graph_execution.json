@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "a09b614fbdc7f3ca46db3cbbb746c45b8a6d691d8be0b9ad0e36cd4f779c0f26",
+  "provider_sha256": "59d7cf3a4853146fc7edf22db73071b496e0c3d63b522d05616c63c0fb76f0c6",
+  "code_sha256": {
+    "sciona/temporal_sparse_execution.py": "07857a9f01b4c531ddea33f03611de738c7bd711d7b28e2f3f9190f66b627876",
+    "sciona/temporal_sparse_features.py": "4dc40b7909d9fb8b4516a7256da1ad4c15022c0e7a939286c4cfd4d224f5b450",
+    "sciona/temporal_sparse_graph.py": "41067deef92c39ca8f80f783d1f2cf17d421b7f5f3a7f597f5fe9f003cb5d8e6",
+    "sciona/temporal_sparse_source.py": "98b540b7fba296fa7ae27f286fe848daf3fabab440f25e923f47b3611577e3bc",
+    "sciona/temporal_sparse_training.py": "f6261de8467916fc4835fda2be98671e30370120752c6e53ac665562f3637625",
+    "scripts/temporal_sparse_synthetic.py": "24d858b04112510bf7a8a24d3fa924938e246f9edf7473eeebf6dff29d1ce08a",
+    "scripts/validate_temporal_sparse_graph_execution.py": "e4f916b21b557458a5b040cad80b1528d4b15b0a85865d66a3cabb0505ffc6f3"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 30,
+    "validation_rows": 10,
+    "query_rows": 2,
+    "models": 2,
+    "updates_per_model": 5,
+    "feature_count": 24,
+    "bounded_predictions": true,
+    "finite_rmsle": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Synthetic six-stage private-stream temporal sparse execution; no served publication or historical accuracy claim."
+}

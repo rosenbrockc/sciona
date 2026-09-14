@@ -1,0 +1,63 @@
+{
+  "format": "dfdc-checkpoint-selection-review.v1",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "selected_checkpoints": [
+    {
+      "seed": 111,
+      "fold": 0,
+      "checkpoint_suffix": 36
+    },
+    {
+      "seed": 555,
+      "fold": 0,
+      "checkpoint_suffix": 19
+    },
+    {
+      "seed": 777,
+      "fold": 0,
+      "checkpoint_suffix": 29
+    },
+    {
+      "seed": 777,
+      "fold": 0,
+      "checkpoint_suffix": 31
+    },
+    {
+      "seed": 888,
+      "fold": 0,
+      "checkpoint_suffix": 37
+    },
+    {
+      "seed": 888,
+      "fold": 0,
+      "checkpoint_suffix": 40
+    },
+    {
+      "seed": 999,
+      "fold": 0,
+      "checkpoint_suffix": 23
+    }
+  ],
+  "training_seed_count": 5,
+  "selected_checkpoint_count": 7,
+  "configured_epochs": 40,
+  "fresh_run_saved_epoch_suffixes": {
+    "first": 0,
+    "last": 39
+  },
+  "unresolved_selected_suffixes": [
+    {
+      "seed": 888,
+      "fold": 0,
+      "checkpoint_suffix": 40
+    }
+  ],
+  "finding": "Submission asks for one suffix 40 while a fresh default training run saves suffixes 0 through 39. Training and submission also use different checkpoint prefixes. Seven states come from five seed labels, including repeated seeds at different suffixes. No external states were fetched, so checkpoint internal epoch/provenance cannot be inspected.",
+  "decision": "Do not silently relabel suffix 40 as 39, add an epoch, or claim default training reproduces every selected submission state. Establish source revision/provenance or expose a documented explicit checkpoint-selection adaptation before full promotion.",
+  "source_sha256": {
+    "predict_submission.sh": "ec6a05edcda59ad49582b86506df59cb5006b30a0970995d235883bd8984db4f",
+    "train.sh": "698a3d1ebc0312e47e50820258b1f0e0b0c9ae5889f19755661916156646b554",
+    "configs/b7.json": "543dc76cf59a5084a7f45df6f9321d66cad68a0a3dad123433d0a85dbb187247",
+    "training/pipelines/train_classifier.py": "0a55698c94c2d353e019984c2e5389f6785151fb25f4dfaf70106502df8ed728"
+  }
+}

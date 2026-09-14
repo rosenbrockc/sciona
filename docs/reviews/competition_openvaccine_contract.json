@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 81,
+  "serialized_boundary_tests": 13,
+  "hashes": {
+    "tests/test_openvaccine_contract.py": "97c33147b9ffdc7a62ed289a884114a6ac4d7f50543ac08df539c569fa518cf5",
+    "tests/test_openvaccine_lifecycle_contract.py": "af0a612e305e3fb40c65ae3d7cc313ef52de2a0b0fbaf4f14e15f325e51a5f51",
+    "tests/test_openvaccine_round_contract.py": "b3f2a628695cd561d892006d40e3519fa2182b9d95ff9daaef5d019a76f180b8",
+    "tests/test_openvaccine_splits.py": "1c0c6e5bbf4327c552ba0b644824c7bc84bd8b14b2e3f6de494ecf2cb8121ca6",
+    "tests/test_openvaccine_population.py": "2b77bc531dc17012e8619c925a2ce077dd546139c3b1a3cb0c9f22ce6532cc41",
+    "tests/test_openvaccine_targets.py": "6697cd3039f426431f039d01e4b36e5c3ee982b45db1e7ad95773fdede5ac808",
+    "sciona/openvaccine_contract.py": "27ff23d73475e06dad1c6a3fc10d76e6d8d710f10c323c399612f7bab21d4ca6",
+    "scripts/openvaccine_synthetic.py": "8d84af1847084b4a9486589d6b415098ad8fb8f13d9f76fc7eb855fddc8a5d08"
+  },
+  "scope": "Strict JSON contract and combined population, splits, targets, round and lifecycle preflight tests. Full execution is separately evidenced by graph execution; no catalog mutation."
+}

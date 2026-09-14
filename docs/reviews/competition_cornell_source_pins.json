@@ -1,0 +1,448 @@
+{
+  "repository": "ryanwongsa/kaggle-birdsong-recognition",
+  "commit": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59",
+  "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit",
+    "node_id": "MDc6TGljZW5zZTEz"
+  },
+  "pins": [
+    {
+      "software_path": "LICENSE",
+      "sha256": "060641539bf9cf4ee112989ede9e7fcd0492f5d6dc726473bdf6d5a096579666",
+      "git_blob_sha1": "e1832582a244f3d6309809783014d16911bb5dbd"
+    },
+    {
+      "software_path": "README.md",
+      "sha256": "03e854a00b8e855563783222d40b1d4ee8979bbea4b9cfdffaf3787486bfe834",
+      "git_blob_sha1": "0fe696ecaddf3ba212b5c683851b74d18fa65fcd"
+    },
+    {
+      "software_path": "requirements.txt",
+      "sha256": "f6bd5d36ef71a8ba443db2b9173aa1d7b954c653f161ebf996bc9f2f2abf97cc",
+      "git_blob_sha1": "c05408e46ebe7b5a19ee35a6ed6b3ca7f0cac5e4"
+    },
+    {
+      "software_path": "src/augmentations/base_augment.py",
+      "sha256": "a8e9212b86b9a81cae2b01aea3d5764150993424ec2b13424891b1d197687383",
+      "git_blob_sha1": "e9ab12d0a8e397a4a88539e0e03351152aa50dc0"
+    },
+    {
+      "software_path": "src/augmentations/default_augment.py",
+      "sha256": "81857e799eea02bf84897ef11370bf24d327ca67f7d5b2b8a8565a194e52b73c",
+      "git_blob_sha1": "fb4ac231d7b0ec35af89ac7aa7a99c5d7ce18481"
+    },
+    {
+      "software_path": "src/augmentations/mixup.py",
+      "sha256": "d6536b5442222b9f4bea4c7b10cbee1c50315a58a9a41f01998c8644dc8b7fa6",
+      "git_blob_sha1": "d948b5bb11bbde5482280f5602a53a0a12c6e164"
+    },
+    {
+      "software_path": "src/augmentations/noise_maker.py",
+      "sha256": "2a4c21ebf4c248091571c898b618a2d575d98a47c2092d2f9a218a94ce3e8a3e",
+      "git_blob_sha1": "7ade5dcf9bcb54cb04abfa841028d5a4d58a7da9"
+    },
+    {
+      "software_path": "src/augmentations/sed_background_augment.py",
+      "sha256": "1aadecd8a35d022e8a501424ac70398b11a3069b4c6c32d7ecbad7616c7e9162",
+      "git_blob_sha1": "8042a4e1ddbcc3e92e593790b67fae5d6c4c338f"
+    },
+    {
+      "software_path": "src/augmentations/sed_default_augment.py",
+      "sha256": "961b99f0f96809225d7db6c03db11ae6a79380fed8cb91cefaaeafb783fbe432",
+      "git_blob_sha1": "61f5bf690d706f5017ca55a7a3c5739e5df8fd36"
+    },
+    {
+      "software_path": "src/augmentations/spec_augment.py",
+      "sha256": "aabf293aeb9b3d6e92c818133e96dfc7d299b6ec741653ed3af01b37a743a2d5",
+      "git_blob_sha1": "34240b44ff0047fd1fd0de0c1e623b362a5319e9"
+    },
+    {
+      "software_path": "src/config_params/configs.py",
+      "sha256": "7517a96761aaff119fdbf6f100f0376b15f5740d454b11a3131a8daa54023706",
+      "git_blob_sha1": "58ee9b9b29a95a2393e41f010f1a4dfe32b5eeab"
+    },
+    {
+      "software_path": "src/config_params/example_config.py",
+      "sha256": "4779e3d7cc9f5ff77a2e9f8c85a53d453a8b1cb52862385ecd45d915abfce0ef",
+      "git_blob_sha1": "363bf6279eba10cd43619a008d4c430ce86f1970"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_2.py",
+      "sha256": "24610e792bc1141c4e71b7ade482639e70400cc98118caa071a9dc517c4aa804",
+      "git_blob_sha1": "985cfa02eeea9a62ce4ae33a813edbe4963a7cd7"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold0.py",
+      "sha256": "697747e86b3c544ac25627b09b3b17d66eba40dbfdddf81be95697796709f3cb",
+      "git_blob_sha1": "abbeb5ce134ec16d592c9ccc36da64dc83e2f42d"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold0_2.py",
+      "sha256": "8e34bf9a297ee64eaaf2ada5b434cfa565e43269f46c1e8585344a7977cef069",
+      "git_blob_sha1": "272cc99a148b1e5a4a7a15cce212715d9881ec21"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold1.py",
+      "sha256": "0c831bc3f8ef44aed44907d9339e05091fdfbfcee89d4ce0ffab7388abaa3990",
+      "git_blob_sha1": "d595f3b2a13e6058d069b7aa3320fa346377819b"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold1_2.py",
+      "sha256": "fbd01698e375f3d3ad6b411d5d6baa299efca50e2773e9abff7da243b4f2ad50",
+      "git_blob_sha1": "92f50175f7b7f877f48cd0da4bf4f9a52e1e2286"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold2.py",
+      "sha256": "11904d843af94b789b90ccc2c0af407ec2efe8f5dc03755f1b05e6bdc5f9455e",
+      "git_blob_sha1": "8b4f72a18033922ba6a89b87c9aa283132456ccf"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold2_2.py",
+      "sha256": "88f8254a20c6abe23281449e6b3fe20756bf6b89d221858a07ddfa85b9603dab",
+      "git_blob_sha1": "0d7448ddd4c47144c53306eb918f1e233a90c406"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold3.py",
+      "sha256": "1eb65eed33359d970a009f33ac44ea3822d9d641e103840bbea564da5264b3a0",
+      "git_blob_sha1": "1ab150969537cf12db53d9bbe05dd6207583961c"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_mix_fold3_2.py",
+      "sha256": "8223d7b62a249fe07b6634bb8d51c6beb9b9201d47fdd23eca95e17e33b8bbe0",
+      "git_blob_sha1": "ac826d8ed6f19cb1e4e0d87f34a73fb8fe7f0c19"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_nomix_1.py",
+      "sha256": "6a993942e3a8fa74b2de49bb48f2ffccdf3392c6b4fadddc1f29f5d13ea7c17d",
+      "git_blob_sha1": "59c26126c3bf8af663690d0205fddc5661294950"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_nomix_3.py",
+      "sha256": "d22a033653150bb5bf1006dfd5c1db6ecca36789defd7c486901122c1b7efa2c",
+      "git_blob_sha1": "17402795243da1fb22cd350b52053c1ed91a53e5"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_nomix_fold0.py",
+      "sha256": "15bbabd9fa8a2b4120b3fd0e61e4b5d81284992505e8d6cb213cff0990eb71d0",
+      "git_blob_sha1": "28d2a80bab682d176b89ebed6c3c2cb4eeb4af01"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_nomix_fold1.py",
+      "sha256": "043518a0867c61d873db91dd9ed60f47bd2a1bef748b3568762e30668f213d2c",
+      "git_blob_sha1": "576d42d879cca8161bc9b7f71e3df10e6440cde9"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_nomix_fold2_augd.py",
+      "sha256": "b9a2b3984b78fde91ff0a289c527744df3bb589f45e68cb8168c3e4906e745ec",
+      "git_blob_sha1": "92272d5b47189ab145fb0515731f57d54bd30291"
+    },
+    {
+      "software_path": "src/config_params/final_sed/final_sed_dense121_nomix_fold3_augd.py",
+      "sha256": "25452d4a40b8be93fcbdb79ba4caf0e356c48e52999a8c7cd927c03d1ac06e0d",
+      "git_blob_sha1": "f130b0f4059057f8b4d9b6a87e5102757b16b90c"
+    },
+    {
+      "software_path": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold0.py",
+      "sha256": "64b58edc40b6dd856e0467f695219a055deb7ca2d5d802b217f6641d145193ea",
+      "git_blob_sha1": "3f9e73f5b4d665289233ab043b64e8e1d2f3c0eb"
+    },
+    {
+      "software_path": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold1.py",
+      "sha256": "6d73e83c7e758cd04848cc139b26ff1af00b2dfb8302cb4ecbb8b4e60270d1ba",
+      "git_blob_sha1": "b77dc4eea40332678e3b92944a11e9a0c8848afe"
+    },
+    {
+      "software_path": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold2.py",
+      "sha256": "4c8c447ebbed66696869c5e606c567880381a88c9ac568cfb51f7cdc7fabe5b2",
+      "git_blob_sha1": "29a2ac49c7477a32b2fa4c8520af9d25848c7540"
+    },
+    {
+      "software_path": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold3.py",
+      "sha256": "14fd58e1c0b70cdbfaadbc43341747cd5befee24d16ed42f603bea32d674f468",
+      "git_blob_sha1": "32b778aa814fbf7100bb6fcb07e6628ae0c46a92"
+    },
+    {
+      "software_path": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold4.py",
+      "sha256": "71da3b778e8a352cef90f12d20f8df44703078fb2b44dd2cfbe24066fc8b58ef",
+      "git_blob_sha1": "ddcd7bf462a73984ed012c0dcbb81ba2cb2d94d4"
+    },
+    {
+      "software_path": "src/dataloaders/audio_dataset.py",
+      "sha256": "11af107839c7214f4eaaebec28d8c4cf71e37e2e917ebbe9a1f0940f84c7202c",
+      "git_blob_sha1": "df4f5ad79716b712475832ad7f584df2aecf0240"
+    },
+    {
+      "software_path": "src/dataloaders/audio_dataset_v2.py",
+      "sha256": "11aeed8357235f10100897e574d2a25d5d93f6273bc0274e3ccc2df1d54ca99f",
+      "git_blob_sha1": "449d347af1191dfacc1a414fd5c00a183e9c88d0"
+    },
+    {
+      "software_path": "src/dataloaders/audio_dataset_v3.py",
+      "sha256": "abd51cc43661dc537ea3be04820d36a8bbcacea8bfd168355594290052a6c867",
+      "git_blob_sha1": "3052faba41a30d39d0f471ed81f4b1a8faaa8ad6"
+    },
+    {
+      "software_path": "src/dataloaders/audio_dataset_v4.py",
+      "sha256": "17d73111e042025b35e679964f3116d7b5a57aa7afec261c50a229f097d12b2f",
+      "git_blob_sha1": "64e19cdea108f3213a3f1c86814eb3fb36d1ab06"
+    },
+    {
+      "software_path": "src/dataloaders/imbalanced_dataset_sampler.py",
+      "sha256": "37f7310a4cced306a8ab439fbc7a5b0eaa907b24a775dae050e32cb30bf49727",
+      "git_blob_sha1": "b86d334ed4337f1f8899046f7c931beb4251194e"
+    },
+    {
+      "software_path": "src/dataloaders/sed_dataset.py",
+      "sha256": "e673a46cd821a2570909b46c8973d1866e6492ed86ce07d6f39fb0e5ed791910",
+      "git_blob_sha1": "ff2515974ba070f80789bcd929d2c0d1f3c1617e"
+    },
+    {
+      "software_path": "src/engine/base/base_engine.py",
+      "sha256": "0122ed1cb39b7ab511593299a54328118612721594459bfcde8a046c2d4dfde0",
+      "git_blob_sha1": "0690e551dd92f67168bc3bea7eacd8285b2fb76b"
+    },
+    {
+      "software_path": "src/engine/main_engine.py",
+      "sha256": "34dc431913be90b9b50a45e715a03cd6267b0b179dc21bbaa88e3b53a2a00977",
+      "git_blob_sha1": "4a24b20775fa4f2a9e2ee1e4770cd32651978482"
+    },
+    {
+      "software_path": "src/engine/main_engine_v2.py",
+      "sha256": "31636b989e835e154fb94c7c94552785387d3b8b828f7ce5ece0a66abc66ef2a",
+      "git_blob_sha1": "4147020593c10c89eff3d6164cd220ce4f2df277"
+    },
+    {
+      "software_path": "src/engine/main_engine_v3.py",
+      "sha256": "b9a1a95d6da776827506f066a025c654049549175364cdb6d1c8de12305c219b",
+      "git_blob_sha1": "2e173d7de06154d205322383b1257e81044ece48"
+    },
+    {
+      "software_path": "src/engine/main_engine_v4.py",
+      "sha256": "362e159584786bb94ab3f578d8e526a3cea886f6dbd1b3b62292bddc18c0c079",
+      "git_blob_sha1": "057534f19315c434a5506fecc62aaa39cd64512f"
+    },
+    {
+      "software_path": "src/engine/sed_engine.py",
+      "sha256": "3f691a12d269617cfbf7f4265ebb1a6e63596aa55430245913387d096ee2680a",
+      "git_blob_sha1": "1e8c8f7cbdb89cfeec1aa5ef3cc28c5e86a0dfcc"
+    },
+    {
+      "software_path": "src/helpers/audio_utils.py",
+      "sha256": "4ce7826e76c62ac0c3deffc741f6dc539a70cff1117ea0af196b5617186b9bfe",
+      "git_blob_sha1": "91f9bfea21975cd240cc32f8b2e3e6dc512c123e"
+    },
+    {
+      "software_path": "src/helpers/sed_audio_utils.py",
+      "sha256": "7274f02e1909d25f81dfa79d08f557675be14cd777337a65182e0eb1a2ae14cd",
+      "git_blob_sha1": "a6dce625a8044e8411dc8c532d9347149254ccae"
+    },
+    {
+      "software_path": "src/logger/base/base_logger.py",
+      "sha256": "abb6acdc5c7d37afd664c6b7ca8cdf87adf49d74d5ce806bbcc74b18cd6ac036",
+      "git_blob_sha1": "70dd42d041f004a5bd459b4d4cbf1e3a3cb4976f"
+    },
+    {
+      "software_path": "src/logger/base/utils.py",
+      "sha256": "fc04a475cb833d8823824755b5bedc0fef85ce79550f604451f0e0f93ed8e956",
+      "git_blob_sha1": "5f17382e9b4c11cbea204c0d1c21c4c811b0ab65"
+    },
+    {
+      "software_path": "src/logger/neptune/neptune_logger.py",
+      "sha256": "c7749bcf1b028f9d01572a9f998ee9cd1c78f0dc6e18507bb01b6118f4e37fc5",
+      "git_blob_sha1": "12aafac0138672a0c3e370070beaf9d762ba6549"
+    },
+    {
+      "software_path": "src/logger/neptune/neptune_utils.py",
+      "sha256": "f493a4ca3e48b89c3fe5a45ba784750bc6e9134c7693a2d96243d391352f4fae",
+      "git_blob_sha1": "c557ca9a3f43257384ede503d077eb93cc31aea7"
+    },
+    {
+      "software_path": "src/logger/print/print_logger.py",
+      "sha256": "7c8ec9c647e9bc297f2adbf1c9b5520ffa52ffbabc2ee3e9996906b40d4eb093",
+      "git_blob_sha1": "9e38ee425ad59ec773bd335df24693ae3b69d981"
+    },
+    {
+      "software_path": "src/logger/print/print_utils.py",
+      "sha256": "22962f647a0059be894c6af2bea42e3bc8dfac3d51d270f2772f02c648b12b5d",
+      "git_blob_sha1": "7582999454bbfb2a4b74af55fd02fe1b47deb023"
+    },
+    {
+      "software_path": "src/loss/bce_controlled_loss.py",
+      "sha256": "6e45c35dc206508df6226cf1654442ffa2493560b13eeea0b302e8c545283c1f",
+      "git_blob_sha1": "ce7190f76d3794484af8c6125d9f21dfaee67faa"
+    },
+    {
+      "software_path": "src/loss/bce_controlled_standard_loss.py",
+      "sha256": "4acf58a30633665c35179fa21a3eb690ac3e44825c6b4870cf04aab1c0f28039",
+      "git_blob_sha1": "e90bd5433753ce1ac789b03cf094f8c76df432f3"
+    },
+    {
+      "software_path": "src/loss/bce_loss.py",
+      "sha256": "aafbbb960a62906b08503b187e40dd437f965a335f2217368242a8d4ebf3c190",
+      "git_blob_sha1": "084bd0ac138ce728c2a67e486944a742cbbcf898"
+    },
+    {
+      "software_path": "src/loss/custom_losses.py",
+      "sha256": "8a3160af1d80d2fac3799b9b41dbdeb27416e56e87045bdb2f42fdb12c50586e",
+      "git_blob_sha1": "26982fccf8ceb09bdfccc43e916ec08a3c42bfac"
+    },
+    {
+      "software_path": "src/loss/custom_losses_for_targets.py",
+      "sha256": "30f2a1fcd3a802e835294a220d269b852acb9eac7864788ecf26ba0c08840065",
+      "git_blob_sha1": "68c2a3803eee2b0f978474b8a473048d92f98152"
+    },
+    {
+      "software_path": "src/loss/f1_controlled_loss.py",
+      "sha256": "5e1fe3e8ccf9a0ccf8017a1e6938bf90c2cb76ab8caa887f8645b9882d3a144d",
+      "git_blob_sha1": "867d61bb09200cf9073084c4f5b3eb098ddda9bf"
+    },
+    {
+      "software_path": "src/loss/focal_controlled_standard_loss.py",
+      "sha256": "a9fdaf5c4d12593b7b355533af74a24bbf6934679398fa3240324b38c6aaf125",
+      "git_blob_sha1": "350afb1223a3d3999de594f2d08ee07b795b120e"
+    },
+    {
+      "software_path": "src/loss/focal_loss_standard.py",
+      "sha256": "a66fa7d0cb7802c5cac5b6cb3e67f73105ae06695af4e17b61f6978094d63b89",
+      "git_blob_sha1": "46d5e69d5af4043bf14d4cd3e5373657d58887e2"
+    },
+    {
+      "software_path": "src/loss/focal_mse_loss.py",
+      "sha256": "ee37b470b5ae983c8891ec1233b212d50b9104f92fd3c8fd479883b62bd9bfb7",
+      "git_blob_sha1": "047cde9e56dd4923dd0694bde3b7918b79aa0abc"
+    },
+    {
+      "software_path": "src/loss/noisy_controlled_loss.py",
+      "sha256": "c62edef26b1bc1d17ecdd45cde59eb344b4770b474b1a20bb6dbcc83189421ad",
+      "git_blob_sha1": "8f64841857f32962a9a821e3cc094a46654be56d"
+    },
+    {
+      "software_path": "src/loss/noisy_loss.py",
+      "sha256": "3c93c1398facd05eb94517516e54ae56149af2725051833ce6087915edc657e6",
+      "git_blob_sha1": "d1d6947cdf3efee3e2866e6b82e65d5e61f88991"
+    },
+    {
+      "software_path": "src/loss/sed_removed_focal_loss.py",
+      "sha256": "cadaf764aeacde525ff3587f40e161d393692c93359194ad031b70d6fee839d7",
+      "git_blob_sha1": "e290130c2463004564be3287e7106e3a976cd2e2"
+    },
+    {
+      "software_path": "src/loss/sed_scaled_focal_loss.py",
+      "sha256": "8131392751fc69cd2dcc63724cfd3e1b3e5f4aec3db143af9b307a3489beb9f2",
+      "git_blob_sha1": "f5746e86d80c00102a5614cce1f34f80fd93b589"
+    },
+    {
+      "software_path": "src/loss/sed_scaled_pos_neg_focal_loss.py",
+      "sha256": "5f1607d4bfaa479ceac6d99ddc7236479cfedbfdbf358d0180d4e1b9150536e3",
+      "git_blob_sha1": "b064ba10546b5990ebf1956a386d73cfc3510e90"
+    },
+    {
+      "software_path": "src/loss/sed_scaled_pos_neg_focal_loss_augd.py",
+      "sha256": "5f216be35fa73c2f2616116519a45ddb47df831f6724d02d691247d439a99e6e",
+      "git_blob_sha1": "86c4d09f93008343a6ccaa17e1d726d5a7137c87"
+    },
+    {
+      "software_path": "src/loss/smooth_bce_loss.py",
+      "sha256": "dfe4707d540e5a9ea521e57132beb7741415a2f2f141a825388a079c151617d0",
+      "git_blob_sha1": "0e5c2e34be6d1533ff22599f3e17ac85b68d799a"
+    },
+    {
+      "software_path": "src/metrics/custom_f1score.py",
+      "sha256": "b3c1f8c55edddb583a2e38ae04209aa6e515613f68701315d6064e286052245e",
+      "git_blob_sha1": "34b7072f0fd59ef6d6b4c1819e7c64339fdb288a"
+    },
+    {
+      "software_path": "src/metrics/custom_lraps.py",
+      "sha256": "122d0ce0bf72826237af951825d60e5d801bb71445d98f1e73d208ee3af7338f",
+      "git_blob_sha1": "5e9c4d0cf82b1d58fddcdc1cdbc4e9e9c75e0572"
+    },
+    {
+      "software_path": "src/metrics/custom_test.py",
+      "sha256": "ab20d503b227a2cbc299b0ba46707367c12ea43c9e164b15a702b62d8cb7c5cb",
+      "git_blob_sha1": "910241ae0288184904c1eedb4205c3ac96a6daea"
+    },
+    {
+      "software_path": "src/metrics/sed_f1score_clip.py",
+      "sha256": "70dc1852fc735e8cfeb76d4ca6c3ef837ae61bf62bc2f819517777fd9bb5f669",
+      "git_blob_sha1": "8b434eb027b80e2d3b5b0c8b69b8760bfe6a3c51"
+    },
+    {
+      "software_path": "src/metrics/sed_f1score_frame.py",
+      "sha256": "99a8a3cfb306d374d16cda2e728c2e90538fae5d2f0d34ddf9f83e83fbf1665e",
+      "git_blob_sha1": "120dcc636055556472882081802a6880295d30a3"
+    },
+    {
+      "software_path": "src/metrics/sed_lraps.py",
+      "sha256": "584a09b988f72562d742bc7862430d685a7dae8d7015c68ef69b209eecd4113a",
+      "git_blob_sha1": "6fb02329f93e03eb8e6fa5853dfa0678ba3a76c2"
+    },
+    {
+      "software_path": "src/metrics/sed_test.py",
+      "sha256": "44e5ae8609867e258cb334e5c035a37b07194a6c8b17b15c56dd16ff361f2125",
+      "git_blob_sha1": "ea4bd16964de099033a262a3430e7f4d12872e2c"
+    },
+    {
+      "software_path": "src/models/aux_densenet121.py",
+      "sha256": "001080f4f8d5664d8a598d8e0d23381b843827b585a864190e003740571013f8",
+      "git_blob_sha1": "4d2ad79e554016ac5bcd28fd3918e9442b78a4ff"
+    },
+    {
+      "software_path": "src/models/aux_densnet161.py",
+      "sha256": "839ebaceeeccea9ab12e2ec8552e77e44ba91533bf2192a845b29c56c6b14e19",
+      "git_blob_sha1": "3a85dec36e66194dfd43ee1082a8f950b252015c"
+    },
+    {
+      "software_path": "src/models/classifier_dcase.py",
+      "sha256": "03d30425a979dcc47be7830e11b0ad8453f9f7d68137fb3b85a464415223cc51",
+      "git_blob_sha1": "3f5f645c24a7af89e52ae4a6e24ef5b22a98dfdb"
+    },
+    {
+      "software_path": "src/models/classifier_m_series.py",
+      "sha256": "85e5671985755e58b1cd014ffd1cd4769dedf6eaf07a1747094c75f0df02a10c",
+      "git_blob_sha1": "c764b89c6f169141abbf5d07a1ce4d43e2aaf02a"
+    },
+    {
+      "software_path": "src/models/densenet121.py",
+      "sha256": "f010824f3cf539f12a79396145ff783deeb8e0b9d4ee555a5177a21d3e3bd5cd",
+      "git_blob_sha1": "37b1416019ddfc643585d8df2bf3bebb02f3c3fa"
+    },
+    {
+      "software_path": "src/models/densenet161.py",
+      "sha256": "90baeab5cc2586d3a65cd9e9e4f06380d361d485d730fe0cff816355906bf202",
+      "git_blob_sha1": "af591a3a7bf83f3cc04d97f3878aaa5e72a45c38"
+    },
+    {
+      "software_path": "src/models/sed_models.py",
+      "sha256": "2b47c35d037f1ef4bb177395ab326bfc28881788012a7491711ed762e8b12b8b",
+      "git_blob_sha1": "7a3e855309503b00ebe190a9a5cc967a7f76a968"
+    },
+    {
+      "software_path": "src/sed_train.py",
+      "sha256": "5a810342312df5c340f864272d27eefb6e47de1bd19821b3a572b2fca44ed675",
+      "git_blob_sha1": "459e945859ef590a08bc2adbf7e1cf76a1ba0305"
+    },
+    {
+      "software_path": "src/train.py",
+      "sha256": "9ad43cc08c6563d1cc0c09b36bd8c9616bb3afdcfd6e947aeb3f7e359790785d",
+      "git_blob_sha1": "3a3d442a7833f215cf05e7f2d4e8a5ca6d117edd"
+    },
+    {
+      "software_path": "src/train_v2.py",
+      "sha256": "a821f1c2312ee64c04dd82c5e3f19d3953e854f2b1be2b8d5abf17ab2f5d93b1",
+      "git_blob_sha1": "0ecc2ca31e52295cd6ee6f0a3125578937ae1ca7"
+    },
+    {
+      "software_path": "src/train_v3.py",
+      "sha256": "71e4e85de060df7172824c010aa14c433a3fefd84864323bfa8ecccb2be4cf85",
+      "git_blob_sha1": "705749000ebb0f6b06161fa566a583f40e79d4d4"
+    },
+    {
+      "software_path": "src/train_v4.py",
+      "sha256": "3b54c4ba26a6d7b260f85d04533e95fa647f8105b8163f484347311fade3f1f0",
+      "git_blob_sha1": "fe583be223d6b303b0b94e9af04e688c97169fb1"
+    }
+  ]
+}

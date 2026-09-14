@@ -1,0 +1,108 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "variant": "model_H",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_I",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_L",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_A",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_F",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_B",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_C",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_M",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_G",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_E",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_D",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_J",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    },
+    {
+      "variant": "model_K",
+      "full_population_fit": true,
+      "complete_checkpoint_reloaded": true,
+      "restored_preprocessing_inference": true,
+      "predictions": 12
+    }
+  ],
+  "ensemble_predictions": 12,
+  "scope": "All thirteen full models: raw synthetic fit, population batching, one SGD epoch in full mode, complete checkpoint reload, restored preprocessing inference and ensemble. Validation-based selection tested separately; served graph pending.",
+  "runtime_hashes": {
+    "champs_lifecycle": "bcdf4da023f58a8b33e5b20c0febd30edc00c5df8a67a89f5714b2fd45b0467c",
+    "champs_training": "9c62553dc0ff76a72cc5dbb42ebeeaac938236fb188da3dc7b0ebe483f98ddd8",
+    "champs_preprocessing": "f2749374e6574832406ae45d6aceb1689b84ff2b0f52509be8d0616ac78cb5dd",
+    "champs_source_runtime": "62d91f96f600e9c852c7635995418c646ad86bbf39976f292b7d924885e84788",
+    "champs_population": "d0bfbe1da139a76a0ec74163f92b7e9ad742fc134f9c92f21f33f9cc933f4d41",
+    "champs_prediction": "a46a92c246c286e9f6de34f2e27dcb203ccb0c09716fa742afa6abba18c03967",
+    "champs_ensemble": "d088852ed47b849e620d93677b613655ad9904df6d6f0c1686cf2e8dcf428afd"
+  },
+  "validator_sha256": "7599367cce697fdb4723460c0a8ffc50ecbe810aa0edac3d4a9ee850cbb70603"
+}

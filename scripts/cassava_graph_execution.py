@@ -1,0 +1,50 @@
+"""Execute Cassava's serialized draft graph with private, temporary diagnostics.
+
+Only intermediate persistence is intercepted; both providers and the runner
+execute normally. Callers retain ownership of returned checkpoint artifacts.
+"""
+import asyncio
+import hashlib
+import inspect
+from pathlib import Path
+import tempfile
+from unittest.mock import patch
+
+from sciona.atoms.ml import cassava_execution as provider
+from sciona.services.execution_graph_codec import encode_execution_graph, decode_execution_graph
+from sciona.visualizer import runner
+from scripts.build_cassava_execution_graph import build_graph
+
+
+def execute_through_graph(plan, **kwargs):
+    graph = build_graph()
+    digest, nodes, edges = encode_execution_graph(graph)
+    graph = decode_execution_graph(nodes, edges, digest)
+    if encode_execution_graph(graph)[0] != digest:
+        raise ValueError('Serialized graph roundtrip changed execution identity')
+    paths = [Path(__file__), Path(inspect.getfile(provider)),
+             Path(inspect.getfile(build_graph)), Path(inspect.getfile(runner))]
+    sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+    before = {p: sha(p) for p in paths}
+    captured = {}
+    def capture(directory, node, name, value):
+        if name.startswith('out_'):
+            captured[(node, name)] = value
+    arguments = dict(sample_keys=list(plan.keys), labels=list(plan.labels),
+                     assignments=list(plan.assignments), **kwargs)
+    with tempfile.TemporaryDirectory(prefix='cassava-synthetic-graph-') as directory:
+        with patch.object(runner, 'RUNS_DIR', Path(directory)), \
+             patch.object(runner, 'save_intermediate_value', side_effect=capture):
+            status = asyncio.run(runner.CDGExecutionSession(None, 'synthetic-cassava', 'case').execute(
+                arguments, cdg=graph))
+    if status['status'] != 'completed':
+        raise ValueError('Cassava graph did not complete')
+    if set(captured) != {('fold_plan', 'out_plan'), ('train_ensemble', 'out_result')}:
+        raise ValueError('Both providers must execute and return their declared outputs')
+    if captured[('fold_plan', 'out_plan')] != plan:
+        raise ValueError('Graph changed shared fold membership')
+    if before != {p: sha(p) for p in paths}:
+        raise ValueError('Graph, provider or runner changed during execution')
+    result = captured[('train_ensemble', 'out_result')]
+    return tuple(result[name] for name in [
+        'predictions', 'family_outputs', 'histories', 'evaluations', 'checkpoints'])

@@ -1,0 +1,15 @@
+{
+  "format": "physical_operator-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "45d1b68b19e14884016a12441c201c75b7c33900e964e9c684782a58f9078097",
+  "validator_sha256": "9ddf633af729ede456f85c7b88bbbd2050ea794172266eb9f97f45bee146186b",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

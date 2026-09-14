@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "5d2f953e-86bb-57f8-9a97-e0b6a303fd94",
+  "source_content_hash": "69deb6e73d3e9e16de3fa53ef108b6a2928c0bed6706bf72ba5c8e558a97d8a5",
+  "scope": "Independent corrected direct-quantile uncertainty pipeline with all 14 levels and 28-day restored forecasts",
+  "stage_mapping": {
+    "base_forecasting": "Hierarchy preparation and direct quantile regressors replace the unsupported intake point-forecast dependency",
+    "residual_calculation": "Residual-distribution stage excluded; targets and features use expanding absolute-difference volatility scaling",
+    "probability_distribution_fitting": "Gaussian and negative-binomial fitting claims excluded; grouped LightGBM quantile objective is used directly",
+    "quantile_generation": "Nine source quantiles, quantile-weighted sampling, per-level grouped search and repeated perturbed inference",
+    "hierarchical_scaling": "Source level factors and median-total adjustment, with explicit retained-base-reference correction for undefined aggregate outlet denominators"
+  },
+  "source_pins_sha256": "c3983bbe6fd393ed10ee094f0d014c129fd6724e97006c5bee4ec55ca925adff",
+  "limitations": [
+    "Automated Tier 3 Community only; no Tier 1 human review or Tier 2 usage qualification. Original intake remains draft with mandatory exact provenance.",
+    "Independent reconstruction; original archive reuse grant remains unresolved. No original implementation, data, trained models or notebook outputs are embedded in this implementation.",
+    "The intake point-forecast/residual/distribution recipe is contradicted by pinned U1 software and explicitly replaced in this corrected execution.",
+    "Aggregate outlet normalization is an independent correction: preserve defined filtered-base means; otherwise use pre-filter base histories at the outlet, or the full base pool for aggregate outlet roles. Historical implementation parity is unproven.",
+    "Independent deterministic CPU, single-thread, feature naming and per-stage RNG choices do not reproduce historical global/time seeds, learned weights or competitive scores.",
+    "Full default schedule: 14 configured levels, nine quantiles, one bag and latest outer holdout; global controller controls quantile masks. Outer row exclusion is not an unbiased future-test guarantee.",
+    "Full-budget synthetic graph execution covers 126 models, 4482 candidate fits and 2730000 repeated queries. Historical population scale, accuracy, cross-platform, clean-install and production qualification are unclaimed.",
+    "Canonical finite JSON input is capped at 256 MiB. Caller supplies aligned integer hierarchy roles, three category partitions, prices and complete consecutive calendar/state roles. Each invocation retrains.",
+    "Source cleaning excludes certain calendar rows and requires a retained final history day. Undefined sampling populations, nonpositive volume scales and nonfinite feature/prediction arithmetic reject.",
+    "Forecasts remain unrounded, unsorted and unclipped; no quantile monotonicity guarantee. Source CSV rounding is a presentation step outside the numerical result."
+  ],
+  "license_status": "Original archive grant unresolved; independent reconstruction, no original implementation embedded",
+  "reconstruction_correction": "retained_base_reference",
+  "review_source": "automated"
+}

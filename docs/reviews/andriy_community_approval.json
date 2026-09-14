@@ -1,0 +1,17 @@
+{
+  "approved_provider_versions": 25,
+  "served_providers": 25,
+  "graph_state": {
+    "status": "approved",
+    "is_publishable": true,
+    "verified_leaf_coverage": 1.0,
+    "leaf_count": 4,
+    "top_level_input_arity": 7,
+    "top_level_output_arity": 6,
+    "trust_tier": 3,
+    "is_latest": true
+  },
+  "total_distinct_served_cdgs": 25,
+  "trust_tier": 3,
+  "idempotent_reapproval_new_evidence": 0
+}

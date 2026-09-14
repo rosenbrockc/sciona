@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/tikutikutiku/kaggle-hubmap",
+  "commit": "615444e86f4fb5ab916c0b66d311a307f4e4dd27",
+  "files": {
+    "src/get_fold_idxs_list.py": "30f60df9e10aef50dffe0f7a1c5e8afc245b80f731e4c37df24d9cabe522ed9b"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source_commit": "6145325986b46ae5b125029ea49ac72e62568a69",
+  "checks": {
+    "strict_standard_error_filter": true,
+    "five_vs_six_ridge_features_reproduced": true,
+    "source_path_typo_reproduced": true,
+    "final_blend_matches_scalar_weights": true
+  },
+  "scope": "Selected original source functions/call sites with synthetic arrays and stub prediction I/O; no full training, neural topology, or promotion claim.",
+  "validator_sha256": "1b8cb12500540d982b1ff958efd6237346cad193a988f6011da3f802acc51768"
+}

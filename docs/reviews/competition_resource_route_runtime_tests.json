@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "approved": false,
+  "source_version_id": "65947cba-17e3-5a60-ac2b-7a3545885a39",
+  "source_content_hash": "d07d9ca3d6cf5dc01c2b487384d68cc218797da1504dc97483cbeb69b0f0ee1f",
+  "tests_passed": 12,
+  "exhaustively_compared_synthetic_graphs": 30,
+  "scope": "Complete five-stage constrained-route realization of explicitly generic agent simulation/search planning topology.",
+  "stage_mapping": {
+    "state_encoder": "encode_state",
+    "candidate_generator": "generate_candidates",
+    "search_or_rollout": "search_routes",
+    "constraint_repair": "validate_route",
+    "plan_selection": "select_plan"
+  },
+  "sha256": {
+    "sciona/resource_route_planning.py": "0e665377e805cd5e592c4692b2093b02be6c598ab9fc5aa0092deeebf13d6aea",
+    "tests/test_resource_route_planning.py": "910503e34d1ef21676d64223ec08394c101783f4bc51ffe360c7296ac222fb39"
+  },
+  "limitations": [
+    "Finite directed graph, nonnegative integer costs and bounded integer resources",
+    "No continuous controls, stochastic transitions or arbitrary game simulator",
+    "Exact resource-expanded Dijkstra; state-space size depends on budgets",
+    "Search-limit output is neither infeasibility nor a feasible partial plan",
+    "Independent implementation; no historical competition solution claim",
+    "Provider, serialized graph, semantic review and publication gates pending"
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "approved": false,
+  "networks_fitted": 4,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Original Lasagne/Theano network construction and automatic differentiation execute",
+    "Two- and three-hidden-layer synthetic networks reduce loss by more than tenfold",
+    "Nine-class learning and normalized probabilities",
+    "Seeded repeatability and single-versus-batched inference"
+  ],
+  "sha256": {
+    "scripts/validate_otto_lasagne_runtime.py": "73d81abc46e4f9aa2baa4e468f888aad438ba43147b3134ffcb734a2eda95d0c",
+    "docs/reviews/otto_theano_numpy_compatibility.patch": "67c3dda8efdb755d1010ea3a4f6b24cd64d4395b57a772e64745b867e573d4fc"
+  },
+  "environment": {
+    "lasagne": "0.2.dev1",
+    "theano": "1.0.5",
+    "commits": {
+      "theano": "f3bb5b755ec5e92fb60b5364d83a10878fa9a211",
+      "lasagne": "5d3c63cb315c50b1cbd27a6bc8664b406f34dd99"
+    },
+    "execution": "CPU Python linker, NumPy BLAS",
+    "gpu_validated": false
+  },
+  "sources": [
+    "https://lasagne.readthedocs.io/en/latest/user/installation.html",
+    "https://github.com/Lasagne/Lasagne",
+    "https://github.com/Theano/Theano"
+  ],
+  "limitations": [
+    "Runtime validation only; full two/six/120/120-run source ensembles remain pending.",
+    "Compatibility patch removes obsolete NumPy distutils imports and uses public NumPy include path API; CPU Python linker tested.",
+    "GPU execution not established; source layer-count conventions, architectures and optimizer settings unresolved.",
+    "Dependency/license closure and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

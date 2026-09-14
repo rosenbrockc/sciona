@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "exact_population_cases": 160,
+  "all_folds_and_both_detectors": true,
+  "row_order_and_rng_exact": true,
+  "inputs_unchanged": true,
+  "implementation_sha256": {
+    "sciona/wheat_base_population.py": "7ddc643f4b0191c18b8939d9f1c661db534543275eb40981e2470d8846ab6007",
+    "scripts/validate_wheat_base_population.py": "28913548b621ba87dca8710c80591625eef43461080d5276d829c7dcb26509e1"
+  },
+  "limits": [
+    "Synthetic in-memory annotation rows only; image loading, auxiliary-source provenance and image augmentation remain separate.",
+    "Source pandas operations execute on installed pandas; historical pandas numerical/runtime parity is not claimed."
+  ]
+}

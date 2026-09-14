@@ -1,0 +1,15 @@
+{
+  "format": "video_multilabel-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "168fc79053827ed676f5f0eba30dbc44947ee76c4e7d0c6dffd9410228977e64",
+  "validator_sha256": "656b3d1fc300935e358fadb8d2227093e1df9daf29e33fb32d72349ed600fc84",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

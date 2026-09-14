@@ -1,0 +1,12 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "synthetic_predictions": 6,
+  "source_predictor_exact_match": true,
+  "partial_final_batch": true,
+  "reordered_ids_aligned": true,
+  "six_decimal_source_boundary": true,
+  "duplicate_missing_rows_rejected": true,
+  "scope": "Original predictor function with CPU device and synthetic I/O, compared to reusable unscaling/alignment adapter; no trained full-ensemble inference claim.",
+  "runtime_sha256": "a46a92c246c286e9f6de34f2e27dcb203ccb0c09716fa742afa6abba18c03967",
+  "validator_sha256": "49e093f3aa8449ff59b26eb24a1debdf6f539051d008f0a2f158532f7f20b82b"
+}

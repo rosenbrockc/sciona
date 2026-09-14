@@ -1,0 +1,80 @@
+{
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "c9981942933fed2afaee9d9e3be90ea24d7167a3d08eeaf7e668e245bc822167",
+  "provider_sha256": "3a581686d8e7ef87bb649f545cff292498ab9dff4e1145ba93ba5d3e4e8c9590",
+  "validation_sha256": "e7cd1d7d9961fad3a9959c3f8e697e70bf9ee772ad8322b4f8f87920a9814d62",
+  "test_sha256": "9c0aa7b29e12b911de9fec9fd495ff21850967749650e7c18f3f5dbaf6963d04",
+  "libraries": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1"
+  },
+  "cases": [
+    {
+      "seed": 8121,
+      "duration_seconds": 6,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8121,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8122,
+      "duration_seconds": 6,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8122,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8123,
+      "duration_seconds": 6,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8123,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8124,
+      "duration_seconds": 6,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8124,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8125,
+      "duration_seconds": 6,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 8125,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    }
+  ],
+  "cases_passed": 10,
+  "limitations": [
+    "Unmodified numerical source body with current NumPy/SciPy; not a historical library environment.",
+    "Synthetic signals only; no clinical or predictive-performance claim.",
+    "Explicit raw-input float32 conversion matches source file loader; numerical parity covers resampling and zero-state causal filtering.",
+    "Provider implementation evidence only; complete model graph and catalog approval remain outstanding."
+  ]
+}

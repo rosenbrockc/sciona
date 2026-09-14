@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entry": 11,
+  "checks": [
+    "Native nine-class balanced-stochastic logreg-pegasos learning",
+    "Five excluding-fold reference scalers and full-training query scaler",
+    "Heldout-label and changed-query isolation",
+    "Large query features yield finite logistic probabilities",
+    "Single versus batched query invariance",
+    "Private temporary transport cleanup and overlap rejection"
+  ],
+  "sha256": {
+    "sciona/otto_sofia.py": "fe364ae067492dea2524a6050a0bb656cbfe2bae39d4343e381a438f491bcdbb",
+    "sciona/otto_sofia.R": "332550b60603cc9cec371b857542856e2fb96283234e8c7183baa1aee5d15999",
+    "sciona/otto_sofia_crossfit.py": "decb90e5b7c8fd738cb5dc027f4abbb291b5bde4232e4a573c9f4ab2076732e7",
+    "tests/test_otto_sofia.py": "57ba44b854044662fb5070f21f8194246455c03acd07c76802131cbe4e481d3c",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b"
+  },
+  "numerical_correction": "Native logistic exp(margin)/(1+exp(margin)) overflowed for large positive margins; use native linear prediction then stable R plogis without altering fitted weights.",
+  "limitations": [
+    "Historical lambda, iterations, standard-deviation convention and preprocessing scope unresolved.",
+    "Remaining Sofia interaction/t-SNE branches not implemented.",
+    "Native dependency closure and full-stack publication gates pending.",
+    "Runtime retains a 60-second timeout for nine-class fit."
+  ],
+  "catalog_mutations": 0
+}

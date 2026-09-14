@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 4,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "All thirty distinct seeded raw multiclass models",
+    "Independent average of run predictions",
+    "Full 180-fit five-fold/query lifecycle",
+    "Heldout-label and query isolation",
+    "Seed wrap and query batching repeatability",
+    "Overlap fails before bag fitting"
+  ],
+  "sha256": {
+    "sciona/otto_raw_boosting.py": "79a40c58057ac7010afa08aa81cc4b5da69fce6e3ec4e726cf2e133872fa8483",
+    "sciona/otto_raw_boosting_crossfit.py": "83ce202fa8b847576dff85930de9c87737ff10799cbe62c2c8bcb6f17f14483d",
+    "tests/test_otto_raw_boosting.py": "870d1bcfe518b6e4f01fc8c41e91935f99cf3869efa5a7627024f524cd334dd0"
+  },
+  "limitations": [
+    "Explicit independent histogram-boosting controls and seed schedule; historical settings unresolved.",
+    "Source-size thirty-run bag tested on synthetic populations with five rounds per model.",
+    "Full upstream/second-level ensemble and source qualification remain pending."
+  ],
+  "catalog_mutations": 0
+}

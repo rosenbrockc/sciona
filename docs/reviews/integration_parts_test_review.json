@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 40,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_integration_by_parts.py": "9f940713a4c1ec0bc30045a9b5b643286b0c1d2044989a249c7271311049fe0b",
+    "tests/physics_ingest/test_integration_parts_proof.py": "87816337e050a8898336617391065db90a04e10c6d1e658ae33885de7576e08d"
+  },
+  "provider_sha256": "7a09e1dbe9c42a1dc54b1d1370f6cdae98eda920b3cbc0736f95445d371647ca",
+  "synthetic_only": true
+}

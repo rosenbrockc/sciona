@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 32,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_wave_relations.py": "7bdbdd18c895b0dc144e19d12dff822f558b31b32cd7839c970bbdcf2a5524a6",
+    "tests/physics_ingest/test_wave_relations_proof.py": "139d9a7c3cc6aa2104657ddb1da28dc7870e2c8daaf47394ee850b350be388ed"
+  },
+  "provider_sha256": "745c9b264a6066033828c59c6b1ba5f0e59de6d7abb5a94978f5b5df9866042d",
+  "synthetic_only": true
+}

@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 16,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entries": [
+    4,
+    22,
+    23
+  ],
+  "checks": [
+    "Hand transformation and sorted-label frequency oracles for all eight supported variant/metric pairs",
+    "Exactly five excluding-fold reference populations and full-training query reference",
+    "Scaler fitted only to each excluding-fold population",
+    "Heldout-label and query isolation for all three variants",
+    "Unsmoothed zeros and stable supplied-order ties",
+    "Chunk invariance and invalid overlap/count/metric rejection"
+  ],
+  "sha256": {
+    "sciona/otto_variant_knn.py": "01e7f23ea9e6b13f8afa0aa6a74d40fdc6e07cfd12d1cdfd469a4af62d1e0784",
+    "tests/test_otto_variant_knn.py": "d5fa19cef432476c4b4fbf0485b604021bd6036bf190c1602f72c67fa9bb2cd0",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b"
+  },
+  "limitations": [
+    "Historical neighbor counts, metric assignment, tie behavior and scaling scope/convention unresolved.",
+    "Scaled-log branch excludes Bray-Curtis because standardization yields signed features.",
+    "Explicit fold-local scaling is an independent realization; no historical metric reproduction claim.",
+    "Full winner stack and publication gates remain pending."
+  ],
+  "catalog_mutations": 0
+}

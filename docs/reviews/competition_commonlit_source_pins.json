@@ -1,0 +1,51 @@
+{
+  "repository": "mathislucka/kaggle_clrp_1st_place_solution",
+  "commit": "6145325986b46ae5b125029ea49ac72e62568a69",
+  "pins": [
+    {
+      "software_path": "LICENSE",
+      "sha256": "231d7bc546815289ffaa4de858b4225465cdb478eef25ce63345af7014d095e5",
+      "git_blob_sha1": "2650b0c35d4915be090a894a6b31335107745bd1"
+    },
+    {
+      "software_path": "README.md",
+      "sha256": "e0dc4d5ed6d87473681c033d87991551a6226b176e418e0832ccf49500a4c8ef",
+      "git_blob_sha1": "ed6e7d2d7ba33dba58074e0f7f3a45ad4251b718"
+    },
+    {
+      "software_path": "notebooks/01_clrp_data_preparation.ipynb",
+      "extracted_path": "notebooks/01_clrp_data_preparation.code.json",
+      "code_cells": 10,
+      "sha256": "5bc2c367a42b240cd727a8922dac8237d8cb650d2ecfe9a1869d344d46e0c791",
+      "extraction": "Code cells only; outputs and notebook metadata discarded"
+    },
+    {
+      "software_path": "notebooks/02_clrp_external_data_prep.ipynb",
+      "extracted_path": "notebooks/02_clrp_external_data_prep.code.json",
+      "code_cells": 22,
+      "sha256": "2d694fa7bb0c3328578712fde5a3f56bcc992ec3d715ce771a1c6f46f2d0af63",
+      "extraction": "Code cells only; outputs and notebook metadata discarded"
+    },
+    {
+      "software_path": "notebooks/03_clrp_external_data_labeling.ipynb",
+      "extracted_path": "notebooks/03_clrp_external_data_labeling.code.json",
+      "code_cells": 14,
+      "sha256": "46fd800bc87857e46e9165da95ecd4d01ef61159aa025c7629b42280f6ff5bd7",
+      "extraction": "Code cells only; outputs and notebook metadata discarded"
+    },
+    {
+      "software_path": "notebooks/04_clrp_training.ipynb",
+      "extracted_path": "notebooks/04_clrp_training.code.json",
+      "code_cells": 37,
+      "sha256": "0a7d7b61dc77c00b8786bb60d9074a657585b644229d095999fdd1b301fadc55",
+      "extraction": "Code cells only; outputs and notebook metadata discarded"
+    },
+    {
+      "software_path": "notebooks/05_clrp_inference.ipynb",
+      "extracted_path": "notebooks/05_clrp_inference.code.json",
+      "code_cells": 17,
+      "sha256": "0f3bee7cff5359bb2b233ebc6835342879c5ee5325bee67ae8b50f0f0b78506a",
+      "extraction": "Code cells only; outputs and notebook metadata discarded"
+    }
+  ]
+}

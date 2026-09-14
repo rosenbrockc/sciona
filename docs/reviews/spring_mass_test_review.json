@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_spring_mass.py tests/physics_ingest/test_spring_mass_proof.py -q",
+  "synthetic_only": true,
+  "test_source_sha256": {
+    "tests/physics_ingest/test_spring_mass.py": "e23bb5348d843242dfe020f093a140dc3aa4cb5113d8afde52e4cbef17200339",
+    "tests/physics_ingest/test_spring_mass_proof.py": "d4dfb8fe73feb4d17167ba07d9670cf18bf3034f4011894fb3a3c939835dd864"
+  },
+  "provider_sha256": "0a3eb6ac1a2ae59b0bd95f854565aa1cc1d47600b1080be1ec40f1ca7342b182"
+}

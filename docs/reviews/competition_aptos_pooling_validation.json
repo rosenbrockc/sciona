@@ -1,0 +1,20 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "synthetic_only": true,
+  "source_cases": 12,
+  "paired_optimizer_updates": 36,
+  "outputs_input_gradients_parameter_gradients_exact": true,
+  "runtime": {
+    "torch": "2.11.0"
+  },
+  "scope": "Pooling component only; full APTOS model training, refinement and ensemble remain unqualified. Learned exponent is unconstrained as in source.",
+  "sha256": {
+    "sciona/aptos_pooling.py": "6c7ffa9346a524370f1e700eb607ca3bbce7829b91e3ef23327c3d4c6466a33f",
+    "tests/test_aptos_pooling.py": "174682431136f577c84f5bc4d8067ada3262d2aa3f21ff57e5e866ee4c7cbf36",
+    "scripts/validate_aptos_pooling.py": "02daa614a0e7090a8682c64dcb79b9e9343a27efa2ed75a15ad5bf031dff114a",
+    "docs/reviews/competition_aptos_pooling_source_pins.json": "a0772d14f912e2a6bfd202e2c14b7b22b9ac36fb849a5a2bbae902c720b418ee",
+    "docs/licenses/APTOS-pooling-MIT.txt": "c31c66c3945689e8876c9bbdb360228d13e4a15d84a77452dbe2db0ab67558e7"
+  }
+}

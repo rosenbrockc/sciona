@@ -1,0 +1,14 @@
+{
+  "served_distinct_cdgs": 23,
+  "retrieved_version_hash": "52c93e5241475c00251a12e84c19dc08398a3bb5ecbac1ad9cdc46180a4cf82a",
+  "trust_tier": 3,
+  "verified_leaf_coverage": 1.0,
+  "retrieved_graph_equals_validated_graph": true,
+  "nodes": 3,
+  "edges": 4,
+  "original_full_ensemble_status": {
+    "status": "draft",
+    "is_publishable": false
+  },
+  "scope": "Feng XGBoost source model for one caller-selected population; full ensemble remains draft."
+}

@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "upstream_sha256": "62297d620d56d0848b3234faa8b4c0f04791e533203447ee23c06d3e6968ed21",
+  "source_sha256": "c7408d12f971edf7bf66d55f1de2161b278be7bc45ad9903c954c85600de5d6e",
+  "identical_post_adaptation_backbone_tensors": 611,
+  "shared_random_task_head": true,
+  "full_resolution_images": 2,
+  "post_adaptation_predictions_exactly_equal": true,
+  "malformed_parameter_hierarchy_rejected": true,
+  "scope": "Numerical equivalence after explicit training-population adaptation; upstream redistribution terms, full pretrained lifecycle and complete ensemble remain separate gates.",
+  "sha256": {
+    "sciona/cassava_efficientnet_upstream.py": "0417ac3859c47303e5c289dcef1ac7a9ad1c1b51744a9ec65da5db5467f71fef",
+    "sciona/cassava_efficientnet_weights.py": "15145907da545ab8501f2c0fef025b7957f12d815260888fa78047fc610b4091",
+    "sciona/cassava_efficientnet_model.py": "56ba01b91cfb069ee7e8165a6a2494eafe1a2e757a22af2eabb3504d2de97ae6",
+    "sciona/cassava_training_images.py": "79bf5b6a09da1cf709c2477f9aa73a7a34f94fa6221b3e6126acb3bffbdf9902",
+    "scripts/validate_cassava_efficientnet_upstream.py": "dbf3d456da336803d9bc2de458c4271f59bc00b7e794b2d2d53db9a5fb45899c",
+    "docs/reviews/competition_cassava_efficientnet_weight_origin_validation.json": "d098c4579c23b269d0428bf6cdcbdede1498d3f6d7dc0a34aee9113de7fb54d9"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 6,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entry": 5,
+  "checks": [
+    "Separate categorical levels per feature including zero",
+    "Vocabulary fitted to reference only; unseen levels explicitly ignored",
+    "Nine native binary SGD models learn synthetic nine-class population",
+    "Query population and query batch invariance",
+    "Private runtime cleanup",
+    "Missing native output cannot reuse previous class scores"
+  ],
+  "sha256": {
+    "sciona/otto_libfm.py": "8be7d1f4fa73943f1945b27eb06567bdd8f1a04aa265b50efe72fa1b9af358b9",
+    "tests/test_otto_libfm.py": "4482e31c7bf8d345e1a94a1dfcc0238e9d4d8a9185bf2b3fc9c313f38568976a",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b"
+  },
+  "environment": {
+    "version": "1.4.4",
+    "commit": "30b9c799c41d043f31565cbf827bf41d0dc3e2ab"
+  },
+  "sources": [
+    "https://github.com/srendle/libfm",
+    "https://www.libfm.org/libfm-1.42.manual.pdf"
+  ],
+  "limitations": [
+    "Winner multiclass reduction, optimizer, settings and exact version unresolved.",
+    "Independent SGD one-vs-rest component returns nine unnormalized scores; no winner reproduction claim.",
+    "Five-fold orchestration still pending.",
+    "Reference-only categorical vocabulary and unseen-level policy are explicit independent choices.",
+    "Native dependency/license closure and portable packaging pending; each fit has 60-second timeout."
+  ],
+  "catalog_mutations": 0
+}

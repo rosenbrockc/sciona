@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "d505faaa-7277-5559-b32c-f95c9f1f9d63",
+  "source_content_hash": "f03e6e0c5dfb38e00baa98ea53f9a45a43b9ac4536c343bac2449ca09dbff138",
+  "serialized_graph_sha256": "361ec002f383b0e770936e525461a15623a8cc559a1d601218590fbc97e27259",
+  "provider_sha256": "3e452b07655455f55e6bc75cd3c359aeb310139c6672256c5d662b138b82017d",
+  "code_sha256": {
+    "sciona/amex_assembly.py": "7499ba727026a86d7e6d25a49a6778408ad1aaa36b1093732051f0e7298e297c",
+    "sciona/amex_binning.py": "4f2fbf1b505aa45daa98fe2e061b0454e9bff62e34b40be7f33921ac3f95f918",
+    "sciona/amex_categorical.py": "613e98a20408e36fc3c9ad499439068749674cd0349b781c6061f1c16a71a2c5",
+    "sciona/amex_execution.py": "5f2e4d3c8960b9e621aadf24093576a22e06109581333830cf139edaff1abfdb",
+    "sciona/amex_graph.py": "5b4ed1a5c06dcd82b7ab186af579a9c382203cb3bf77d4bd7cc83e5463c7924a",
+    "sciona/amex_manual.py": "3ec5930a9f06e2654153371b2f3b3f4271e4a376a2f4e814a471ab3a15547b9e",
+    "sciona/amex_metric.py": "c8605f1f41a6cb6ebb40bb6b3a2cb0d9cfe598a741c36ace79838c3b49ace62d",
+    "sciona/amex_network.py": "1c81c86f5cdaaa4630fd576f2935c6fb29ed4d2d418e184f89a3802fa4f43e3a",
+    "sciona/amex_neural_training.py": "c0d4d1f0aee2ec460bdf5520a9d7d4aff4c4da6e576babe4d1130163464ba0cb",
+    "sciona/amex_numeric.py": "aeefcd3e3aa1ccd52e904c79b99b52f348a4727fce78e73ecd03acb9cb0afa73",
+    "sciona/amex_pipeline.py": "f78cda923285c40e4ed3f3179d00a30f475d037d3a6faaecf9b3ae745a01ef29",
+    "sciona/amex_ranks.py": "029c61b4bc1e6ecb81e0545f205417e2e032c670126e2b3e24004a4ee049cd63",
+    "sciona/amex_raw.py": "10525eb73bb182f08e1cf7d41eff18f20ed1853c2d3f825906e47d9668998381",
+    "sciona/amex_row_model.py": "70a20aa92a82e8b510b03b0b4472a496f1de6d05008033bb21af736d25381519",
+    "sciona/amex_sequence.py": "68e91ab9509e468844d638f32eeab6898ead02537b1fc20a6183208fe9f02a3e",
+    "sciona/amex_tree.py": "343d7d8b6d43f34c8b19fccae8da56ef1b89f83471b5fe24cced2c7cf9f19b08",
+    "scripts/amex_synthetic.py": "02e4e357d24ee2edb36076f63171204496849269c0e67bb204310a5474b9f58c",
+    "scripts/validate_amex_graph_execution.py": "3f5aef2a13230a861cf06c523e4bb31e89eff9cf67af4848461c0cc5d1b58da1"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "models": 25,
+    "raw_preprocessing": true,
+    "full_training_limits": true,
+    "synthetic_query_rows": 8,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true,
+    "code_unchanged_during_execution": true
+  },
+  "scope": "Independent full CPU pipeline on synthetic raw sequences at generalized feature widths. Historical precision, unbiased validation and competitive accuracy unqualified."
+}

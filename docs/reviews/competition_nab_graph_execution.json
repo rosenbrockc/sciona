@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "05bf24c16fabb12fc00597e7ef84b4cf5061341f73ff953522b05fc99f457269",
+  "provider_sha256": "3b735f47a44fb3689ee435baa5594a2aff09291edd1408605451397cd23871e3",
+  "code_sha256": {
+    "sciona/nab_contract.py": "2532adfe4b55b7ff34b110c9d4dc69cbf5e130deeb3a8008c9cc03c8aefc5179",
+    "sciona/nab_graph.py": "d1ca588fcb3dc2c87080c1bec0d864034abf12453fac8793ee47663301a5763f",
+    "sciona/nab_scoring.py": "0cc26cabc078bff6ef6405ec20e0cfd2022460b2b1f414b63ef2affb60cac2f8",
+    "sciona/nab_streaming.py": "9f4ca18e0a3cad9eda127ec4f84714d2a07834c715d2e4cb7d885a6dfc6f28f9",
+    "scripts/nab_synthetic.py": "3da44e76e6d8df20ecd1caa2e598ee6654fbccab34341dca98c5e390efc1f17b",
+    "scripts/validate_nab_graph_execution.py": "959ace4f2c66156cab6743c2829d9a12a4abfc4d2d95ad1c44b3a2767e8f62fd"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "models_fitted": 90,
+    "stream_points": 100,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual full generic causal isolation-forest synthetic graph execution and corrected NAB evaluation; no served publication, historical winning detector or accuracy claim."
+}

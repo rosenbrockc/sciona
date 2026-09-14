@@ -1,0 +1,52 @@
+{
+  "approved": false,
+  "cases": [
+    {
+      "model": "sciona.contrails_single_model",
+      "parameters": 33425421,
+      "outputs": [
+        [
+          1,
+          1,
+          512,
+          512
+        ],
+        [
+          1,
+          1,
+          256,
+          256
+        ]
+      ],
+      "strict_inference_checkpoint_load": true,
+      "elapsed_seconds": 2.3142255409620702
+    },
+    {
+      "model": "sciona.contrails_temporal_model",
+      "parameters": 33437005,
+      "outputs": [
+        [
+          1,
+          1,
+          512,
+          512
+        ],
+        [
+          1,
+          1,
+          256,
+          256
+        ]
+      ],
+      "strict_inference_checkpoint_load": true,
+      "elapsed_seconds": 2.1365253339754418
+    }
+  ],
+  "hashes": {
+    "sciona/contrails_single_model.py": "7e8c6aae4f73326a5a40b106f6e2f9057afe1a78fb0670602dea19003f263328",
+    "sciona/contrails_temporal_model.py": "c31ad4e3bce828e411b7eec24e4516fdb76d106056000aff0550099ea008bb39",
+    "sciona/contrails_single_inference.py": "64f2a8464904a2ea3195cd10e3e18f25ca15cd566bb50034ba99191fd7e8cada",
+    "sciona/contrails_temporal_inference.py": "85c8bf1b70d36d29f4a621f38e37415c5b3e62174a2fb2fee2dc757b47cbb29a"
+  },
+  "scope": "Random initialization, full 1024-square training forward and strict inference checkpoint compatibility. No weights or real inputs downloaded; eight-way inference and backward remain unverified."
+}

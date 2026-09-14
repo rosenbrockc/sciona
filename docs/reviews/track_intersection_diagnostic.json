@@ -1,0 +1,25 @@
+{
+  "synthetic_only": true,
+  "provider_sha256": "dda1f5a1d363efbd45d0357edea25ce1000a6e9df9de29e73d653ee116a2edd4",
+  "checks": [
+    {
+      "case": "reachable",
+      "surface_residual": 0.0,
+      "phase_advance": 1.5707963267948966,
+      "finite": true
+    },
+    {
+      "case": "unreachable",
+      "surface_residual": -7.0,
+      "phase_advance": 6.283185307179586,
+      "finite": true
+    },
+    {
+      "case": "reverse_full_turn",
+      "surface_residual": 0.0,
+      "phase_advance": 0.0,
+      "finite": true
+    }
+  ],
+  "scope": "Analytic synthetic geometry diagnostics; no template, hit or detector data. No approval."
+}

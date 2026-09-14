@@ -1,0 +1,86 @@
+{
+  "format": "arc-process-probe.v1",
+  "status": "passed",
+  "binary_sha256": "7ec9ff2a36efa96ac10b382cf786b52572557f0f577af979d010870f70fbd92c",
+  "code_sha256": {
+    "sciona/arc_process.py": "49fbc91bd70b8a6ae29a71e3fb5251c92b97fa11e97e5ced414890d7b311606f",
+    "sciona/arc_contract.py": "e9a8aed638f6be671ce76126017390d805992adc0159e99685ac7c8e681566f6",
+    "scripts/validate_arc_process.py": "3f1baf52b14cc8148cfc82ea071c307770ce74f0aba007b2ffc7d0202ef79852",
+    "requirements/arc-execution.txt": "e41226edb463a260b8d4b260c7939628d8691d98638196a695037993023535a9"
+  },
+  "checks": [
+    {
+      "synthetic_test_index": 0,
+      "all_four_source_modes_completed": true,
+      "identity_in_top_three": true,
+      "attempts": [
+        {
+          "argument": 3,
+          "seconds": 0.21545287501066923,
+          "peak_rss_mib": 18.71875
+        },
+        {
+          "argument": 23,
+          "seconds": 0.13593108300119638,
+          "peak_rss_mib": 27.21875
+        },
+        {
+          "argument": 33,
+          "seconds": 0.13467425003182143,
+          "peak_rss_mib": 27.234375
+        },
+        {
+          "argument": 4,
+          "seconds": 0.13402150000911206,
+          "peak_rss_mib": 19.203125
+        }
+      ]
+    },
+    {
+      "synthetic_test_index": 1,
+      "all_four_source_modes_completed": true,
+      "identity_in_top_three": true,
+      "attempts": [
+        {
+          "argument": 3,
+          "seconds": 0.11718791699968278,
+          "peak_rss_mib": 18.703125
+        },
+        {
+          "argument": 23,
+          "seconds": 0.13246579200495034,
+          "peak_rss_mib": 27.21875
+        },
+        {
+          "argument": 33,
+          "seconds": 0.13674712501233444,
+          "peak_rss_mib": 27.328125
+        },
+        {
+          "argument": 4,
+          "seconds": 0.1306643330026418,
+          "peak_rss_mib": 18.890625
+        }
+      ]
+    },
+    {
+      "forced_limit": "time_limit",
+      "status": "time_limit",
+      "no_candidates": true
+    },
+    {
+      "forced_limit": "memory_limit",
+      "status": "memory_limit",
+      "no_candidates": true
+    },
+    {
+      "binary_hash_mismatch_rejected": true
+    }
+  ],
+  "limits": [
+    "Local preliminary build, not yet a reproducible published runtime build.",
+    "Four source arguments executed serially; adaptive scheduler not yet implemented.",
+    "RSS sampled every 10ms; not an OS-enforced instantaneous memory ceiling.",
+    "Synthetic execution only; no competition accuracy or publication claim."
+  ]
+}

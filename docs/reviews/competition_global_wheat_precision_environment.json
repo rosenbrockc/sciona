@@ -1,0 +1,31 @@
+{
+  "runtime_ready": false,
+  "missing_requirements": [
+    "CUDA device unavailable",
+    "Torch was built without CUDA",
+    "Apex API unavailable: amp_initialize",
+    "Apex API unavailable: amp_scale_loss"
+  ],
+  "historical_core_versions_match": false,
+  "historical_apex_revision_qualified": false,
+  "numerical_precision_qualified": false,
+  "approved": false,
+  "observed": {
+    "python": "3.13.11",
+    "torch": "2.11.0",
+    "cuda_available": false,
+    "cuda_build": null,
+    "cudnn": null,
+    "amp_initialize": false,
+    "amp_scale_loss": false
+  },
+  "read_only": true,
+  "catalog_mutations": 0,
+  "requested_precision": "Apex O1",
+  "verifier_sha256": "1f98accbd7080dfec87a3d8023e480f3ebe7ff9409b5708953a2168f6fa45a56",
+  "limits": [
+    "Capability and core version inspection only; no detector or AMP step executed.",
+    "Apex APIs do not prove an exact historical revision or precision semantics.",
+    "Core versions omit OS, hardware, remaining dependencies and numerical qualification."
+  ]
+}

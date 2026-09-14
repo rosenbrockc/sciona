@@ -1,0 +1,1236 @@
+{
+  "approved": false,
+  "all_wheel_pins_have_compatible_unyanked_wheels": true,
+  "python_version": "3.13.11",
+  "packages": {
+    "annotated-doc": {
+      "version": "0.0.4",
+      "index_url": "https://pypi.org/pypi/annotated-doc/0.0.4/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "annotated_doc-0.0.4-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/1e/d3/26bf1008eb3d2daa8ef4cacc7f3bfdc11818d111f7e2d0201bc6e3b49d45/annotated_doc-0.0.4-py3-none-any.whl",
+        "sha256": "571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320",
+        "bytes": 5303,
+        "requires_python": ">=3.8"
+      }
+    },
+    "annotated-types": {
+      "version": "0.7.0",
+      "index_url": "https://pypi.org/pypi/annotated-types/0.7.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "annotated_types-0.7.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/78/b6/6307fbef88d9b5ee7421e68d78a9f162e0da4900bc5f5793f6d3d0e34fb8/annotated_types-0.7.0-py3-none-any.whl",
+        "sha256": "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53",
+        "bytes": 13643,
+        "requires_python": ">=3.8"
+      }
+    },
+    "anyio": {
+      "version": "4.12.1",
+      "index_url": "https://pypi.org/pypi/anyio/4.12.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "anyio-4.12.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/38/0e/27be9fdef66e72d64c0cdc3cc2823101b80585f8119b5c112c2e8f5f7dab/anyio-4.12.1-py3-none-any.whl",
+        "sha256": "d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c",
+        "bytes": 113592,
+        "requires_python": ">=3.9"
+      }
+    },
+    "asttokens": {
+      "version": "2.4.1",
+      "index_url": "https://pypi.org/pypi/asttokens/2.4.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "asttokens-2.4.1-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/45/86/4736ac618d82a20d87d2f92ae19441ebc7ac9e7a581d7e58bbe79233b24a/asttokens-2.4.1-py2.py3-none-any.whl",
+        "sha256": "051ed49c3dcae8913ea7cd08e46a606dba30b79993209636c4875bc1d637bc24",
+        "bytes": 27764,
+        "requires_python": null
+      }
+    },
+    "attrs": {
+      "version": "26.1.0",
+      "index_url": "https://pypi.org/pypi/attrs/26.1.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "attrs-26.1.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl",
+        "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+        "bytes": 67548,
+        "requires_python": ">=3.9"
+      }
+    },
+    "bidict": {
+      "version": "0.23.1",
+      "index_url": "https://pypi.org/pypi/bidict/0.23.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "bidict-0.23.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/99/37/e8730c3587a65eb5645d4aba2d27aae48e8003614d6aaf15dda67f702f1f/bidict-0.23.1-py3-none-any.whl",
+        "sha256": "5dae8d4d79b552a71cbabc7deb25dfe8ce710b17ff41711e13010ead2abfc3e5",
+        "bytes": 32764,
+        "requires_python": ">=3.8"
+      }
+    },
+    "biosppy": {
+      "version": "2.2.4",
+      "index_url": "https://pypi.org/pypi/biosppy/2.2.4/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "biosppy-2.2.4-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/67/9e/37c9455e5c75d713304c6525798c00c02ff38e75e939cf81c017c7793a38/biosppy-2.2.4-py2.py3-none-any.whl",
+        "sha256": "3612ac67bbe6e42556a2f53ecb3595441f44fe1e888d0b3dd9b21eb91b732ca0",
+        "bytes": 159462,
+        "requires_python": ">3.5.2"
+      }
+    },
+    "certifi": {
+      "version": "2026.2.25",
+      "index_url": "https://pypi.org/pypi/certifi/2026.2.25/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "certifi-2026.2.25-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/9a/3c/c17fb3ca2d9c3acff52e30b309f538586f9f5b9c9cf454f3845fc9af4881/certifi-2026.2.25-py3-none-any.whl",
+        "sha256": "027692e4402ad994f1c42e52a4997a9763c646b73e4096e4d5d6db8af1d6f0fa",
+        "bytes": 153684,
+        "requires_python": ">=3.7"
+      }
+    },
+    "charset-normalizer": {
+      "version": "3.4.5",
+      "index_url": "https://pypi.org/pypi/charset-normalizer/3.4.5/json",
+      "compatible_unyanked_wheels": 2,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "charset_normalizer-3.4.5-cp313-cp313-macosx_10_13_universal2.whl",
+        "url": "https://files.pythonhosted.org/packages/f5/48/9f34ec4bb24aa3fdba1890c1bddb97c8a4be1bd84ef5c42ac2352563ad05/charset_normalizer-3.4.5-cp313-cp313-macosx_10_13_universal2.whl",
+        "sha256": "ac59c15e3f1465f722607800c68713f9fbc2f672b9eb649fe831da4019ae9b23",
+        "bytes": 280788,
+        "requires_python": ">=3.7"
+      }
+    },
+    "click": {
+      "version": "8.3.1",
+      "index_url": "https://pypi.org/pypi/click/8.3.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "click-8.3.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/98/78/01c019cdb5d6498122777c1a43056ebb3ebfeef2076d9d026bfe15583b2b/click-8.3.1-py3-none-any.whl",
+        "sha256": "981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6",
+        "bytes": 108274,
+        "requires_python": ">=3.10"
+      }
+    },
+    "contourpy": {
+      "version": "1.3.3",
+      "index_url": "https://pypi.org/pypi/contourpy/1.3.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "contourpy-1.3.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/96/e4/7adcd9c8362745b2210728f209bfbcf7d91ba868a2c5f40d8b58f54c509b/contourpy-1.3.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "d002b6f00d73d69333dac9d0b8d5e84d9724ff9ef044fd63c5986e62b7c9e1b1",
+        "bytes": 274034,
+        "requires_python": ">=3.11"
+      }
+    },
+    "cycler": {
+      "version": "0.12.1",
+      "index_url": "https://pypi.org/pypi/cycler/0.12.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "cycler-0.12.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e7/05/c19819d5e3d95294a6f5947fb9b9629efb316b96de511b418c53d245aae6/cycler-0.12.1-py3-none-any.whl",
+        "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30",
+        "bytes": 8321,
+        "requires_python": ">=3.8"
+      }
+    },
+    "fastapi": {
+      "version": "0.129.0",
+      "index_url": "https://pypi.org/pypi/fastapi/0.129.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "fastapi-0.129.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/9e/dd/d0ee25348ac58245ee9f90b6f3cbb666bf01f69be7e0911f9851bddbda16/fastapi-0.129.0-py3-none-any.whl",
+        "sha256": "b4946880e48f462692b31c083be0432275cbfb6e2274566b1be91479cc1a84ec",
+        "bytes": 102950,
+        "requires_python": ">=3.10"
+      }
+    },
+    "filelock": {
+      "version": "3.25.2",
+      "index_url": "https://pypi.org/pypi/filelock/3.25.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "filelock-3.25.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/a4/a5/842ae8f0c08b61d6484b52f99a03510a3a72d23141942d216ebe81fefbce/filelock-3.25.2-py3-none-any.whl",
+        "sha256": "ca8afb0da15f229774c9ad1b455ed96e85a81373065fb10446672f64444ddf70",
+        "bytes": 26759,
+        "requires_python": ">=3.10"
+      }
+    },
+    "flatbuffers": {
+      "version": "25.12.19",
+      "index_url": "https://pypi.org/pypi/flatbuffers/25.12.19/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "flatbuffers-25.12.19-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e8/2d/d2a548598be01649e2d46231d151a6c56d10b964d94043a335ae56ea2d92/flatbuffers-25.12.19-py2.py3-none-any.whl",
+        "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4",
+        "bytes": 26661,
+        "requires_python": null
+      }
+    },
+    "fonttools": {
+      "version": "4.62.1",
+      "index_url": "https://pypi.org/pypi/fonttools/4.62.1/json",
+      "compatible_unyanked_wheels": 2,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "fonttools-4.62.1-cp313-cp313-macosx_10_13_universal2.whl",
+        "url": "https://files.pythonhosted.org/packages/3b/56/6f389de21c49555553d6a5aeed5ac9767631497ac836c4f076273d15bd72/fonttools-4.62.1-cp313-cp313-macosx_10_13_universal2.whl",
+        "sha256": "c22b1014017111c401469e3acc5433e6acf6ebcc6aa9efb538a533c800971c79",
+        "bytes": 2865155,
+        "requires_python": ">=3.10"
+      }
+    },
+    "fsspec": {
+      "version": "2026.2.0",
+      "index_url": "https://pypi.org/pypi/fsspec/2026.2.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "fsspec-2026.2.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e6/ab/fb21f4c939bb440104cc2b396d3be1d9b7a9fd3c6c2a53d98c45b3d7c954/fsspec-2026.2.0-py3-none-any.whl",
+        "sha256": "98de475b5cb3bd66bedd5c4679e87b4fdfe1a3bf4d707b151b3c07e58c9a2437",
+        "bytes": 202505,
+        "requires_python": ">=3.10"
+      }
+    },
+    "h11": {
+      "version": "0.16.0",
+      "index_url": "https://pypi.org/pypi/h11/0.16.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "h11-0.16.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl",
+        "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+        "bytes": 37515,
+        "requires_python": ">=3.8"
+      }
+    },
+    "h5py": {
+      "version": "3.16.0",
+      "index_url": "https://pypi.org/pypi/h5py/3.16.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "h5py-3.16.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/b0/65/5e088a45d0f43cd814bc5bec521c051d42005a472e804b1a36c48dada09b/h5py-3.16.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "42108e93326c50c2810025aade9eac9d6827524cdccc7d4b75a546e5ab308edb",
+        "bytes": 3045837,
+        "requires_python": ">=3.10"
+      }
+    },
+    "httpcore": {
+      "version": "1.0.9",
+      "index_url": "https://pypi.org/pypi/httpcore/1.0.9/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "httpcore-1.0.9-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl",
+        "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55",
+        "bytes": 78784,
+        "requires_python": ">=3.8"
+      }
+    },
+    "httpx": {
+      "version": "0.28.1",
+      "index_url": "https://pypi.org/pypi/httpx/0.28.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "httpx-0.28.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl",
+        "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad",
+        "bytes": 73517,
+        "requires_python": ">=3.8"
+      }
+    },
+    "icontract": {
+      "version": "2.7.3",
+      "index_url": "https://pypi.org/pypi/icontract/2.7.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "icontract-2.7.3-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/ee/aa/ffc16b7ed17e052e7d2140e66336f829e9383f61f31249c4d181e12fcdea/icontract-2.7.3-py3-none-any.whl",
+        "sha256": "8fb0f93f71211416f214f37c01b8017fdc8c079d70159f49f0ddcc10918c14d0",
+        "bytes": 40983,
+        "requires_python": null
+      }
+    },
+    "idna": {
+      "version": "3.11",
+      "index_url": "https://pypi.org/pypi/idna/3.11/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "idna-3.11-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl",
+        "sha256": "771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea",
+        "bytes": 71008,
+        "requires_python": ">=3.8"
+      }
+    },
+    "inflect": {
+      "version": "7.5.0",
+      "index_url": "https://pypi.org/pypi/inflect/7.5.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "inflect-7.5.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/8a/eb/427ed2b20a38a4ee29f24dbe4ae2dafab198674fe9a85e3d6adf9e5f5f41/inflect-7.5.0-py3-none-any.whl",
+        "sha256": "2aea70e5e70c35d8350b8097396ec155ffd68def678c7ff97f51aa69c1d92344",
+        "bytes": 35197,
+        "requires_python": ">=3.9"
+      }
+    },
+    "jax": {
+      "version": "0.9.2",
+      "index_url": "https://pypi.org/pypi/jax/0.9.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "jax-0.9.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/17/9c/e897231c880f69e32251d3b1145894d7a04e4342d9bef8d29644c440d11b/jax-0.9.2-py3-none-any.whl",
+        "sha256": "822a8ae155ab42e7bc59f2ae7a28705bcfccb01a7e76abfc8ae996190cdc5598",
+        "bytes": 3099142,
+        "requires_python": ">=3.11"
+      }
+    },
+    "jaxlib": {
+      "version": "0.9.2",
+      "index_url": "https://pypi.org/pypi/jaxlib/0.9.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "jaxlib-0.9.2-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/09/d5/e5416c39e77eb1987479ef3b67930af9e78ecf65e7eb8a6cbe40b2aa0b66/jaxlib-0.9.2-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "52a0032508f8cf5791c7a7bee142531ee706c3c05518117fb0b6ee8d5e17fde7",
+        "bytes": 58772433,
+        "requires_python": ">=3.11"
+      }
+    },
+    "jinja2": {
+      "version": "3.1.6",
+      "index_url": "https://pypi.org/pypi/jinja2/3.1.6/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "jinja2-3.1.6-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl",
+        "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+        "bytes": 134899,
+        "requires_python": ">=3.7"
+      }
+    },
+    "joblib": {
+      "version": "1.5.3",
+      "index_url": "https://pypi.org/pypi/joblib/1.5.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "joblib-1.5.3-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/7b/91/984aca2ec129e2757d1e4e3c81c3fcda9d0f85b74670a094cc443d9ee949/joblib-1.5.3-py3-none-any.whl",
+        "sha256": "5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713",
+        "bytes": 309071,
+        "requires_python": ">=3.9"
+      }
+    },
+    "jsonpatch": {
+      "version": "1.33",
+      "index_url": "https://pypi.org/pypi/jsonpatch/1.33/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "jsonpatch-1.33-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/73/07/02e16ed01e04a374e644b575638ec7987ae846d25ad97bcc9945a3ee4b0e/jsonpatch-1.33-py2.py3-none-any.whl",
+        "sha256": "0ae28c0cd062bbd8b8ecc26d7d164fbbea9652a1a3693f3b956c1eae5145dade",
+        "bytes": 12898,
+        "requires_python": ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*"
+      }
+    },
+    "jsonpointer": {
+      "version": "3.0.0",
+      "index_url": "https://pypi.org/pypi/jsonpointer/3.0.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "jsonpointer-3.0.0-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/71/92/5e77f98553e9e75130c78900d000368476aed74276eb8ae8796f65f00918/jsonpointer-3.0.0-py2.py3-none-any.whl",
+        "sha256": "13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942",
+        "bytes": 7595,
+        "requires_python": ">=3.7"
+      }
+    },
+    "kiwisolver": {
+      "version": "1.5.0",
+      "index_url": "https://pypi.org/pypi/kiwisolver/1.5.0/json",
+      "compatible_unyanked_wheels": 2,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "kiwisolver-1.5.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/a8/3a/d0a972b34e1c63e2409413104216cd1caa02c5a37cb668d1687d466c1c45/kiwisolver-1.5.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "dda366d548e89a90d88a86c692377d18d8bd64b39c1fb2b92cb31370e2896bbd",
+        "bytes": 64065,
+        "requires_python": ">=3.10"
+      }
+    },
+    "langchain-core": {
+      "version": "1.2.19",
+      "index_url": "https://pypi.org/pypi/langchain-core/1.2.19/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "langchain_core-1.2.19-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/aa/cb/8704b2a22c0987627ed29464d23a45fb15e10a28fb482f4d84c3bddcbf27/langchain_core-1.2.19-py3-none-any.whl",
+        "sha256": "6e74cb0fb443a8046ee298c05c99b67abe54cc57fcbc6d1cd3b0f2485ee47574",
+        "bytes": 503456,
+        "requires_python": "<4.0.0,>=3.10.0"
+      }
+    },
+    "langgraph": {
+      "version": "1.1.2",
+      "index_url": "https://pypi.org/pypi/langgraph/1.1.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "langgraph-1.1.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/52/38/3117cd90325635893a76132cdae74f5b1f53c93c33b3dc6124521cec9825/langgraph-1.1.2-py3-none-any.whl",
+        "sha256": "5fd43c839ec2b5af564e9ae2d2d4f22ce0a006a0b58e800cc4e8de4dd9cbb643",
+        "bytes": 167543,
+        "requires_python": ">=3.10"
+      }
+    },
+    "langgraph-checkpoint": {
+      "version": "4.0.1",
+      "index_url": "https://pypi.org/pypi/langgraph-checkpoint/4.0.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "langgraph_checkpoint-4.0.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/65/4c/09a4a0c42f5d2fc38d6c4d67884788eff7fd2cfdf367fdf7033de908b4c0/langgraph_checkpoint-4.0.1-py3-none-any.whl",
+        "sha256": "e3adcd7a0e0166f3b48b8cf508ce0ea366e7420b5a73aa81289888727769b034",
+        "bytes": 50453,
+        "requires_python": ">=3.10"
+      }
+    },
+    "langgraph-prebuilt": {
+      "version": "1.0.8",
+      "index_url": "https://pypi.org/pypi/langgraph-prebuilt/1.0.8/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "langgraph_prebuilt-1.0.8-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/dc/41/ec966424ad3f2ed3996d24079d3342c8cd6c0bd0653c12b2a917a685ec6c/langgraph_prebuilt-1.0.8-py3-none-any.whl",
+        "sha256": "d16a731e591ba4470f3e313a319c7eee7dbc40895bcf15c821f985a3522a7ce0",
+        "bytes": 35648,
+        "requires_python": ">=3.10"
+      }
+    },
+    "langgraph-sdk": {
+      "version": "0.3.11",
+      "index_url": "https://pypi.org/pypi/langgraph-sdk/0.3.11/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "langgraph_sdk-0.3.11-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/13/c8/b8d15d4b9a320a3f57a851030a371066b91dbd1420f097d3d0338da9adc9/langgraph_sdk-0.3.11-py3-none-any.whl",
+        "sha256": "18905fd6248ade98b0995d859a98672d57c811fbfffc0d63d1c107a512351b26",
+        "bytes": 94887,
+        "requires_python": ">=3.10"
+      }
+    },
+    "langsmith": {
+      "version": "0.7.17",
+      "index_url": "https://pypi.org/pypi/langsmith/0.7.17/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "langsmith-0.7.17-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/34/31/62689d57f4d25792bd6a3c05c868771899481be2f3e31f9e71d31e1ac4ab/langsmith-0.7.17-py3-none-any.whl",
+        "sha256": "cbec10460cb6c6ecc94c18c807be88a9984838144ae6c4693c9f859f378d7d02",
+        "bytes": 359147,
+        "requires_python": ">=3.10"
+      }
+    },
+    "markdown-it-py": {
+      "version": "4.0.0",
+      "index_url": "https://pypi.org/pypi/markdown-it-py/4.0.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "markdown_it_py-4.0.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl",
+        "sha256": "87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147",
+        "bytes": 87321,
+        "requires_python": ">=3.10"
+      }
+    },
+    "markupsafe": {
+      "version": "3.0.3",
+      "index_url": "https://pypi.org/pypi/markupsafe/3.0.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "markupsafe-3.0.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/9c/d9/5f7756922cdd676869eca1c4e3c0cd0df60ed30199ffd775e319089cb3ed/markupsafe-3.0.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "116bb52f642a37c115f517494ea5feb03889e04df47eeff5b130b1808ce7c219",
+        "bytes": 12029,
+        "requires_python": ">=3.9"
+      }
+    },
+    "matplotlib": {
+      "version": "3.10.8",
+      "index_url": "https://pypi.org/pypi/matplotlib/3.10.8/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "matplotlib-3.10.8-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/8d/a0/2ba3473c1b66b9c74dc7107c67e9008cb1782edbe896d4c899d39ae9cf78/matplotlib-3.10.8-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "56271f3dac49a88d7fca5060f004d9d22b865f743a12a23b1e937a0be4818ee1",
+        "bytes": 8148794,
+        "requires_python": ">=3.10"
+      }
+    },
+    "mdurl": {
+      "version": "0.1.2",
+      "index_url": "https://pypi.org/pypi/mdurl/0.1.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "mdurl-0.1.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+        "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+        "bytes": 9979,
+        "requires_python": ">=3.7"
+      }
+    },
+    "ml-dtypes": {
+      "version": "0.5.4",
+      "index_url": "https://pypi.org/pypi/ml-dtypes/0.5.4/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "ml_dtypes-0.5.4-cp313-cp313-macosx_10_13_universal2.whl",
+        "url": "https://files.pythonhosted.org/packages/d9/a1/4008f14bbc616cfb1ac5b39ea485f9c63031c4634ab3f4cf72e7541f816a/ml_dtypes-0.5.4-cp313-cp313-macosx_10_13_universal2.whl",
+        "sha256": "8c760d85a2f82e2bed75867079188c9d18dae2ee77c25a54d60e9cc79be1bc48",
+        "bytes": 676888,
+        "requires_python": ">=3.9"
+      }
+    },
+    "mock": {
+      "version": "5.2.0",
+      "index_url": "https://pypi.org/pypi/mock/5.2.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "mock-5.2.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/bd/d9/617e6af809bf3a1d468e0d58c3997b1dc219a9a9202e650d30c2fc85d481/mock-5.2.0-py3-none-any.whl",
+        "sha256": "7ba87f72ca0e915175596069dbbcc7c75af7b5e9b9bc107ad6349ede0819982f",
+        "bytes": 31617,
+        "requires_python": ">=3.6"
+      }
+    },
+    "more-itertools": {
+      "version": "11.0.1",
+      "index_url": "https://pypi.org/pypi/more-itertools/11.0.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "more_itertools-11.0.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/d8/f4/5e52c7319b8087acef603ed6e50dc325c02eaa999355414830468611f13c/more_itertools-11.0.1-py3-none-any.whl",
+        "sha256": "eaf287826069452a8f61026c597eae2428b2d1ba2859083abbf240b46842ce6d",
+        "bytes": 72182,
+        "requires_python": ">=3.10"
+      }
+    },
+    "mpmath": {
+      "version": "1.3.0",
+      "index_url": "https://pypi.org/pypi/mpmath/1.3.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "mpmath-1.3.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl",
+        "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c",
+        "bytes": 536198,
+        "requires_python": null
+      }
+    },
+    "msgpack": {
+      "version": "1.1.2",
+      "index_url": "https://pypi.org/pypi/msgpack/1.1.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "msgpack-1.1.2-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/92/dc/c385f38f2c2433333345a82926c6bfa5ecfff3ef787201614317b58dd8be/msgpack-1.1.2-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "42eefe2c3e2af97ed470eec850facbe1b5ad1d6eacdbadc42ec98e7dcf68b4b7",
+        "bytes": 84315,
+        "requires_python": ">=3.9"
+      }
+    },
+    "networkx": {
+      "version": "3.6.1",
+      "index_url": "https://pypi.org/pypi/networkx/3.6.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "networkx-3.6.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl",
+        "sha256": "d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762",
+        "bytes": 2068504,
+        "requires_python": "!=3.14.1,>=3.11"
+      }
+    },
+    "numexpr": {
+      "version": "2.14.2",
+      "index_url": "https://pypi.org/pypi/numexpr/2.14.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "numexpr-2.14.2-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/a9/8a/c4c1f171e101dbfe8b31d8d9f91369ff1bc49b1b4c9a4dc04bb9ed6e4155/numexpr-2.14.2-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "92b00c78664070e3af155c6be713a0a5d75d598647ce32a5609adb79a8f961d3",
+        "bytes": 153509,
+        "requires_python": ">=3.11"
+      }
+    },
+    "numpy": {
+      "version": "2.4.2",
+      "index_url": "https://pypi.org/pypi/numpy/2.4.2/json",
+      "compatible_unyanked_wheels": 2,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "numpy-2.4.2-cp313-cp313-macosx_14_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/da/b4/f805ab79293c728b9a99438775ce51885fd4f31b76178767cfc718701a39/numpy-2.4.2-cp313-cp313-macosx_14_0_arm64.whl",
+        "sha256": "8e4549f8a3c6d13d55041925e912bfd834285ef1dd64d6bc7d542583355e2e98",
+        "bytes": 5198157,
+        "requires_python": ">=3.11"
+      }
+    },
+    "opencv-python": {
+      "version": "4.13.0.92",
+      "index_url": "https://pypi.org/pypi/opencv-python/4.13.0.92/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "opencv_python-4.13.0.92-cp37-abi3-macosx_13_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/fc/6f/5a28fef4c4a382be06afe3938c64cc168223016fa520c5abaf37e8862aa5/opencv_python-4.13.0.92-cp37-abi3-macosx_13_0_arm64.whl",
+        "sha256": "caf60c071ec391ba51ed00a4a920f996d0b64e3e46068aac1f646b5de0326a19",
+        "bytes": 46247052,
+        "requires_python": ">=3.6"
+      }
+    },
+    "opt-einsum": {
+      "version": "3.4.0",
+      "index_url": "https://pypi.org/pypi/opt-einsum/3.4.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "opt_einsum-3.4.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl",
+        "sha256": "69bb92469f86a1565195ece4ac0323943e83477171b91d24c35afe028a90d7cd",
+        "bytes": 71932,
+        "requires_python": ">=3.8"
+      }
+    },
+    "orjson": {
+      "version": "3.11.7",
+      "index_url": "https://pypi.org/pypi/orjson/3.11.7/json",
+      "compatible_unyanked_wheels": 2,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "orjson-3.11.7-cp313-cp313-macosx_15_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/a5/29/a77f48d2fc8a05bbc529e5ff481fb43d914f9e383ea2469d4f3d51df3d00/orjson-3.11.7-cp313-cp313-macosx_15_0_arm64.whl",
+        "sha256": "d897e81f8d0cbd2abb82226d1860ad2e1ab3ff16d7b08c96ca00df9d45409ef4",
+        "bytes": 125189,
+        "requires_python": ">=3.10"
+      }
+    },
+    "ormsgpack": {
+      "version": "1.12.2",
+      "index_url": "https://pypi.org/pypi/ormsgpack/1.12.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "ormsgpack-1.12.2-cp313-cp313-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl",
+        "url": "https://files.pythonhosted.org/packages/eb/29/bb0eba3288c0449efbb013e9c6f58aea79cf5cb9ee1921f8865f04c1a9d7/ormsgpack-1.12.2-cp313-cp313-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl",
+        "sha256": "5ea60cb5f210b1cfbad8c002948d73447508e629ec375acb82910e3efa8ff355",
+        "bytes": 378661,
+        "requires_python": ">=3.10"
+      }
+    },
+    "packaging": {
+      "version": "26.0",
+      "index_url": "https://pypi.org/pypi/packaging/26.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "packaging-26.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/b7/b9/c538f279a4e237a006a2c98387d081e9eb060d203d8ed34467cc0f0b9b53/packaging-26.0-py3-none-any.whl",
+        "sha256": "b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529",
+        "bytes": 74366,
+        "requires_python": ">=3.8"
+      }
+    },
+    "pandas": {
+      "version": "2.3.3",
+      "index_url": "https://pypi.org/pypi/pandas/2.3.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pandas-2.3.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/31/94/72fac03573102779920099bcac1c3b05975c2cb5f01eac609faf34bed1ca/pandas-2.3.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "bdcd9d1167f4885211e401b3036c0c8d9e274eee67ea8d0758a256d60704cfe8",
+        "bytes": 10680807,
+        "requires_python": ">=3.9"
+      }
+    },
+    "peakutils": {
+      "version": "1.3.5",
+      "index_url": "https://pypi.org/pypi/peakutils/1.3.5/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "PeakUtils-1.3.5-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/92/6f/ad8db42b3a744e910e62a8781282acadf7b95ff16f714f05347f6fb6129b/PeakUtils-1.3.5-py3-none-any.whl",
+        "sha256": "5c54ca98ba3177b8c1ae4c5fdfd1b09d7bec947b9c25d9e4bd25334526ca98e5",
+        "bytes": 7722,
+        "requires_python": null
+      }
+    },
+    "pillow": {
+      "version": "11.3.0",
+      "index_url": "https://pypi.org/pypi/pillow/11.3.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pillow-11.3.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/f9/0e/37d7d3eca6c879fbd9dba21268427dffda1ab00d4eb05b32923d4fbe3b12/pillow-11.3.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "7db51d222548ccfd274e4572fdbf3e810a5e66b00608862f947b163e613b67dd",
+        "bytes": 4686038,
+        "requires_python": ">=3.9"
+      }
+    },
+    "psutil": {
+      "version": "7.0.0",
+      "index_url": "https://pypi.org/pypi/psutil/7.0.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "psutil-7.0.0-cp36-abi3-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/04/8b/30f930733afe425e3cbfc0e1468a30a18942350c1a8816acfade80c005c4/psutil-7.0.0-cp36-abi3-macosx_11_0_arm64.whl",
+        "sha256": "39db632f6bb862eeccf56660871433e111b6ea58f2caea825571951d4b6aa3da",
+        "bytes": 239535,
+        "requires_python": ">=3.6"
+      }
+    },
+    "pyarrow": {
+      "version": "23.0.1",
+      "index_url": "https://pypi.org/pypi/pyarrow/23.0.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pyarrow-23.0.1-cp313-cp313-macosx_12_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/47/10/2cbe4c6f0fb83d2de37249567373d64327a5e4d8db72f486db42875b08f6/pyarrow-23.0.1-cp313-cp313-macosx_12_0_arm64.whl",
+        "sha256": "6b8fda694640b00e8af3c824f99f789e836720aa8c9379fb435d4c4953a756b8",
+        "bytes": 34210066,
+        "requires_python": ">=3.10"
+      }
+    },
+    "pydantic": {
+      "version": "2.12.5",
+      "index_url": "https://pypi.org/pypi/pydantic/2.12.5/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pydantic-2.12.5-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/5a/87/b70ad306ebb6f9b585f114d0ac2137d792b48be34d732d60e597c2f8465a/pydantic-2.12.5-py3-none-any.whl",
+        "sha256": "e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d",
+        "bytes": 463580,
+        "requires_python": ">=3.9"
+      }
+    },
+    "pydantic-core": {
+      "version": "2.41.5",
+      "index_url": "https://pypi.org/pypi/pydantic-core/2.41.5/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pydantic_core-2.41.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/94/02/abfa0e0bda67faa65fef1c84971c7e45928e108fe24333c81f3bfe35d5f5/pydantic_core-2.41.5-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "112e305c3314f40c93998e567879e887a3160bb8689ef3d2c04b6cc62c33ac34",
+        "bytes": 1896206,
+        "requires_python": ">=3.9"
+      }
+    },
+    "pygments": {
+      "version": "2.19.2",
+      "index_url": "https://pypi.org/pypi/pygments/2.19.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pygments-2.19.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/c7/21/705964c7812476f378728bdf590ca4b771ec72385c533964653c68e86bdc/pygments-2.19.2-py3-none-any.whl",
+        "sha256": "86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b",
+        "bytes": 1225217,
+        "requires_python": ">=3.8"
+      }
+    },
+    "pyparsing": {
+      "version": "3.3.2",
+      "index_url": "https://pypi.org/pypi/pyparsing/3.3.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pyparsing-3.3.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl",
+        "sha256": "850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d",
+        "bytes": 122781,
+        "requires_python": ">=3.9"
+      }
+    },
+    "python-dateutil": {
+      "version": "2.9.0.post0",
+      "index_url": "https://pypi.org/pypi/python-dateutil/2.9.0.post0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+        "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427",
+        "bytes": 229892,
+        "requires_python": "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+      }
+    },
+    "python-multipart": {
+      "version": "0.0.32",
+      "index_url": "https://pypi.org/pypi/python-multipart/0.0.32/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "python_multipart-0.0.32-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e1/04/e8135ebd1ad02c56ec633277529b2602ff99ff634be76cdba5744cf554fd/python_multipart-0.0.32-py3-none-any.whl",
+        "sha256": "ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23",
+        "bytes": 30042,
+        "requires_python": ">=3.10"
+      }
+    },
+    "pytz": {
+      "version": "2026.1.post1",
+      "index_url": "https://pypi.org/pypi/pytz/2026.1.post1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pytz-2026.1.post1-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/10/99/781fe0c827be2742bcc775efefccb3b048a3a9c6ce9aec0cbf4a101677e5/pytz-2026.1.post1-py2.py3-none-any.whl",
+        "sha256": "f2fd16142fda348286a75e1a524be810bb05d444e5a081f37f7affc635035f7a",
+        "bytes": 510489,
+        "requires_python": null
+      }
+    },
+    "pywavelets": {
+      "version": "1.9.0",
+      "index_url": "https://pypi.org/pypi/pywavelets/1.9.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pywavelets-1.9.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/aa/0c/b54b86596c0df68027e48c09210e907e628435003e77048384a2dd6767e3/pywavelets-1.9.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "c50320fe0a4a23ddd8835b3dc9b53b09ee05c7cc6c56b81d0916f04fc1649070",
+        "bytes": 4286838,
+        "requires_python": ">=3.11"
+      }
+    },
+    "pyyaml": {
+      "version": "6.0.3",
+      "index_url": "https://pypi.org/pypi/pyyaml/6.0.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "pyyaml-6.0.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/b1/16/95309993f1d3748cd644e02e38b75d50cbc0d9561d21f390a76242ce073f/pyyaml-6.0.3-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "2283a07e2c21a2aa78d9c4442724ec1eb15f5e42a723b99cb3d822d48f5f7ad1",
+        "bytes": 173252,
+        "requires_python": ">=3.8"
+      }
+    },
+    "requests": {
+      "version": "2.32.5",
+      "index_url": "https://pypi.org/pypi/requests/2.32.5/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "requests-2.32.5-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl",
+        "sha256": "2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6",
+        "bytes": 64738,
+        "requires_python": ">=3.9"
+      }
+    },
+    "requests-toolbelt": {
+      "version": "1.0.0",
+      "index_url": "https://pypi.org/pypi/requests-toolbelt/1.0.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "requests_toolbelt-1.0.0-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/3f/51/d4db610ef29373b879047326cbf6fa98b6c1969d6f6dc423279de2b1be2c/requests_toolbelt-1.0.0-py2.py3-none-any.whl",
+        "sha256": "cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06",
+        "bytes": 54481,
+        "requires_python": ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+      }
+    },
+    "rich": {
+      "version": "14.3.3",
+      "index_url": "https://pypi.org/pypi/rich/14.3.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "rich-14.3.3-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/14/25/b208c5683343959b670dc001595f2f3737e051da617f66c31f7c4fa93abc/rich-14.3.3-py3-none-any.whl",
+        "sha256": "793431c1f8619afa7d3b52b2cdec859562b950ea0d4b6b505397612db8d5362d",
+        "bytes": 310458,
+        "requires_python": ">=3.8.0"
+      }
+    },
+    "scikit-learn": {
+      "version": "1.8.0",
+      "index_url": "https://pypi.org/pypi/scikit-learn/1.8.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "scikit_learn-1.8.0-cp313-cp313-macosx_12_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/58/37/31b83b2594105f61a381fc74ca19e8780ee923be2d496fcd8d2e1147bd99/scikit_learn-1.8.0-cp313-cp313-macosx_12_0_arm64.whl",
+        "sha256": "edec98c5e7c128328124a029bceb09eda2d526997780fef8d65e9a69eead963e",
+        "bytes": 8044458,
+        "requires_python": ">=3.11"
+      }
+    },
+    "scipy": {
+      "version": "1.17.1",
+      "index_url": "https://pypi.org/pypi/scipy/1.17.1/json",
+      "compatible_unyanked_wheels": 2,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "scipy-1.17.1-cp313-cp313-macosx_14_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/5b/58/3ce96251560107b381cbd6e8413c483bbb1228a6b919fa8652b0d4090e7f/scipy-1.17.1-cp313-cp313-macosx_14_0_arm64.whl",
+        "sha256": "7ff200bf9d24f2e4d5dc6ee8c3ac64d739d3a89e2326ba68aaf6c4a2b838fd7d",
+        "bytes": 20325719,
+        "requires_python": ">=3.11"
+      }
+    },
+    "setuptools": {
+      "version": "81.0.0",
+      "index_url": "https://pypi.org/pypi/setuptools/81.0.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "setuptools-81.0.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl",
+        "sha256": "fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6",
+        "bytes": 1062021,
+        "requires_python": ">=3.9"
+      }
+    },
+    "shortuuid": {
+      "version": "1.0.13",
+      "index_url": "https://pypi.org/pypi/shortuuid/1.0.13/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "shortuuid-1.0.13-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/c0/44/21d6bf170bf40b41396480d8d49ad640bca3f2b02139cd52aa1e272830a5/shortuuid-1.0.13-py3-none-any.whl",
+        "sha256": "a482a497300b49b4953e15108a7913244e1bb0d41f9d332f5e9925dba33a3c5a",
+        "bytes": 10529,
+        "requires_python": ">=3.6"
+      }
+    },
+    "six": {
+      "version": "1.17.0",
+      "index_url": "https://pypi.org/pypi/six/1.17.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "six-1.17.0-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl",
+        "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+        "bytes": 11050,
+        "requires_python": "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+      }
+    },
+    "sniffio": {
+      "version": "1.3.1",
+      "index_url": "https://pypi.org/pypi/sniffio/1.3.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "sniffio-1.3.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl",
+        "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+        "bytes": 10235,
+        "requires_python": ">=3.7"
+      }
+    },
+    "sse-starlette": {
+      "version": "3.2.0",
+      "index_url": "https://pypi.org/pypi/sse-starlette/3.2.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "sse_starlette-3.2.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/96/7f/832f015020844a8b8f7a9cbc103dd76ba8e3875004c41e08440ea3a2b41a/sse_starlette-3.2.0-py3-none-any.whl",
+        "sha256": "5876954bd51920fc2cd51baee47a080eb88a37b5b784e615abb0b283f801cdbf",
+        "bytes": 12763,
+        "requires_python": ">=3.9"
+      }
+    },
+    "starlette": {
+      "version": "0.52.1",
+      "index_url": "https://pypi.org/pypi/starlette/0.52.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "starlette-0.52.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/81/0d/13d1d239a25cbfb19e740db83143e95c772a1fe10202dda4b76792b114dd/starlette-0.52.1-py3-none-any.whl",
+        "sha256": "0029d43eb3d273bc4f83a08720b4912ea4b071087a3b48db01b7c839f7954d74",
+        "bytes": 74272,
+        "requires_python": ">=3.10"
+      }
+    },
+    "sympy": {
+      "version": "1.14.0",
+      "index_url": "https://pypi.org/pypi/sympy/1.14.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "sympy-1.14.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl",
+        "sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5",
+        "bytes": 6299353,
+        "requires_python": ">=3.9"
+      }
+    },
+    "tenacity": {
+      "version": "9.1.4",
+      "index_url": "https://pypi.org/pypi/tenacity/9.1.4/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "tenacity-9.1.4-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl",
+        "sha256": "6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55",
+        "bytes": 28926,
+        "requires_python": ">=3.10"
+      }
+    },
+    "threadpoolctl": {
+      "version": "3.6.0",
+      "index_url": "https://pypi.org/pypi/threadpoolctl/3.6.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "threadpoolctl-3.6.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/32/d5/f9a850d79b0851d1d4ef6456097579a9005b31fea68726a4ae5f2d82ddd9/threadpoolctl-3.6.0-py3-none-any.whl",
+        "sha256": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb",
+        "bytes": 18638,
+        "requires_python": ">=3.9"
+      }
+    },
+    "torch": {
+      "version": "2.11.0",
+      "index_url": "https://pypi.org/pypi/torch/2.11.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "torch-2.11.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/87/89/5ea6722763acee56b045435fb84258db7375c48165ec8be7880ab2b281c5/torch-2.11.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "1e6debd97ccd3205bbb37eb806a9d8219e1139d15419982c09e23ef7d4369d18",
+        "bytes": 80606801,
+        "requires_python": ">=3.10"
+      }
+    },
+    "tqdm": {
+      "version": "4.67.3",
+      "index_url": "https://pypi.org/pypi/tqdm/4.67.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "tqdm-4.67.3-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl",
+        "sha256": "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf",
+        "bytes": 78374,
+        "requires_python": ">=3.7"
+      }
+    },
+    "typeguard": {
+      "version": "4.5.1",
+      "index_url": "https://pypi.org/pypi/typeguard/4.5.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "typeguard-4.5.1-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/91/88/b55b3117287a8540b76dbdd87733808d4d01c8067a3b339408c250bb3600/typeguard-4.5.1-py3-none-any.whl",
+        "sha256": "44d2bf329d49a244110a090b55f5f91aa82d9a9834ebfd30bcc73651e4a8cc40",
+        "bytes": 36745,
+        "requires_python": ">=3.9"
+      }
+    },
+    "typing-extensions": {
+      "version": "4.15.0",
+      "index_url": "https://pypi.org/pypi/typing-extensions/4.15.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "typing_extensions-4.15.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl",
+        "sha256": "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548",
+        "bytes": 44614,
+        "requires_python": ">=3.9"
+      }
+    },
+    "typing-inspection": {
+      "version": "0.4.2",
+      "index_url": "https://pypi.org/pypi/typing-inspection/0.4.2/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "typing_inspection-0.4.2-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl",
+        "sha256": "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7",
+        "bytes": 14611,
+        "requires_python": ">=3.9"
+      }
+    },
+    "tzdata": {
+      "version": "2025.3",
+      "index_url": "https://pypi.org/pypi/tzdata/2025.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "tzdata-2025.3-py2.py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/c7/b0/003792df09decd6849a5e39c28b513c06e84436a54440380862b5aeff25d/tzdata-2025.3-py2.py3-none-any.whl",
+        "sha256": "06a47e5700f3081aab02b2e513160914ff0694bce9947d6b76ebd6bf57cfc5d1",
+        "bytes": 348521,
+        "requires_python": ">=2"
+      }
+    },
+    "urllib3": {
+      "version": "2.6.3",
+      "index_url": "https://pypi.org/pypi/urllib3/2.6.3/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "urllib3-2.6.3-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl",
+        "sha256": "bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4",
+        "bytes": 131584,
+        "requires_python": ">=3.9"
+      }
+    },
+    "uuid-utils": {
+      "version": "0.14.1",
+      "index_url": "https://pypi.org/pypi/uuid-utils/0.14.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "uuid_utils-0.14.1-cp39-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl",
+        "url": "https://files.pythonhosted.org/packages/43/b7/add4363039a34506a58457d96d4aa2126061df3a143eb4d042aedd6a2e76/uuid_utils-0.14.1-cp39-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl",
+        "sha256": "93a3b5dc798a54a1feb693f2d1cb4cf08258c32ff05ae4929b5f0a2ca624a4f0",
+        "bytes": 604679,
+        "requires_python": ">=3.9"
+      }
+    },
+    "uvicorn": {
+      "version": "0.41.0",
+      "index_url": "https://pypi.org/pypi/uvicorn/0.41.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "uvicorn-0.41.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/83/e4/d04a086285c20886c0daad0e026f250869201013d18f81d9ff5eada73a88/uvicorn-0.41.0-py3-none-any.whl",
+        "sha256": "29e35b1d2c36a04b9e180d4007ede3bcb32a85fbdfd6c6aeb3f26839de088187",
+        "bytes": 68783,
+        "requires_python": ">=3.10"
+      }
+    },
+    "xgboost": {
+      "version": "3.4.1",
+      "index_url": "https://pypi.org/pypi/xgboost/3.4.1/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "xgboost-3.4.1-py3-none-macosx_12_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/f7/94/e5c37a8972ad780edc1d8459d1931356344ca133f7f99ba9cfda516b5bba/xgboost-3.4.1-py3-none-macosx_12_0_arm64.whl",
+        "sha256": "a7afd7dbace0951c93aa85ffe046e54bc40893f5b51cd3e7991eb157bf9c7c7c",
+        "bytes": 2365501,
+        "requires_python": ">=3.12"
+      }
+    },
+    "xxhash": {
+      "version": "3.6.0",
+      "index_url": "https://pypi.org/pypi/xxhash/3.6.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "xxhash-3.6.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/31/a8/3fbce1cd96534a95e35d5120637bf29b0d7f5d8fa2f6374e31b4156dd419/xxhash-3.6.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "7d8b8aaa30fca4f16f0c84a5c8d7ddee0e25250ec2796c973775373257dde8f1",
+        "bytes": 30821,
+        "requires_python": ">=3.7"
+      }
+    },
+    "zstandard": {
+      "version": "0.25.0",
+      "index_url": "https://pypi.org/pypi/zstandard/0.25.0/json",
+      "compatible_unyanked_wheels": 1,
+      "compatible_yanked_wheels": [],
+      "selected_wheel": {
+        "filename": "zstandard-0.25.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "url": "https://files.pythonhosted.org/packages/3f/06/9ae96a3e5dcfd119377ba33d4c42a7d89da1efabd5cb3e366b156c45ff4d/zstandard-0.25.0-cp313-cp313-macosx_11_0_arm64.whl",
+        "sha256": "a1a4ae2dec3993a32247995bdfe367fc3266da832d82f8438c8570f989753de1",
+        "bytes": 640440,
+        "requires_python": ">=3.9"
+      }
+    }
+  },
+  "unresolved": [],
+  "source_only_packages": {},
+  "scope": "Compatible wheel availability and publisher-index hashes only; wheel downloads, installed-file comparison to publisher wheels and fresh installation are not yet verified.",
+  "sha256": {
+    "docs/reviews/competition_flavours_environment_audit.json": "6c367bd65ed1f3b236093f15aa8975a2657355aec38b85bade002655306b2037",
+    "scripts/audit_flavours_published_wheels.py": "1a4bbd9742e0795d6161297a3375392f9028692dc0f01a0c56d762cca76460d2"
+  }
+}

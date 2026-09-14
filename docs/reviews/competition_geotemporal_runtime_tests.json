@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 29,
+  "serialized_boundary_tests": 11,
+  "source_version_id": "9bb6428c-0529-56c8-b51d-96e1b4d6990c",
+  "source_content_hash": "b22878a5b3fa77fcf721b4343515a4284b9dd7777758bd9e86b1ed56e5c6790e",
+  "stage_mapping": {
+    "geo_temporal_join": "Latest available spatial context per site within radius/lookback",
+    "spatial_temporal_features": "Planar coordinates, seasonal phase, distances, context age, strict-past target lags and missingness",
+    "leakage_safe_geo_validation": "Expanding time blocks, explicit gap, fitting-only warmup and fold-local target history",
+    "fusion_model": "ExtraTrees regressor for each forward fold followed by full-training refit",
+    "geographic_postprocessing": "Nonnegative clipping and same-time spatial-neighbor smoothing"
+  },
+  "checks": {
+    "hand_causal_join": true,
+    "future_context_isolation": true,
+    "heldout_label_isolation": true,
+    "forward_gap_validation": true,
+    "warmup_explicitly_unvalidated": true,
+    "full_training_refit": true,
+    "heldout_mse_check": true,
+    "geographic_smoothing_hand_check": true,
+    "coordinate_clock_contract": true,
+    "strict_json_boundary": true,
+    "mutated_intermediate_rejected_before_fit": true
+  },
+  "sha256": {
+    "sciona/geotemporal_contract.py": "23c7519f74c86094f7baff6d12cda49a4ff4411f67c91cf02719aefb328ea061",
+    "sciona/geotemporal_features.py": "56c192e429b985ec6bfaa82c4a9fbdf1a7d060ff315560ee1bbf4179681e5348",
+    "sciona/geotemporal_graph.py": "a05a4e5756bb5ecb57ddf9f7cab6b0bf3e12a850941b5760b20a5f7b9495c708",
+    "sciona/geotemporal_postprocess.py": "99f4e1aae492346823477a6d7161ac11b7503cb2347cde7e653b7d31b0049855",
+    "sciona/geotemporal_training.py": "1315c166505f11f2bb1f23c5780d7c91d6121806bce99ed98072373ed6700edb",
+    "sciona/geotemporal_validation.py": "82256afe9d38ad5570acbb77c0e91d630e2730fd7500e35d7fcbca551fdfa208",
+    "tests/test_geotemporal_contract.py": "d155bd8fe98599e08ee93215949ec8ccbdcbc82947e7c66ca003068a8eb64d50",
+    "tests/test_geotemporal_features.py": "6e46b2a4779e98578f102061bf72f84e1ee657808d36bfefce660012479c0ca1",
+    "tests/test_geotemporal_training.py": "744abc1e10486952195cdd7ca383c1d2643bebf107c963299da016c2f1712a16",
+    "tests/test_geotemporal_validation.py": "5d51e6ec7107b028182351efaa3c389daa8a56d700b147d94b704c1089f0a114",
+    "scripts/geotemporal_synthetic.py": "67c34c499c30779a771699dc24c4949d9f54532b0aea84793ad80547c8047bb5"
+  },
+  "scope": "Synthetic planar temporal regression only; no unseen-location or empirical accuracy claim. Tier3 review pending."
+}

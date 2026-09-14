@@ -1,0 +1,52 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "scope": "Publisher-pinned historical-reference reconstruction candidates; original notebook timm version and winner checkpoint identity unverified. This report covers backbone loading and inference; full pretrained ensemble training remains unqualified.",
+  "runtime": {
+    "timm": "0.9.2",
+    "torch": "2.11.0",
+    "safetensors": "0.6.2"
+  },
+  "references": {
+    "resnext50_32x4d.ra_in1k": {
+      "revision": "5f3db49db76b4ccb53aa11ad65f41647e8063426",
+      "publisher_license": "apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/timm/resnext50_32x4d.ra_in1k/revision/5f3db49db76b4ccb53aa11ad65f41647e8063426",
+      "weights_url": "https://huggingface.co/timm/resnext50_32x4d.ra_in1k/resolve/5f3db49db76b4ccb53aa11ad65f41647e8063426/model.safetensors",
+      "weights_sha256": "3f95526f236e9f14fbd84561989ccf00eb0190532dc30b4e4c36eae5e47111ec",
+      "weights_bytes": 100417784,
+      "strict_state_load": true,
+      "synthetic_inference_shape": [
+        1,
+        1000
+      ],
+      "repeat_outputs_identical": true,
+      "explicit_config_url": "https://github.com/huggingface/pytorch-image-models/releases/download/v0.1-weights/resnext50_32x4d_ra-d733960d.pth",
+      "current_untagged_default_url": "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-rsb-weights/resnext50_32x4d_a1h-0146ab0a.pth"
+    },
+    "vit_base_patch16_384.orig_in21k_ft_in1k": {
+      "revision": "b3a735915218fc1ae72bca2ae77189bd40bbad2c",
+      "publisher_license": "apache-2.0",
+      "metadata_url": "https://huggingface.co/api/models/timm/vit_base_patch16_384.orig_in21k_ft_in1k/revision/b3a735915218fc1ae72bca2ae77189bd40bbad2c",
+      "weights_url": "https://huggingface.co/timm/vit_base_patch16_384.orig_in21k_ft_in1k/resolve/b3a735915218fc1ae72bca2ae77189bd40bbad2c/model.safetensors",
+      "weights_sha256": "0e964f9d962c84e526ac0697761e4e36066d2bca39fed8bd8de8c38cdb908811",
+      "weights_bytes": 347452074,
+      "strict_state_load": true,
+      "synthetic_inference_shape": [
+        1,
+        1000
+      ],
+      "repeat_outputs_identical": true,
+      "explicit_config_url": "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_384-83fb41ba.pth",
+      "current_untagged_default_url": "https://storage.googleapis.com/vit_models/augreg/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_384.npz"
+    }
+  },
+  "sha256": {
+    "scripts/validate_cassava_timm_pretrained.py": "12ec44861efa0c9c620930071fafd4469333f8c35afe2b6f6d41158aa60a651f",
+    "sciona/cassava_pretrained.py": "f36039d9cfe94c0bd1d656e42e2430b63a017e5b06cf55fc9e0ae5a375f5140c",
+    "tests/test_cassava_pretrained.py": "2c705607f88aeb361d5d4381a40bbc1ec21a3af76c17023cabfa565d1a649565",
+    "docs/reviews/competition_cassava_timm_history.json": "99300aaadc5a90c0e2a31dde4f61304c2d3f31d87eb546b068eff5b75b5511af",
+    "docs/reviews/competition_cassava_timm_pretrained_license.json": "3889869df2c957ced847e0e009f7b02fb3cc84fc0b9b5303e4669978e1585eaa"
+  }
+}

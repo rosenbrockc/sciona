@@ -1,0 +1,13 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "checked_files": 98,
+  "graph_digest": "9d5ff3e24a795a261fb683c82208b116af79536f8c2194b662edd18fa086b6a9",
+  "component_execution_prerequisites_complete": true,
+  "pending": [],
+  "limitations": [
+    "Integrity and prerequisite audit only; does not approve atoms or CDGs.",
+    "Provider identity, interfaces, runtime dependency closure and semantic review still require catalog intake checks.",
+    "This component does not cover the full eleven-model ensemble or the broader competition/physics backlog."
+  ]
+}

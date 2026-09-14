@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_eigenstate_orthogonality.py": "a1fb1c25181b1163eefeba5cc36305b0ae1e6a70aea6f7b8116f6b4666f93718",
+    "tests/physics_ingest/test_eigenstate_orthogonality_proof.py": "fcd496c4cd0487195cf07a338bf2344068bec7f6e445641b654b1125116e4469"
+  },
+  "provider_sha256": "8e1c05b85e73bbb94148aed21cbbf4271eb502155bef43c1f0ba176e5e8623d2",
+  "synthetic_only": true
+}

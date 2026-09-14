@@ -1,0 +1,785 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "exact_history_cases": 128,
+  "cases": [
+    {
+      "detector": "effdet",
+      "history": 0,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 1,
+      "completed_epochs": 100,
+      "selected_epoch": 99
+    },
+    {
+      "detector": "effdet",
+      "history": 2,
+      "completed_epochs": 56,
+      "selected_epoch": 15
+    },
+    {
+      "detector": "effdet",
+      "history": 3,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "effdet",
+      "history": 4,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 5,
+      "completed_epochs": 43,
+      "selected_epoch": 2
+    },
+    {
+      "detector": "effdet",
+      "history": 6,
+      "completed_epochs": 62,
+      "selected_epoch": 21
+    },
+    {
+      "detector": "effdet",
+      "history": 7,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "effdet",
+      "history": 8,
+      "completed_epochs": 51,
+      "selected_epoch": 10
+    },
+    {
+      "detector": "effdet",
+      "history": 9,
+      "completed_epochs": 57,
+      "selected_epoch": 16
+    },
+    {
+      "detector": "effdet",
+      "history": 10,
+      "completed_epochs": 57,
+      "selected_epoch": 16
+    },
+    {
+      "detector": "effdet",
+      "history": 11,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 12,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "effdet",
+      "history": 13,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "effdet",
+      "history": 14,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "effdet",
+      "history": 15,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 16,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "effdet",
+      "history": 17,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "effdet",
+      "history": 18,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 19,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 20,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "effdet",
+      "history": 21,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 22,
+      "completed_epochs": 46,
+      "selected_epoch": 5
+    },
+    {
+      "detector": "effdet",
+      "history": 23,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 24,
+      "completed_epochs": 56,
+      "selected_epoch": 15
+    },
+    {
+      "detector": "effdet",
+      "history": 25,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "effdet",
+      "history": 26,
+      "completed_epochs": 46,
+      "selected_epoch": 5
+    },
+    {
+      "detector": "effdet",
+      "history": 27,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 28,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 29,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "effdet",
+      "history": 30,
+      "completed_epochs": 53,
+      "selected_epoch": 12
+    },
+    {
+      "detector": "effdet",
+      "history": 31,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "effdet",
+      "history": 32,
+      "completed_epochs": 71,
+      "selected_epoch": 30
+    },
+    {
+      "detector": "effdet",
+      "history": 33,
+      "completed_epochs": 64,
+      "selected_epoch": 23
+    },
+    {
+      "detector": "effdet",
+      "history": 34,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 35,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "effdet",
+      "history": 36,
+      "completed_epochs": 59,
+      "selected_epoch": 18
+    },
+    {
+      "detector": "effdet",
+      "history": 37,
+      "completed_epochs": 46,
+      "selected_epoch": 5
+    },
+    {
+      "detector": "effdet",
+      "history": 38,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "effdet",
+      "history": 39,
+      "completed_epochs": 46,
+      "selected_epoch": 5
+    },
+    {
+      "detector": "effdet",
+      "history": 40,
+      "completed_epochs": 43,
+      "selected_epoch": 2
+    },
+    {
+      "detector": "effdet",
+      "history": 41,
+      "completed_epochs": 57,
+      "selected_epoch": 16
+    },
+    {
+      "detector": "effdet",
+      "history": 42,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 43,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "effdet",
+      "history": 44,
+      "completed_epochs": 47,
+      "selected_epoch": 6
+    },
+    {
+      "detector": "effdet",
+      "history": 45,
+      "completed_epochs": 80,
+      "selected_epoch": 39
+    },
+    {
+      "detector": "effdet",
+      "history": 46,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "effdet",
+      "history": 47,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "effdet",
+      "history": 48,
+      "completed_epochs": 47,
+      "selected_epoch": 6
+    },
+    {
+      "detector": "effdet",
+      "history": 49,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 50,
+      "completed_epochs": 54,
+      "selected_epoch": 13
+    },
+    {
+      "detector": "effdet",
+      "history": 51,
+      "completed_epochs": 57,
+      "selected_epoch": 16
+    },
+    {
+      "detector": "effdet",
+      "history": 52,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "effdet",
+      "history": 53,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "effdet",
+      "history": 54,
+      "completed_epochs": 46,
+      "selected_epoch": 5
+    },
+    {
+      "detector": "effdet",
+      "history": 55,
+      "completed_epochs": 58,
+      "selected_epoch": 17
+    },
+    {
+      "detector": "effdet",
+      "history": 56,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "effdet",
+      "history": 57,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "effdet",
+      "history": 58,
+      "completed_epochs": 81,
+      "selected_epoch": 40
+    },
+    {
+      "detector": "effdet",
+      "history": 59,
+      "completed_epochs": 51,
+      "selected_epoch": 10
+    },
+    {
+      "detector": "effdet",
+      "history": 60,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "effdet",
+      "history": 61,
+      "completed_epochs": 74,
+      "selected_epoch": 33
+    },
+    {
+      "detector": "effdet",
+      "history": 62,
+      "completed_epochs": 64,
+      "selected_epoch": 23
+    },
+    {
+      "detector": "effdet",
+      "history": 63,
+      "completed_epochs": 76,
+      "selected_epoch": 35
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 0,
+      "completed_epochs": 40,
+      "selected_epoch": null
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 1,
+      "completed_epochs": 100,
+      "selected_epoch": 99
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 2,
+      "completed_epochs": 53,
+      "selected_epoch": 12
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 3,
+      "completed_epochs": 72,
+      "selected_epoch": 31
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 4,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 5,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 6,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 7,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 8,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 9,
+      "completed_epochs": 43,
+      "selected_epoch": 2
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 10,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 11,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 12,
+      "completed_epochs": 43,
+      "selected_epoch": 2
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 13,
+      "completed_epochs": 47,
+      "selected_epoch": 6
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 14,
+      "completed_epochs": 78,
+      "selected_epoch": 37
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 15,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 16,
+      "completed_epochs": 70,
+      "selected_epoch": 29
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 17,
+      "completed_epochs": 53,
+      "selected_epoch": 12
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 18,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 19,
+      "completed_epochs": 44,
+      "selected_epoch": 3
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 20,
+      "completed_epochs": 56,
+      "selected_epoch": 15
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 21,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 22,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 23,
+      "completed_epochs": 87,
+      "selected_epoch": 46
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 24,
+      "completed_epochs": 66,
+      "selected_epoch": 25
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 25,
+      "completed_epochs": 54,
+      "selected_epoch": 13
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 26,
+      "completed_epochs": 53,
+      "selected_epoch": 12
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 27,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 28,
+      "completed_epochs": 56,
+      "selected_epoch": 15
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 29,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 30,
+      "completed_epochs": 88,
+      "selected_epoch": 47
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 31,
+      "completed_epochs": 58,
+      "selected_epoch": 17
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 32,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 33,
+      "completed_epochs": 53,
+      "selected_epoch": 12
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 34,
+      "completed_epochs": 60,
+      "selected_epoch": 19
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 35,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 36,
+      "completed_epochs": 47,
+      "selected_epoch": 6
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 37,
+      "completed_epochs": 47,
+      "selected_epoch": 6
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 38,
+      "completed_epochs": 50,
+      "selected_epoch": 9
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 39,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 40,
+      "completed_epochs": 46,
+      "selected_epoch": 5
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 41,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 42,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 43,
+      "completed_epochs": 51,
+      "selected_epoch": 10
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 44,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 45,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 46,
+      "completed_epochs": 50,
+      "selected_epoch": 9
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 47,
+      "completed_epochs": 50,
+      "selected_epoch": 9
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 48,
+      "completed_epochs": 49,
+      "selected_epoch": 8
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 49,
+      "completed_epochs": 56,
+      "selected_epoch": 15
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 50,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 51,
+      "completed_epochs": 42,
+      "selected_epoch": 1
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 52,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 53,
+      "completed_epochs": 48,
+      "selected_epoch": 7
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 54,
+      "completed_epochs": 58,
+      "selected_epoch": 17
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 55,
+      "completed_epochs": 41,
+      "selected_epoch": 0
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 56,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 57,
+      "completed_epochs": 47,
+      "selected_epoch": 6
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 58,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 59,
+      "completed_epochs": 56,
+      "selected_epoch": 15
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 60,
+      "completed_epochs": 45,
+      "selected_epoch": 4
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 61,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 62,
+      "completed_epochs": 52,
+      "selected_epoch": 11
+    },
+    {
+      "detector": "fasterrcnn",
+      "history": 63,
+      "completed_epochs": 43,
+      "selected_epoch": 2
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/wheat_base_control.py": "23f6fad530b8c4ce3dfbe6dc53d2ab40396860a6159648dadaed1855f4a6d6b7",
+    "scripts/validate_wheat_base_control.py": "f5b4cdb1f1cd21ed2d292a4a5ed28613e40b83bf2e24bfcbb822ba6ab88448f8"
+  },
+  "limits": [
+    "Synthetic validation histories only; actual source metrics and training populations require separate qualification.",
+    "Nonfinite metrics are rejected rather than allowing a bad execution to qualify."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "provider_states": [
+    {
+      "status": "draft",
+      "is_publishable": false,
+      "trust_tier": 3,
+      "count": 25
+    }
+  ],
+  "served_cdg_count": 24,
+  "draft_intake_applied": true,
+  "promotion_applied": false,
+  "idempotent_dry_run_created_rows": 0
+}

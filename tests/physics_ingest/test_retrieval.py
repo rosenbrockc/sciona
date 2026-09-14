@@ -1213,3 +1213,23 @@ def test_adapter_source_payload_future_data_artifact_satisfies_dependency_requir
     assert "missing_required_data_artifact_dependencies" not in executable[
         "compiler_contract"
     ]["blockers"]
+
+
+def test_community_publication_does_not_claim_human_review():
+    from sciona.physics_ingest.retrieval import SymbolicArtifactCandidate
+    candidate = SymbolicArtifactCandidate.from_catalog_row({
+        'fqdn': 'synthetic.community_relation',
+        'review_status': 'automated_pass',
+        'publish_status': 'approved',
+        'is_publishable': True,
+    })
+    assert candidate.published
+    assert candidate.reviewed
+    assert not candidate.human_reviewed
+    assert candidate.trust_status == 'automated_pass'
+    certified_review = SymbolicArtifactCandidate.from_catalog_row({
+        'fqdn': 'synthetic.reviewed_relation',
+        'review_status': 'human_reviewed',
+        'publish_status': 'approved',
+    })
+    assert certified_review.human_reviewed

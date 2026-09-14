@@ -1,0 +1,15 @@
+{
+  "format": "connectomics-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "e345459079d47c7dc6431c8f6400faba25c7c929abaabe85d64eae4e82774613",
+  "validator_sha256": "fe0f5e7621bf41e85518a5205c60470d6780668d073adc0901cf0ead297b819c",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

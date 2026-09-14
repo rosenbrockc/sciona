@@ -1,0 +1,25 @@
+{
+  "format": "tabular_ensemble-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "calibration_leakage",
+    "missing_oof_validation",
+    "query_population_leakage",
+    "missing_forest",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_tabular_ensemble_execution.py": "5256ccb1c50d8a229774cb5adff4adc78f359b39c090d392439e604538d1bff1",
+    "scripts/validate_tabular_ensemble_review_gates.py": "74221cd7d72a8c16ae3345cb112347e4a9f288ea9775e29dc63276f3380b1a62"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

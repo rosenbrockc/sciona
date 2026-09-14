@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 38,
+  "serialized_boundary_tests": 4,
+  "source_version_id": "49c645b7-3659-5cfa-a386-78f7a51f7358",
+  "source_content_hash": "185e7d6e033ad27cfcf8c655d4da84ae680d6c9ec33795095b816e28e052055b",
+  "stage_mapping": {
+    "physical_state_assembly": "Explicit SI units, uniform periodic grid, nondimensional diffusion parameters and disjoint populations",
+    "spectral_or_graph_features": "Real FFT with learned retained complex modes",
+    "operator_surrogate": "Spectral/local Fourier blocks trained by CPU float64 full-batch Adam and restored best validation checkpoint",
+    "constraint_projection": "Euclidean nonnegative initial-mass simplex projection",
+    "metric_postprocessing": "Conservative convex nearest-neighbor periodic smoothing"
+  },
+  "checks": {
+    "explicit_dft_comparison": true,
+    "spectral_gradients": true,
+    "projection_kkt": true,
+    "validation_training_isolation": true,
+    "query_training_isolation": true,
+    "best_checkpoint_restore": true,
+    "mixed_mode_query_beats_mean_baseline": true,
+    "nonnegative_mass_conservation": true,
+    "strict_json_boundary": true,
+    "mutated_intermediate_rejected_before_fit": true
+  },
+  "sha256": {
+    "sciona/physical_operator_contract.py": "55d12e0b7f143896f03efb104df67e5978efa4cb2f0d791f65611ac6dd6b7f97",
+    "sciona/physical_operator_graph.py": "a0de53536c5156cfd4f274ab142efcf960e215b36e5e5b911da910c4717b5212",
+    "sciona/physical_operator_network.py": "1ec25a6498b57a468a377e878c39f5759fa05544a151e18f5b983105fbf8156b",
+    "sciona/physical_operator_projection.py": "31b5630cc9877ce93577d251d949b7326d666cd7995dda39c56d1fa855cdea0d",
+    "sciona/physical_operator_state.py": "281c5e3358c3357e0c32c1af37678271cb13be326a9a2e6d70f98625bf35160a",
+    "sciona/physical_operator_training.py": "120ef52d9cdc1013f3a15585cd3e8e5759aa451de1d7609f692dcc73246f2842",
+    "tests/test_physical_operator_contract.py": "4a2486bf4280247525aaa4095a5f2e0e8a265aa9cfeae881bd9f08824858bc33",
+    "tests/test_physical_operator_network.py": "de469a21ed8652a16dbb34f69f981a951ec0769185f3a85d4382000599739ca2",
+    "tests/test_physical_operator_projection.py": "e329b6ce9a4469a8ecc493a92bc23af7dae7c70890432c104998c272d40971b8",
+    "tests/test_physical_operator_training.py": "49129898f2d8f215a6860dbe755a7a5b57bbec76889390f2241604c9f704d553",
+    "scripts/physical_operator_synthetic.py": "7ff1c06ea05333a67256db2ce44a9a6be86d26f005fafa73501c6a6fbc2cb45a"
+  },
+  "scope": "Single-mode and two-mode analytic synthetic diffusion only. No arbitrary PDE, deployment or historical benchmark qualification. Tier3 review pending."
+}

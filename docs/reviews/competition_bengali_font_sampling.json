@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "images_per_backend": 64,
+  "backends": [
+    "legacy",
+    "sfc64"
+  ],
+  "exact_derived_shear_samples": true,
+  "exact_parent_rng_following_draws": true,
+  "implementation_sha256": "72c76335386936f5ec99b3ddd18c385b2d3566cff49a9b787d4cae5bc81b3ad8",
+  "limits": [
+    "Explicit parent seeds; notebook worker initialization not reproduced.",
+    "Candidate imgaug derivation and parameter functions execute on installed NumPy.",
+    "Full historical wrapper object lifecycle not executed in this probe."
+  ]
+}

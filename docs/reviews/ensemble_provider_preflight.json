@@ -1,0 +1,18 @@
+{
+  "read_only": true,
+  "graph_nodes": 155,
+  "unique_graph_providers": 33,
+  "closure_providers": 59,
+  "dependencies": 26,
+  "exact_served_providers": 52,
+  "new_providers": [
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_alignment.aligned_eleven_model_blend",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.collect_population_scores",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ensemble_population_indices",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ordered_prediction_ids",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.select_ensemble_population",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.ensemble_family_inputs",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.pack_eleven_predictions"
+  ],
+  "version_conflicts": []
+}

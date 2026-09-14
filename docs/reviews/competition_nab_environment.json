@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "direct_runtime_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "threadpoolctl": "3.6.0"
+  },
+  "python": "3.13",
+  "platform": "macOS arm64",
+  "requirements_sha256": "26b8755d8ce6e2caf9e3fae78ab7652fd50faf14a0d6b4e1b7323bec31ff3678",
+  "scope": "Versions used by the tested provisioned worker; no clean-install or cross-platform qualification."
+}

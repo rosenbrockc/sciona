@@ -1,0 +1,48 @@
+{
+  "approved": false,
+  "source_commit": "f1a6e63969167159ef72c4ba32897e5aef7c3888",
+  "source_files_verified": 12,
+  "source_entry": "Algorithm.findTracks",
+  "required_computations": [
+    "chooseLikelyFirstHits",
+    "chooseLikelyNextHits",
+    "chooseLikelySecondHits",
+    "dropRedundantTracks",
+    "evaluateTracks",
+    "filterInvalidTrackCandidates",
+    "findPairs",
+    "fitTracks",
+    "nonPhysicalPostprocessOddHits",
+    "setupRun"
+  ],
+  "current_python_syntax_failures": [
+    {
+      "source_file": "run-hyperopt.py",
+      "line": 129
+    }
+  ],
+  "source_geometry_classes": {
+    "detector geometry": [
+      "GeometrySpec",
+      "CylindersSpec",
+      "CapsSpec",
+      "DetectorSpec"
+    ],
+    "layer intersections": [
+      "CylinderIntersector",
+      "CapIntersector",
+      "Intersector"
+    ]
+  },
+  "missing_template_stage": "Detector geometry construction and reachability preprocessing.",
+  "integration_requirements": [
+    "Original detector geometry construction has fixed topology assumptions; exercise compatible synthetic geometry before claiming generic support.",
+    "Layer selection includes finite cylinder lengths, cap radial gaps, premove distance, and optional corrections.",
+    "Candidate seeds, repeated extension, ranking, pruning, and commitment must carry consistent state across rounds.",
+    "Rebuilt neighborhoods must exclude committed observations in subsequent rounds.",
+    "The new fixed-cylinder helper has a required validity mask and an explicit reverse-tangent correction; all consumers need corresponding handling.",
+    "Optional calibrated layer functions and cell corrections need explicit configuration and evidence, not silent omission."
+  ],
+  "scope": "Static source-flow audit only. No full execution, detector data, event data, scores or publication approval.",
+  "validator_sha256": "a72a19a514531ad015ff156ce21e48dcd92a949b0a4eebd9eefbfbaffb11ece6"
+}

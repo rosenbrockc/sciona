@@ -1,0 +1,15 @@
+{
+  "approved": false,
+  "source_commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "checks": {
+    "exact_panel_source_cases": 40
+  },
+  "implementation_sha256": "10459120ae7700463b3a3a5f6857a131f96ce715dc15e89407689cb6ac1fec89",
+  "findings": [
+    "Final v43 and v47 submission notebooks run vit4 then unet1024 and threshold at 0.5. unet5 is present in the repository but not invoked by these final notebook ensembles.",
+    "Temporal frames occupy quadrants 3,0 / 1,2; frame-level rotation and reflection precede assembly. Encoder features retain top-left quadrants for decoding.",
+    "Submission model averages eight spatial probabilities, clips and converts to logits, then applies learned asymmetric convolution. vit4 accepts a none configuration but its forward still performs all eight transforms.",
+    "Final training configs use MaxViT tiny features and branch-specific decoder channels, weight decay and schedule. Full encoder/decoder, training losses, fold/ensemble semantics remain to validate."
+  ],
+  "next_action": "Implement and validate the actual two-branch final lifecycle; inspect prediction weighting and training loops before graph publication."
+}

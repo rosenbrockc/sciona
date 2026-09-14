@@ -1,0 +1,13 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "test_results": {
+    "tests": 30,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "provider_sha256": "f93c7c59bb5a9e30c046aaeb4f4c32962e09c9927ab6b09b488e556026543ca0",
+  "test_sha256": "d0bc12517d7df3f02da2414acf62a734978bb59755d61a96b2786b5ff453e780",
+  "scope": "Bounded next-cylinder geometry with validity mask; no full track-reconstruction or pinned competition-source parity claim."
+}

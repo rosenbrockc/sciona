@@ -1,0 +1,18 @@
+{
+  "test_results": {
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_hermitian_expectation.py": "d1f1753db0320277ab68de37230d8500eb6b0d135234017be39f4b60f2e163de",
+    "tests/physics_ingest/test_hermitian_expectation_proof.py": "9063dbf02e4f7dea7cbe0329472a6d34d683ce778ab66f590ae9d9283aa6a678"
+  },
+  "provider_sha256": "f4a66d6b9a61404fe624a7b223373d70eb5353a90a89e18848a8170df2ebade2",
+  "synthetic_only": true,
+  "validated_suites": {
+    "provider": 31,
+    "proof": 7
+  }
+}

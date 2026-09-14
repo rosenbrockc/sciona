@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "synthetic_only": true,
+    "source_columns_compared": 22,
+    "exact_float16": true
+  },
+  "source_commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "source_software_sha256": "a3d669ed6aaf55b7d15f57cee1922dfa9e9fc3308a0bda9599114b44c4ce96b5",
+  "scope": "Pinned grouped moment loop only; fixed cutoff supplied independently. Full preprocessing remains incomplete.",
+  "sha256": {
+    "sciona/m5_encoding.py": "83cdef7393eb4d87f1df0ca2717462aa8c94196d0cc644bbe493bbee62eac18a",
+    "tests/test_m5_encoding.py": "901811c57f7b67d6cb749c0ad87aebf569ebebe5888d21cef1785e3e6325610d",
+    "scripts/validate_m5_encoding_comparison.py": "1dac175c7a0866c9db1593f205fd0b393629bd6fd66623951f8c0e9691e8b3a5",
+    "docs/reviews/competition_m5_source_pins.json": "a93a67eae696d54dfaf735e598935cab9ba0f44e185cc4d5c700f55f086c171d"
+  }
+}

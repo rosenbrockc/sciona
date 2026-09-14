@@ -1,0 +1,26 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "synthetic_molecules": 2,
+  "chemical_bonds": 14,
+  "triplets": 24,
+  "quadruplets": 18,
+  "requested_predictions": 12,
+  "reusable_runtime_matches_reference": true,
+  "fitted_state_replay_and_inference": true,
+  "runtime_sha256": "f2749374e6574832406ae45d6aceb1689b84ff2b0f52509be8d0616ac78cb5dd",
+  "finite_packed_tensors": true,
+  "translation_checks": true,
+  "compatibility_changes": {
+    "    import pybel": "    from openbabel import pybel",
+    "mol.atoms[i].heavyvalence": "mol.atoms[i].OBAtom.GetHvyDegree()",
+    "mol.atoms[i].heterovalence": "mol.atoms[i].OBAtom.GetHeteroDegree()",
+    "mol.atoms[i].valence": "mol.atoms[i].OBAtom.GetExplicitDegree()",
+    "bond_dataframe.append(new_data,verify_integrity=True,sort=False)": "pd.concat([bond_dataframe,new_data],verify_integrity=True,sort=False)",
+    "bonds_train.groupby(\"labeled_type\").mean()[\"scalar_coupling_constant\"]": "bonds_train.groupby(\"labeled_type\")[\"scalar_coupling_constant\"].mean()",
+    "bonds_train.groupby(\"labeled_type\").std()[\"scalar_coupling_constant\"]": "bonds_train.groupby(\"labeled_type\")[\"scalar_coupling_constant\"].std()"
+  },
+  "triplet_layout_corrected": true,
+  "synthetic_vocabulary_reserves_eight_coupling_types": true,
+  "scope": "Raw synthetic chemistry through motifs, fresh vocabulary, scaling and packing. No trained-vocabulary/pretrained-weight parity claim.",
+  "validator_sha256": "e32394f7fb3fceb41b6c0f00130609965e16ef73bf9fb7b85520d8471dafc579"
+}

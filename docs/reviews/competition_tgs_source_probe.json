@@ -1,0 +1,10 @@
+{
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "torch_version": "2.11.0",
+  "functional_dropout_active_under_parent_eval": true,
+  "state_dict_snapshot_aliases_live_parameters": true,
+  "sampler_in_shuffle_is_truthy_current_runtime": true,
+  "scope": "Current torch API behavior; source integration and historical behavior unverified.",
+  "probe_sha256": "5238c0c1c41fa1ba1f4ffa91c609f30bebcc90130a513a175fa37d359c9ac80a"
+}

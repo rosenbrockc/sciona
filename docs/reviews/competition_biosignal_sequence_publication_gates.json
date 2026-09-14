@@ -1,0 +1,15 @@
+{
+  "format": "biosignal_sequence-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "c92de445ee2cf25b9cc41545e54eaabdd7ae0c6efb8565901d4e939d1d1e3f79",
+  "validator_sha256": "3db8245ba949d9e8161cdd39128f20d82dcd44f8f75b94a7bd27185431960a38",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

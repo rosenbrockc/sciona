@@ -1,0 +1,30 @@
+{
+  "approved": false,
+  "checks": [
+    {
+      "source": "src/unet1024/model.py",
+      "implementation": "sciona/contrails_single_model.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/vit4/model.py",
+      "implementation": "sciona/contrails_temporal_model.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/submit/unet1024/model.py",
+      "implementation": "sciona/contrails_single_inference.py",
+      "normalized_ast_equal": true
+    },
+    {
+      "source": "src/submit/vit4/model.py",
+      "implementation": "sciona/contrails_temporal_inference.py",
+      "normalized_ast_equal": true
+    }
+  ],
+  "allowed_changes": [
+    "Package-local validated decoder import",
+    "Default pretrained=False; explicit pretrained flag preserves source constructor behavior"
+  ],
+  "limitations": "AST equality supports source-code preservation, not historical dependency binary or trained-model accuracy equivalence."
+}

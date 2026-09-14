@@ -1,0 +1,40 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "families": {
+    "inception_resnet_v2": {
+      "pretrained_backbone_tensors_matched": 1100,
+      "finite_training_gradient_tensors": 695,
+      "evidence_sha256": {
+        "docs/reviews/competition_aptos_pretrained_inception_resnet_v2_validation.json": "6cb2b91c2fddb8c551ec51e51993c6f2c456add1abd91e6084f459b0cbcf88b7",
+        "docs/reviews/competition_aptos_training_inception_resnet_v2_validation.json": "c7a9aec8b1aff8188d12c02e66172481b54f10995c60b904f7eaac568db07471"
+      }
+    },
+    "inception_v4": {
+      "pretrained_backbone_tensors_matched": 745,
+      "finite_training_gradient_tensors": 450,
+      "evidence_sha256": {
+        "docs/reviews/competition_aptos_pretrained_inception_v4_validation.json": "3ef7ad2f974ed35795120a5264ae514bd557219aea2573f050cf26cf76581725",
+        "docs/reviews/competition_aptos_training_inception_v4_validation.json": "156fb466ec11bbd8ccdcb59e66560083b11753bc2d1325bc1ee60b844fe0c505"
+      }
+    },
+    "seresnext50": {
+      "pretrained_backbone_tensors_matched": 329,
+      "finite_training_gradient_tensors": 226,
+      "evidence_sha256": {
+        "docs/reviews/competition_aptos_pretrained_seresnext50_validation.json": "5552aae7feee7ab3189514e3aa179e77e4fa2c89cddc4a5c2f08586b6f7cc8ee",
+        "docs/reviews/competition_aptos_training_seresnext50_validation.json": "4f50e63486423f0fef17ed830f747991bf695540205bba89a982220ca8f97138"
+      }
+    },
+    "seresnext101": {
+      "pretrained_backbone_tensors_matched": 652,
+      "finite_training_gradient_tensors": 447,
+      "evidence_sha256": {
+        "docs/reviews/competition_aptos_pretrained_seresnext101_validation.json": "2f8ff31cd87c7aada5448153a026ba51a5144536c0bc4e44c650f0e8bc235a68",
+        "docs/reviews/competition_aptos_training_seresnext101_validation.json": "690a1d9576bbad879b40665bfa308a431cd0b9205d2f3c41c6c9591214dddcce"
+      }
+    }
+  },
+  "scope": "All four pinned pretrained families passed full-resolution forward and one full-model training update on synthetic inputs. Complete eight-model, two-stage lifecycle and publication qualification remain open."
+}

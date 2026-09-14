@@ -1,0 +1,174 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "reference": "https://raw.githubusercontent.com/keras-team/keras/2.2.0/keras/callbacks.py",
+  "reference_sha256": "a58b194dd3a03bc68f4ec6ad5832c590e03e4b5e066b254fc881127caf07bb52",
+  "cases": [
+    [
+      {
+        "epoch": 0,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 1,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 2,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": true
+      },
+      {
+        "epoch": 3,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": false
+      },
+      {
+        "epoch": 4,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.0025,
+        "reduced": true
+      },
+      {
+        "epoch": 5,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.0025,
+        "reduced": false
+      },
+      {
+        "epoch": 6,
+        "save_best": false,
+        "stop": true,
+        "learning_rate": 0.00125,
+        "reduced": true
+      }
+    ],
+    [
+      {
+        "epoch": 0,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 1,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 2,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": true
+      },
+      {
+        "epoch": 3,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": false
+      },
+      {
+        "epoch": 4,
+        "save_best": false,
+        "stop": true,
+        "learning_rate": 0.0025,
+        "reduced": true
+      }
+    ],
+    [
+      {
+        "epoch": 0,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 1,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 2,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 3,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.01,
+        "reduced": false
+      },
+      {
+        "epoch": 4,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": true
+      },
+      {
+        "epoch": 5,
+        "save_best": true,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": false
+      },
+      {
+        "epoch": 6,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.005,
+        "reduced": false
+      },
+      {
+        "epoch": 7,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.0025,
+        "reduced": true
+      },
+      {
+        "epoch": 8,
+        "save_best": false,
+        "stop": false,
+        "learning_rate": 0.0025,
+        "reduced": false
+      },
+      {
+        "epoch": 9,
+        "save_best": false,
+        "stop": true,
+        "learning_rate": 0.00125,
+        "reduced": true
+      }
+    ]
+  ],
+  "scope": "Reference callback decision code executes with scalar backend storage; no full historical Keras training runtime claim.",
+  "sha256": {
+    "sciona/tgs_callbacks.py": "9a25799d8e7e37b0042031103bccd494ace4f9fe383e041e2812fca7f69ac480",
+    "scripts/validate_tgs_callback_reference.py": "3b0d655162c32a6810b7abb2b78d4e5c489f66ce2fcae67711fbde30996184b0"
+  }
+}

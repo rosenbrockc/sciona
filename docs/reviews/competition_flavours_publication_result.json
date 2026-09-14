@@ -1,0 +1,30 @@
+{
+  "applied": true,
+  "target_tier": 3,
+  "rollback_validated": true,
+  "rollback_transient_rows_created": 39,
+  "post_rollback_target_version_count": 0,
+  "served_cdgs_after_rollback": 105,
+  "publisher_sha256": "514e496430c380c9b416ee9bda8100225312e51dffeebe033eab2a1001009c00",
+  "rows_created": 39,
+  "provider_versions": 1,
+  "execution_cdgs": 1,
+  "graph_sha256": "ff451daaf8caf75339ec49105469fa7fe2a91ccaedd416a27c8de532657c235b",
+  "version_id": "238ca008-f9ec-5193-8a8b-74742ce42bc1",
+  "served_cdgs": 106,
+  "competition_intakes": 142,
+  "covered_intakes": 39,
+  "remaining_intakes": 103,
+  "coverage_scope": "Direct served source provenance; linked realizations may have documented scope limits.",
+  "served_execution_verification": "passed",
+  "reapply_rows_created": 0,
+  "catalog_scope": "local Supabase",
+  "served_verification_report_sha256": "240469179d6c30566b6bfc8d14a3edd7b02f81dc3c1bd204133373b1467cb8ea",
+  "served_verification_summary": {
+    "model_fits": 115,
+    "tree_boosting_rounds": 111458,
+    "neural_optimizer_updates": 600000,
+    "synthetic_only": true,
+    "full_training_and_inference_budgets": true
+  }
+}

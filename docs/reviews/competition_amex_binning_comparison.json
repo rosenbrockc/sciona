@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_software_sha256": "aca38743b8264103736089292abca7962176bc61d848c7c1af6bb2f2b8084377",
+  "histogram_cases": 300,
+  "normalized_columns": 3,
+  "sha256": {
+    "sciona/amex_binning.py": "4f2fbf1b505aa45daa98fe2e061b0454e9bff62e34b40be7f33921ac3f95f918",
+    "tests/test_amex_binning.py": "14f0807faf7a4bde4ed897aa5b3232bb570d33d59efe6fcffab539ed7960d99c",
+    "scripts/validate_amex_binning_comparison.py": "6175f550f40e985494b4c197d48b648cda87d543ecb223d7910d9c0ac10f6f5a"
+  },
+  "limits": [
+    "Independent numerical reconstruction with source compressed split omission retained. All-missing histograms explicitly reject source undefined input.",
+    "Synthetic feature transforms only; model execution and publication pending."
+  ]
+}

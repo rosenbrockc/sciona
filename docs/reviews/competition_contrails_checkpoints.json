@@ -1,0 +1,11 @@
+{
+  "approved": false,
+  "checks": {
+    "full_model_restore": true,
+    "feature_encoder_restore": true,
+    "snapshot_independence": true,
+    "invalid_checkpoints_rejected_before_copy": 4
+  },
+  "implementation_sha256": "eade81905f7485bbacf51cec150959a9632107fe8aefbd4693a3b3a071e4b14c",
+  "scope": "Actual single branch model initialized randomly; strict checkpoint boundaries. No external pretrained weights or performance claim."
+}

@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "neural_models_fitted": 10,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Dedicated localhost H2O server with one worker thread and bounded heap",
+    "Source sqrt(X+3/8) representation",
+    "Ten distinct seeded native deep-learning fits",
+    "Finite normalized nine-class scores and ensemble synthetic learning",
+    "Owned server process verified terminated"
+  ],
+  "sha256": {
+    "scripts/validate_otto_h2o_runtime.py": "baa034870062ac67ecd3da4df9c03adba6f8c0284a41104cc2e802bfb98b6bc7"
+  },
+  "environment": {
+    "h2o": "3.46.0.8",
+    "java": "OpenJDK 21.0.10"
+  },
+  "sources": [
+    "https://docs.h2o.ai/h2o/latest-stable/h2o-docs/starting-h2o.html"
+  ],
+  "limitations": [
+    "Runtime synthetic validation only; reusable fit interface and five-fold integration pending.",
+    "Independent modern H2O runtime, hidden width, epochs and controls; historical version/settings unresolved.",
+    "Native dependency closure, licensing and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

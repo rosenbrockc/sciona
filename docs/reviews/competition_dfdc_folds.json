@@ -1,0 +1,24 @@
+{
+  "format": "dfdc-fold-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_part_assignments": 400,
+    "independent_default_fold_sizes": true,
+    "original_altered_fold_agreement": true,
+    "invalid_grouping_rejections": 5,
+    "source_inventory_order_and_caps": true,
+    "source_cli_seed_unused_confirmed": true
+  },
+  "adaptations": [
+    "Explicit positional part/original references replace filesystem metadata discovery.",
+    "Restrict fold count1..50, validate direct original references, preserve caller input order.",
+    "No unseeded source global row shuffle here; outer lifecycle must declare its record-order/RNG policy."
+  ],
+  "limits": "Synthetic partition/crop positions only. This establishes source part-based folds and pairing checks, not real provenance or full lifecycle/promotion.",
+  "sha256": {
+    "sciona/dfdc_folds.py": "19a906285411ca326ec162fe47c17368d7804d9bcda271be209d594758d551fd",
+    "scripts/validate_dfdc_folds.py": "8de2b11aad1e03b7a544dd44fad2c817be8c5ce2fe9529c665f888a6db248512",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

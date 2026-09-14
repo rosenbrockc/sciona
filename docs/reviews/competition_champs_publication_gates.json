@@ -1,0 +1,15 @@
+{
+  "format": "champs-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "f1445e4a9de45ae3e24564eb6de91efd2dc2863798a16c9056cd898ce5c1dcc9",
+  "validator_sha256": "c4c90b5c65227948f406760eeeb6306418bb6d5cb889933c0bdd9863ee864521",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

@@ -1,0 +1,29 @@
+{
+  "format": "dfdc-face-preparation-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_frame_cases": 16,
+    "source_detector_image_comparisons": 16,
+    "source_constructor_configuration": 1,
+    "independent_tests": 12
+  },
+  "retained": [
+    "Half-size PIL resize without overriding source interpolation default.",
+    "Double coordinates then int truncation; one-third margins; original NumPy crop slicing.",
+    "No landmark alignment, additional score filter, or box reordering.",
+    "None boxes, empty results, degenerate crops and zip truncation characterized."
+  ],
+  "adaptations": [
+    "Strict uint8 RGB/spatial and finite box contract.",
+    "Omit source unused bookkeeping dimensions overwritten by last face box.",
+    "Caller supplies detector explicitly; no construction, weights or downloads."
+  ],
+  "limits": "Synthetic arrays and detector outputs only. No MTCNN network or full classifier execution; not a promotion gate.",
+  "sha256": {
+    "sciona/dfdc_faces.py": "8852942a6a366dd0b8adb5af038cd6f42cc414c013fad24f265f21d954041a68",
+    "tests/test_dfdc_faces.py": "c6348779ac846afa72766d6adf3586a7fbc7a45b0734c3ab79175620eacda1a3",
+    "scripts/validate_dfdc_faces.py": "bef6b4afc29d05baed5fc785bd17214c23e572520df0ea4e65a3bc8ac87dab01",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

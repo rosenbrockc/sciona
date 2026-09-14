@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "checks": {
+    "trained_folds": 6,
+    "source_model_parity": 6,
+    "out_of_fold_predictions": 6,
+    "prediction_ensemble": 2,
+    "native_api_oracles": 2,
+    "early_stopped": 6,
+    "default_parameters": 1
+  },
+  "lightgbm_version": "4.7.0",
+  "hashes": {
+    "sciona/plasticc_training.py": "3d0937fbe12431f5de58dd1b7737da6651901115f4f78aca7b8a3bb5dfa8727c",
+    "scripts/validate_plasticc_training.py": "b8df83f59c6aae88615418fca282fb66a3fc2b780fe09da8de2a05d27ea0c327",
+    "sciona/plasticc_weighting.py": "cb2a5293d4d02399f1a627c6139555182178afa88e3ac9f4bdc9362ca2473013",
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  },
+  "scope": "Actual synthetic grouped fold training; original source and native API comparison",
+  "adaptations": [
+    "Legacy fit verbose/early_stopping arguments replaced with callbacks"
+  ],
+  "limitations": [
+    "Synthetic capacity overrides disclosed; source defaults separately checked",
+    "No historical LightGBM binary parity or competition accuracy claim",
+    "Full graph remains incomplete"
+  ]
+}

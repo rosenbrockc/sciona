@@ -1,0 +1,15 @@
+{
+  "format": "cornell-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "e7b2c9bc3f9476addf22c17a333712de200d2984ba6bbcb6d6664fe92fe31d9f",
+  "validator_sha256": "8369304924de35d435e9389cd20d97037b993c377d37c5d3f5b28d1e039ef09d",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

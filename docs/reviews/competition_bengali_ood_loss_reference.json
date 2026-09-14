@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "compared_batches": 8,
+  "examples_per_batch": 3,
+  "exact_losses_and_gradients": true,
+  "source_body_sha256": "762fa0cf4ef4de04840a66ea83b023a29ed57ca6745e489e49f02986a9edcb07",
+  "source_expression_sha256": "cfdea50c02727e79eda75db22baba6d39458b0effd57494e8bd309fcb50b47aa",
+  "implementation_sha256": "ca3963b6f66ea4e5aa7a41432a9b22205bf3c727c799e0a1981431eaf0808814",
+  "limits": [
+    "Loss arithmetic only; OOD backbone, pretraining, seen-class mapping and full training remain pending."
+  ]
+}

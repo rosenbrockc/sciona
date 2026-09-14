@@ -1,0 +1,48 @@
+{
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "source_version_id": "dd8cc8a7-162b-52f1-a74d-256ce661f7ba",
+  "source_hash": "6f8962c26d57adbdead9c31a1ed95d7bc31d66bf4e042f5da564d0c8c6d23dee",
+  "evidence_sha256": {
+    "competition_contrails_preprocessing.json": "0893d8dd60eb6d234248f9a892a206e06e2b4cd8e62476de6b62ea837a995036",
+    "competition_contrails_temporal.json": "c030a6adc03d2550c51ae9c369876e98bcb5360bda6d7ee45320f64c40c84a5a",
+    "competition_contrails_losses.json": "4569a06bd8364188dba99c1c60e52ae1b86b77413fc23af0baf5576236dbbe54",
+    "competition_contrails_decoders.json": "9fba56a678d5fa2490b560c53b5780795aa4168f7a0bd9e5da23f490d7bf0dd8",
+    "competition_contrails_scheduler.json": "f0e379707ab139bbd8af741e8cd5d2d4f0758acdc493b5c3524f7f4440f52877",
+    "competition_contrails_population.json": "9d83cb0d80a220e1f748d0e08d7e440221115b67cf0662f2f38ef5b9386e9963",
+    "competition_contrails_prediction.json": "a9218683fea308b2bfb34e33e8d7ad54c865b7028655eda8c950f37c2785ffdf",
+    "competition_contrails_evaluation.json": "5ce963a571673a73a793dc97298632c27d5f824cd59cf60632c0cc576408a503",
+    "competition_contrails_checkpoints.json": "7ef4e6e200e91d5c45c8fcaab7b6f5546a8706b93731ea857aac8bdb5655fd26",
+    "competition_contrails_fold_contract.json": "3de6332307209e394ae0c987f5eaf6003c751fcfc97922d0aefaa7e6240643a3",
+    "competition_contrails_epoch.json": "51c53acef748aacb3755bb774efb60dc9b60f789e4e869c03fd08a3b0c6b198b",
+    "competition_contrails_preparation.json": "05f693a8568b6284e5a48d2a2425137ed37043ed41e9aaf73d7c1bcd54543dc4",
+    "competition_contrails_model_execution.json": "3dd8289afe9d9e282e41103ad6877affec77067d7b4122d1246174ef9a7f8f57",
+    "competition_contrails_model_source_parity.json": "c4fa23843a55d9c9a93deb20ad044224640847e2a75dba0093f1e62c616d5d93",
+    "competition_contrails_runtime_contract.json": "8f92dab2c194f43c1c1feb7603cd3d5b81d68b69db6891460af4360173972185",
+    "competition_contrails_source_pins.json": "6577cf5e285f37439a58c27632b3a94b56152c492742381570d5a7045c839412",
+    "competition_contrails_configuration_pins.json": "221e98b9a717d450b1b544909a36aadde6d07f30827aaa8cf961ced8bdfa899c",
+    "competition_contrails_notebook_pins.json": "cabea1bbeb7f579dd0c9d8d5281180b84c41c0aa00889a7dbffd092527e259fc",
+    "competition_contrails_scope_review.json": "802e6850e8324cfd64877ac419a3da12b95ee01ee848028a65167adefccc7ef5",
+    "competition_contrails_graph.json": "9db895d817dfbe9fea21e1e4e4810cb913b87e6fbf29aee5a5f150e29a8f71ee"
+  },
+  "auxiliary_sha256": {
+    "docs/licenses/Contrails-MIT.txt": "80f0d321ccf7c0947dd460be98aaaec3f10a1b06f0fc27825ea8fd315897d864",
+    "docs/licenses/SegmentationModelsPytorch-MIT.txt": "a9acb108113b9d7582a69a7cbeadef1ff6042bb93cd4890eae2c970727be538c",
+    "sciona/contrails_defaults.json": "0bac132713c178c616fc27cf3aadc5834306bae7d025753ed842fe1aeb398024"
+  },
+  "limitations": [
+    "Corrected full two-branch MaxViT/U-Net implementation; original generic temporal-TTA description is not source-faithful.",
+    "Shifted labels, augmentation masking, skipped decoder block, validation-break timing and terminal-checkpoint selection are preserved.",
+    "Unnormalized fold/branch probability sum and strict0.5 final threshold; threshold sweep is diagnostic only.",
+    "Source-sized arrays replace raw file codecs. Caller supplies the selected times/channels and explicit checkpoint provenance.",
+    "CPU/current dependencies; no historical binary, seeded-training or competition accuracy equivalence claim.",
+    "Explicit random initialization is execution evidence only. Encoder/full-model initial states must be supplied for pretrained use.",
+    "Actual serialized full-model v43 evidence uses all4folds,one epoch,batch1/workers0; default35/40epoch schedules not benchmarked.",
+    "v47 all10fold orchestration tested with stand-ins; the same full computational branches have real execution evidence.",
+    "Tier3 automated Community approval; Tier2 community usage and Tier1 human certification not established.",
+    "No observations, model weights or real templated dataset metadata bundled."
+  ],
+  "finding": "Full actual serialized v43 computation, component source comparisons and independent oracles support Tier3 automated selection under declared runtime/pretraining constraints. Original intake remains draft; no Tier1/Tier2 or competition accuracy claim."
+}

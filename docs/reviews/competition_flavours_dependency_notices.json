@@ -1,0 +1,45 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "dependency_packages": 94,
+  "bundled_notices": 147,
+  "supplemental_packages": [
+    {
+      "package": "langchain-core",
+      "version": "1.2.19",
+      "repository": "langchain-ai/langchain",
+      "commit": "41cca203e633d8506b563f263b005cb52909300d",
+      "license_url": "https://raw.githubusercontent.com/langchain-ai/langchain/41cca203e633d8506b563f263b005cb52909300d/LICENSE",
+      "notice_path": "docs/licenses/APTOS-langchain-core-MIT.txt",
+      "notice_sha256": "4ec67e4ca6e6721dba849b2ca82261597c86a61ee214bbf21416006b7b2d0478",
+      "version_evidence_sha256": {
+        "https://raw.githubusercontent.com/langchain-ai/langchain/41cca203e633d8506b563f263b005cb52909300d/libs/core/pyproject.toml": "8cbfe6506a358c96ad0fcd73840c5fd87f5d4b3ab8da8692d368d721558b0fd6"
+      }
+    },
+    {
+      "package": "langsmith",
+      "version": "0.7.17",
+      "repository": "langchain-ai/langsmith-sdk",
+      "commit": "8c2ebb102eb4b9a9b03030f4f2fc59189bc8d38c",
+      "license_url": "https://raw.githubusercontent.com/langchain-ai/langsmith-sdk/8c2ebb102eb4b9a9b03030f4f2fc59189bc8d38c/LICENSE",
+      "notice_path": "docs/licenses/APTOS-langsmith-MIT.txt",
+      "notice_sha256": "34e0b9842c7a31d34e53bc7eb224e81e07a34996106e029bbc72dea2d449f496",
+      "version_evidence_sha256": {
+        "https://raw.githubusercontent.com/langchain-ai/langsmith-sdk/8c2ebb102eb4b9a9b03030f4f2fc59189bc8d38c/python/pyproject.toml": "e8cc5dd6a5560f28ee81ffd3b15f97803746b905729e9bf4159718039bb47a7a",
+        "https://raw.githubusercontent.com/langchain-ai/langsmith-sdk/8c2ebb102eb4b9a9b03030f4f2fc59189bc8d38c/python/langsmith/__init__.py": "bc2ec6fcc2797d0061d6506baec18e58f9be2562c2ec8df360381c238da03fd4"
+      }
+    },
+    {
+      "package": "flatbuffers",
+      "version": "25.12.19",
+      "source_url": "https://raw.githubusercontent.com/google/flatbuffers/v25.12.19/LICENSE",
+      "notice": "docs/licenses/Cassava-flatbuffers-Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "status": "version-tagged upstream license"
+    }
+  ],
+  "notice_bundle_sha256": "af96c6be093d4bcd6fe0493399ac9376b9ffe9928b234c135e9fe1a2dfa26596",
+  "inventory_sha256": "0ac3ed7ea1dfa0fbeca0a1545c0a95ff00624d2b525d73e62f980fda65d84810",
+  "scope": "Preserved installed dependency notices plus three version-matched supplemental upstream notices. This inventory is not a publisher authentication or complete redistribution review. No wheels,model states or data bundled.",
+  "qualification": "Rebuilt against isolated exact OpenCV overlay; all94selected distribution RECORD checks pass."
+}

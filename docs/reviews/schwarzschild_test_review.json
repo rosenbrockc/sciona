@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 33,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_schwarzschild_radius.py": "524831053363c271857a263f7aa74d4b096f5baf4d6e375996ccf5a9a98f1556",
+    "tests/physics_ingest/test_pdg_real_power_rules.py": "c9ad43e6103cb08370a71caf2c720b59bb92fd9ef2e76aedf65b1890eb37201f"
+  },
+  "provider_sha256": "9cbfd7a5ed070fa0dc5959cbdf5bcebe376efc1ea41bf13171f0c6d4eb60079d",
+  "scope": "25 numerical contract tests plus 8 real-power proof tests, run as separate suites"
+}

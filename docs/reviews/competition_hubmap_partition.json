@@ -1,0 +1,19 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_partition_cases": 12,
+  "empty_partition_rejections": 4,
+  "implementation_sha256": {
+    "sciona/hubmap_raw_training.py": "605e089d2c233bc52b4417b86b58fb20bfc21e1dab7b2c602df26be9e5f2926c",
+    "sciona/hubmap_raw_population.py": "a32bacc34b571bd0452e2eebef41c73d6bfd84ec3f541302a441883c9c96752b",
+    "sciona/hubmap_preparation.py": "6d879b22aafa81cbbc091727a1d35078a4a8f885160e8cd258f8050a0406122c",
+    "sciona/hubmap_tiling.py": "514df1fdf3a50f97ff409bac085241345a9fb738c387d6bc319e4f7c9c540f8d",
+    "scripts/validate_hubmap_partition.py": "df8ec9ccbbfaa119d60bb39a20a78aaaa79867c486cb04d17900b899b023f773",
+    "docs/reviews/competition_hubmap_partition_pins.json": "aa23c467e433ca8f9cc7a75e45d2acd888ee213e4486b35ee223e004da609288"
+  },
+  "limitations": [
+    "Partition selection independently executes pinned source; raw numerical preparation covered by separate source comparisons.",
+    "Synthetic runtime group labels only; original dataset group identities neither embedded nor required.",
+    "Raw-to-training full-network comparison and pseudo-label/inference publication gates remain."
+  ]
+}

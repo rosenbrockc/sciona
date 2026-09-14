@@ -1,0 +1,10 @@
+{
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_langmuir_proof.py -q",
+  "passed": 17,
+  "failed": 0,
+  "synthetic_only": true,
+  "implementation_sha256": {
+    "sciona/physics_ingest/langmuir_proof.py": "1d034dca6bd8a8fb2cf38e0836f91d6f5d06e7d4ba54dd8ce98d1e82a8306475",
+    "tests/physics_ingest/test_langmuir_proof.py": "fe359e0affc00fd8cbc8e7b9d98a77757ed30c84aed80afea8596c810720e8ce"
+  }
+}

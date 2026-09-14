@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 3,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "All 250 seeded AdaBoost/ExtraTrees fits executed",
+    "Synthetic imperfect labels exercise all configured boosting rounds and changing estimator errors",
+    "Nine-class learning after bag averaging",
+    "Seed wrap and query-reordering invariance",
+    "Unavailable SAMME.R request rejected explicitly"
+  ],
+  "sha256": {
+    "sciona/otto_meta_adaboost.py": "ee5a6927e1e00724d8140a5427626b34821845a3f96b6cf6410b27617e7e16fe",
+    "tests/test_otto_meta_adaboost.py": "6e716a3f7c096b37517e393f0792e56d273329d25d50dac215f5a52828dc8ba5"
+  },
+  "limitations": [
+    "Explicit modern SAMME realization; historical SAMME versus SAMME.R and tree/boost controls unresolved.",
+    "Input meta-feature OOF provenance is not established by this learner alone.",
+    "Four-fold second-level tuning and whole-stack integration pending.",
+    "Remaining meta learners, native closure and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

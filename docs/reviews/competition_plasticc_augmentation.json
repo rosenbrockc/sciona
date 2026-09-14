@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "checks": {
+    "metadata": 32,
+    "sampling": 32,
+    "noise": 32,
+    "detection": 32,
+    "object_augmentation": 32,
+    "photoz": 96,
+    "retry_exhaustion": 1,
+    "validation_rejections": 9,
+    "real_gp": 1
+  },
+  "hashes": {
+    "sciona/plasticc_augmentation.py": "66f5ad6d847368d845fa128f57af737519c602fedf2a0b800a5fbaf5d89d8fa4",
+    "scripts/validate_plasticc_augmentation.py": "c3a782d29a7e0b5b44e145bc10a6092fdfae8c3d9807ba31473ac01055d219ca",
+    "sciona/plasticc_observations.py": "694196bf77c42833f07aa0367d67d0a0fbe5491a5d0aaf5d4acf174260310385",
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  },
+  "scope": "Object augmentation only, including actual GP integration; synthetic reference only",
+  "adaptations": [
+    "Explicit empirical reference replaces implicit file read",
+    "Instance RandomState replaces global RandomState; sequence parity checked",
+    "Retry count explicit; no guessed settings default"
+  ],
+  "remaining": [
+    "Dataset orchestration and source settings",
+    "Training and full graph execution"
+  ]
+}

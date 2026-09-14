@@ -1,0 +1,26 @@
+{
+  "format": "dfdc-ensemble-b7-validation.v1",
+  "result": "passed",
+  "checks": {
+    "full_B7_training_runs": 5,
+    "connected_updates": 10,
+    "validation_epochs": 10,
+    "selected_full_states": 7,
+    "strict_state_load_and_finite_forward_checks": 7,
+    "repeated_seed_distinct_epoch_states": true,
+    "trained_seven_state_ensemble_prediction": true,
+    "independent_identical_face_mean_oracle": true
+  },
+  "limits": "Explicit shortened synthetic plan, two epochs per seed, one batch1 update per epoch at380 CPUfloat32, random initialization. No-face training hull stand-in and controlled inference boxes; full historical training length, pretrained quality and original seven checkpoint identities not claimed.",
+  "sha256": {
+    "sciona/dfdc_ensemble_training.py": "1ffdfa2bffa859c025820ea4681c7ceeed8599eddfa2afefeb7124df579e166c",
+    "sciona/dfdc_training.py": "8112e22c58d88ecc8d0fabf7fa77d1e793974a7a8ed2f7252bf3b54575d6d3ce",
+    "sciona/dfdc_selection.py": "c7accd53093451760b2371cbbab3d58e204a0ef8d41833e500bf47ddc161501a",
+    "sciona/dfdc_classifier.py": "42ca019c485a64bb652ff19ddda160ff7c342800ad6ede712bd7ebe854d10c56",
+    "sciona/dfdc_stochastic_depth.py": "e6d6426c069d152fff3ee5dfb0f1cd138cf2b10e42729650de8efbf10e7a60bc",
+    "sciona/dfdc_ensemble_prediction.py": "f5a4100c9c65d0f65e1e0b952e1204622be28794754ecaeaee0396389647a268",
+    "sciona/dfdc_prediction.py": "cc5e6f6e4592d5fb493e7ef37174b3c3977341bb4d3e6da947764aabe21251c8",
+    "scripts/validate_dfdc_ensemble_prediction.py": "0c654f1457c5c68ca0ca46cad06633a669d5ea280181ef46cfa1b9754e909e3f",
+    "scripts/validate_dfdc_ensemble_b7.py": "0a82322c09197bf9954006fb8f63a5cef52e3aa982adcac19d94c9bfd58f5cba"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "format": "adversarial-updates-validation.v1",
+  "result": "passed",
+  "checks": {
+    "source_tail_cases": 32,
+    "independent_symmetric_oracles": 3,
+    "rounding_tie_and_step_clip_oracles": 4,
+    "independent_projection_oracle": true,
+    "targeted_epsilon_boundary": true,
+    "source_nan_and_explicit_rejection_cases": 3
+  },
+  "oracle_scope": "Pinned source assignment AST executed with NumPy equivalents for TensorFlow array ops; supplied synthetic gradients. Does not establish TensorFlow binary reduction parity.",
+  "rounding_reference": "https://www.tensorflow.org/api_docs/python/tf/math/round",
+  "adaptation": "Reject zero/nonfinite normalization instead of source NaN propagation, without adding an epsilon stabilizer.",
+  "limits": "Update rules only; neural model gradients, label inference, ensemble loss, full iteration and serialized publication remain unverified.",
+  "sha256": {
+    "sciona/adversarial_updates.py": "7fb8d70efd285d9f43edceacaa9e348aace10e0eddcf97b410c28012931c45aa",
+    "scripts/validate_adversarial_updates.py": "34419a01f32f6cf7047190f8c03d9d37fb3b7f210fea4f58cab4f377da1bf61d",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "source_commit": "ea702d75cc2258d9d7dd35ca8e5e2539d71f3140",
+  "independent_scalar_comparison_cases": 9,
+  "threshold_below_minimum_returns_no_score": true,
+  "singleton_window_followed_by_samples_divides_by_zero": true,
+  "semantics": [
+    "Scoring depends on observation index, not elapsed time. Window endpoints are inclusive.",
+    "The best active score per window contributes; repeated detections inside a window do not add multiple rewards.",
+    "Confusion counts are per point; false-negative score penalty is per undetected scorable window.",
+    "Post-window false-positive penalty depends on preceding window width; probation uses a fraction with a 5000-row cap."
+  ],
+  "source_sha256": "281b616a795d17ae517d048a48da2b75db247f7b691b6761f724bd12d8f85255",
+  "validator_sha256": "4ea1354b747864b4f6b433dadb4c34c4a150650ebaad2ac82dac4a5552c149b0",
+  "scope": "Scoring component evidence only. No detector, full streaming pipeline, historical result or catalog approval claim."
+}

@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "ensemble_tests_passed": 5,
+  "combined_regression_tests_passed": 13,
+  "source_version_id": "ad3239bf-5a38-565a-81da-3d3cba9a02b0",
+  "source_content_hash": "8b42f3175fa6408c91c325e24784554cc480637a33673bd7a2128e2e657b8dd8",
+  "supervised_models": 6,
+  "dae_models": 5,
+  "synthetic_query_rows": 8,
+  "checks": [
+    "Five actual distinct-config neural branches and one actual tree",
+    "Normalized DAE versus raw prepared tree routing captured",
+    "Both hidden-stack and bottleneck extraction exercised",
+    "Independent scalar six-model arithmetic mean",
+    "Float64 accumulation of float32 neural outputs",
+    "Missing/duplicate configurations and invalid populations rejected before preparation"
+  ],
+  "sha256": {
+    "sciona/porto_ensemble.py": "e7123a1cde6cda15cb526d7dee8d67505fb126b2a1bc6d467720654a88aa17a4",
+    "sciona/porto_tree_blend.py": "425616ae321a1e282ef12770c3103f61d29aa726059c63f9bcc17f84f49e5d2c",
+    "sciona/porto_preparation.py": "dba64ff56ac0746c95b7c239ce5f61077db5ba6647f0d7c550839c34dbd226eb",
+    "sciona/porto_neural_branch.py": "80fc09cbb950c338d37c44a5fbfe8f13dd95017bc00a3219591dbc724d7c6c4f",
+    "tests/test_porto_ensemble.py": "4e6c10fc6f3f2c92cbddcae61cf169e760784344ef4fa1d7f79a9be9a629bad7"
+  },
+  "limits": [
+    "Explicit small synthetic architectures and epochs qualify complete orchestration, not the missing historical five-model configuration table.",
+    "Historical remaining configurations, CV/seed schedule and optimizer equivalence remain unresolved.",
+    "Serialized graph and publication gates still pending."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "format": "dfdc-ensemble-training-validation.v1",
+  "result": "passed",
+  "checks": {
+    "independent_runs": 5,
+    "selected_snapshots": 7,
+    "connected_training_updates": 10,
+    "individual_run_snapshots_and_metrics_exact": true,
+    "rng_restoration_success_and_failure": true,
+    "initialization_rejections": 3
+  },
+  "limits": "Actual synthetic preparation, augmentation, training/validation and checkpoints with small classifiers and explicit shortened epochs. Full B7 per-run evidence is separate; this does not prove default-scale five-run B7 execution or historical seven-state provenance.",
+  "sha256": {
+    "sciona/dfdc_ensemble_training.py": "1ffdfa2bffa859c025820ea4681c7ceeed8599eddfa2afefeb7124df579e166c",
+    "sciona/dfdc_training.py": "8112e22c58d88ecc8d0fabf7fa77d1e793974a7a8ed2f7252bf3b54575d6d3ce",
+    "sciona/dfdc_selection.py": "c7accd53093451760b2371cbbab3d58e204a0ef8d41833e500bf47ddc161501a",
+    "sciona/dfdc_checkpoints.py": "9ca3767560f98ae256e3288e496d48e3fabf45b00e250565c915d57e8e7bc154",
+    "scripts/validate_dfdc_ensemble_training.py": "9a11e1a8853b79c7ce157e498428e27b5cc978bdf36426d21171675bb78aaeca",
+    "scripts/validate_dfdc_training.py": "64314e400a2348d334ae7a2ca9d509827d1f8d0238c6628e15c24387705cfabd"
+  }
+}

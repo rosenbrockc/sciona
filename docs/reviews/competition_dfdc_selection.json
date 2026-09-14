@@ -1,0 +1,20 @@
+{
+  "format": "dfdc-selection-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_seven_request_order_exact": true,
+    "source_five_run_defaults_exact": true,
+    "inconsistent_source_default_rejected": true,
+    "explicit_extension_flagged": true,
+    "numbered_snapshot_order_and_prior_best_metadata": true,
+    "invalid_cases_rejected": 11
+  },
+  "limits": "Synthetic linear-model numbered snapshots test selection only. Explicit41-epoch plan is a caller adaptation, not evidence the original seed888 trained41 epochs. No historical weights or full five-run training tested.",
+  "sha256": {
+    "sciona/dfdc_selection.py": "c7accd53093451760b2371cbbab3d58e204a0ef8d41833e500bf47ddc161501a",
+    "sciona/dfdc_checkpoints.py": "9ca3767560f98ae256e3288e496d48e3fabf45b00e250565c915d57e8e7bc154",
+    "scripts/validate_dfdc_selection.py": "eb35b8103b68be76ea3d736f6c65b7cfc7b7f526669915840a37840cd96a1229",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

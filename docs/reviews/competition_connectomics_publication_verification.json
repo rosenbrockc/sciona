@@ -1,0 +1,39 @@
+{
+  "read_only": true,
+  "synthetic_only": true,
+  "trust_tier": 3,
+  "provider_versions_verified": 2,
+  "served_cdg_count": 81,
+  "catalog_graph_runtime_comparison": "passed",
+  "serialized_graph_cases": 4,
+  "cases": [
+    {
+      "mode": "simple",
+      "directivity": false,
+      "pca_fits": 240,
+      "exact_source_match": true
+    },
+    {
+      "mode": "simple",
+      "directivity": true,
+      "pca_fits": 240,
+      "exact_source_match": true
+    },
+    {
+      "mode": "tuned",
+      "directivity": false,
+      "pca_fits": 480,
+      "exact_source_match": true
+    },
+    {
+      "mode": "tuned",
+      "directivity": true,
+      "pca_fits": 480,
+      "exact_source_match": true
+    }
+  ],
+  "graph_sha256": "53dc75dcdd21723b0dc9da4018177ef8a8da210b900fa5df656d95bbb7ffd925",
+  "version_id": "e347858c-302c-54df-b845-18fa2d44745d",
+  "original_intake_status": "draft",
+  "verifier_sha256": "f4ee85a1b73efe0f978fa11c9553efbe9d26fede0aacde656c2e2ed8b9d6fcad"
+}

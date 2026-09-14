@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 16,
+  "source_version_id": "743c3225-058e-5a7e-ab18-ae5dd1c2b7d4",
+  "source_content_hash": "162915709dcde12f33a88f1d693b169aa8509dbd7e5b29755f89a728d388ee11",
+  "sha256": {
+    "sciona/santander_execution.py": "d8ebdd88e1c241d00b4582aec21720bd3de988ecf3ed44e3639d85235915ffe0",
+    "sciona/santander_graph.py": "e2cfe2bd2725c8e7d00c48a71c5c74fbdfe1fffe5c3b08bef052b61c31dec090",
+    "scripts/santander_synthetic.py": "6083510148c52b734e20d738211c6389046c4eb939b6f3ac2e9d378b3f4b934e",
+    "tests/test_santander_execution.py": "40ef0d268c2fa0dfabbd42eac6566d32f5f5565d2ddae0b4b4bc652c12620116"
+  },
+  "provider_sha256": "5bdcbc044656b70d82e8d31d1f4020aef064dd543f2d854b83c50bf1a099f41c",
+  "scope": "Canonical private boundary, disjoint identities, full pseudo-label capacity, source fold/epoch counts, invalid input rejection, graph codec and witness contracts. Individual learner controls validated by learners."
+}

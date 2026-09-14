@@ -1,0 +1,82 @@
+{
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_commit": "a9abb80c800409abf0ece21ea244ef779f758f96",
+  "approved_scope": "Complete active s32 numerical lifecycle, expressed as a separately versioned Community implementation with declared stochastic/scheduling semantics.",
+  "decisions": [
+    {
+      "topic": "Architecture",
+      "finding": "Pinned source uses one-layer cuDNN-compatible GRU encoder and GRUBlockCell decoder, depth267, train_window283, final horizon63; intake LSTM/window60 claims superseded only in derived graph.",
+      "evidence": [
+        "competition_webtraffic_decoder.json",
+        "competition_webtraffic_encoder.json",
+        "competition_webtraffic_training_forward.json"
+      ]
+    },
+    {
+      "topic": "Stochastic semantics",
+      "finding": "Source initialization distributions/dropout probabilities preserved; CPU per-model NumPy/torch streams are a declared implementation change. No identical-seed TensorFlow replay or checkpoint-trained-value claim.",
+      "evidence": [
+        "competition_webtraffic_initialization.json",
+        "competition_webtraffic_dropout.json",
+        "competition_webtraffic_runtime.json"
+      ]
+    },
+    {
+      "topic": "EMA ordering",
+      "finding": "Source has no explicit order between EMA reads, Adam and shared-step increment. Derived config explicitly specifies observation phases, default after/after. Review approves that deterministic contract, not a claim that it reproduces the source race.",
+      "evidence": [
+        "competition_webtraffic_training_review.json",
+        "competition_webtraffic_ema.json",
+        "competition_webtraffic_runtime.json"
+      ]
+    },
+    {
+      "topic": "Attention",
+      "finding": "Source constructs fingerprint/attention but use_attn=False prevents consumption by decoder; no attention term enters active loss. Excluding this disconnected branch preserves active computation while precluding full original checkpoint representation and seeded graph-equivalence claims.",
+      "evidence": [
+        "competition_webtraffic_graph.json",
+        "competition_webtraffic_encoder.json"
+      ]
+    },
+    {
+      "topic": "Training and forecast",
+      "finding": "Preparation, batching, full-width gradient updates, Adam/EMA state, source stop/checkpoint cadence, three-model count-space averaging and dated integer output are executable and tested. Synthetic short/full-batch cases support computational validity; no benchmark-accuracy claim.",
+      "evidence": [
+        "competition_webtraffic_full_batch.json",
+        "competition_webtraffic_lifecycle.json",
+        "competition_webtraffic_graph.json",
+        "competition_webtraffic_schedule.json",
+        "competition_webtraffic_ensemble.json"
+      ]
+    },
+    {
+      "topic": "Boundary",
+      "finding": "Runtime-only versioned payload, explicit config, strict data validation; no bundled records, weights, original file export or competition-specific date slice.",
+      "evidence": [
+        "competition_webtraffic_graph.json"
+      ]
+    }
+  ],
+  "tier_qualification": "Community Tier3 only; no human certification or Tier2 usage/adversarial qualification.",
+  "remaining_publication_actions": [
+    "Transactional provider/graph publication",
+    "Served catalog materialization and execution verification"
+  ],
+  "evidence_sha256": {
+    "competition_webtraffic_decoder.json": "692764ce7de14f97b2a2db80f513745111b2be2d310f2e1ff9a643c38b38471e",
+    "competition_webtraffic_encoder.json": "ca434f30353282dc707ad9be9b6e8448658a8357ae91cdb60950a50d1acaa374",
+    "competition_webtraffic_training_forward.json": "cb048df61d360ea780da8cecf788c18d2eaae91dfaf4153d5c8ff0ae64a7e133",
+    "competition_webtraffic_initialization.json": "3415c1d5c9554ffce97a8e6ff46447e86a5c74cf426587a1b5a203ce5bd59029",
+    "competition_webtraffic_dropout.json": "73bd284372afd6f052c30bb7fe2bff18611cdd21057d1635529039769d1c37f3",
+    "competition_webtraffic_runtime.json": "41bdeca4ab019f535f7244ee2111920ddde5be083f935d43f6ed94c2f2df8562",
+    "competition_webtraffic_training_review.json": "63095edd26d293774ad1575844968cab1259d659b2fbd56cca9c37e18339aecd",
+    "competition_webtraffic_ema.json": "d6d2681ac485d0fec338f77edf928a2d808a38439d09283e77cc611f706e51d7",
+    "competition_webtraffic_graph.json": "9bd82f2a68cfdf6c4ea2a1e0d473e946be288a41abe5c1893604e0d12278416d",
+    "competition_webtraffic_full_batch.json": "f561edad4623d3764b636bdc2d12a25fbed709d93137e0b4e460771ba84ce54b",
+    "competition_webtraffic_lifecycle.json": "56d2293a0ab27656356f773d2aa6db4fa0984ab39a1b11be6b59d681e17dc005",
+    "competition_webtraffic_schedule.json": "adb2d541c9ad28ee0abc9f8da7fcf3a0eacc96496129547a50b4597ffe688ea6",
+    "competition_webtraffic_ensemble.json": "c99f8e36a99dca0a55f69b488f0b170bed8f989e5a5b29f4d7f75ff48cb56287"
+  }
+}

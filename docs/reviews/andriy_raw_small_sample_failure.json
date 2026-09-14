@@ -1,0 +1,37 @@
+{
+  "synthetic_only": true,
+  "populations": 3,
+  "training_clips_per_population": 6,
+  "training_rows_per_population": 114,
+  "finite_training": true,
+  "constant_training_columns": [
+    0,
+    0,
+    0
+  ],
+  "full_raw_run_passed": false,
+  "failure_node": "glm",
+  "failed_requirement": "nrow(importance) >= 200",
+  "glm_selector_only_used_features": [
+    213,
+    173,
+    203
+  ],
+  "svm_selector_only_used_features": [
+    213,
+    171,
+    203
+  ],
+  "required_glm_features": 200,
+  "required_svm_features": 300,
+  "diagnostic_script_sha256": {
+    "count_glm.R": "023863e83e309e9bbfd81ba65979a29e1b242c4a6fec741122ff8d9eadcc113c",
+    "count_svm.R": "49ff2d4f2bd71bbac7147751e3b59914e77d5eb054c8e55628db2e70ac435f4b"
+  },
+  "validator_sha256": "0a88366e75b041b20013598da55ef439d23c0627c5f5568c34641a17f675b6c4",
+  "limitations": [
+    "Selector-only probes preserve source prefix and seed, but omit downstream model fits; counts are diagnostic, not full model reference parity.",
+    "Observed generic GLM failure was resolved to a source feature-count gate; this is a failed small-sample validation, not successful full execution.",
+    "Larger synthetic raw sample is being evaluated without changing any source gate."
+  ]
+}

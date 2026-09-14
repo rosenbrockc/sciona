@@ -1,0 +1,61 @@
+{
+  "status": "dependency_documentation_reviewed_runtime_pending",
+  "source_pins": [
+    {
+      "repository": "WaymentSteeleLab/EternaFold",
+      "commit": "87b9aac55cee14fd562049d08f7b92d3131f10ce",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/WaymentSteeleLab/EternaFold/87b9aac55cee14fd562049d08f7b92d3131f10ce/LICENSE",
+          "sha256": "8431990ae8dd84812802a5ef3d7cfe05d90257c96ed740c6e6f04ff32bc22afc"
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/WaymentSteeleLab/EternaFold/87b9aac55cee14fd562049d08f7b92d3131f10ce/README.md",
+          "sha256": "393d640845c1af6801946416063efac4d4b5005d04665940301c4aab6c992eed"
+        }
+      ]
+    },
+    {
+      "repository": "csfoo/contrafold-se",
+      "commit": "64f01d52f8fcba2b88c0011d56360554b9a95012",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/csfoo/contrafold-se/64f01d52f8fcba2b88c0011d56360554b9a95012/LICENSE",
+          "sha256": "7babc2649b1dc94a31e11525be834c9fca93f3808d4eb61e88718a25efd73af9"
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/csfoo/contrafold-se/64f01d52f8fcba2b88c0011d56360554b9a95012/README.md",
+          "sha256": "9155e38e976ce476ad5b1083806520ff2fc9d85f82a55c2b2a2b9806cae7d083"
+        }
+      ]
+    },
+    {
+      "repository": "DasLab/arnie",
+      "commit": "919295dbc5bcc6a6be904fd3020affc047ccecb3",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/DasLab/arnie/919295dbc5bcc6a6be904fd3020affc047ccecb3/LICENSE",
+          "sha256": "eeecc0ccdd4289193f7dfef7b899f4c7bce7bd760a8f7093ac5213fc2026c75d"
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/DasLab/arnie/919295dbc5bcc6a6be904fd3020affc047ccecb3/README.md",
+          "sha256": "a5822c778c6be29cd955c3fd26d46022db73963cc38e5eaa09a4807c08737a5e"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    "Pinned EternaFold and CONTRAfold-SE LICENSE files contain BSD-style redistribution terms without a noncommercial condition; Arnie LICENSE is MIT. This resolves the older adapted README wording for these pinned code versions only.",
+    "Current EternaFold documents a multiloop traceback fix and minimum hairpin length increase from zero to three; merely reverting hairpin length does not revert the traceback fix.",
+    "OpenVaccine adapted README identifies original inference as EternaFold parameters with CONTRAfold-SE code. Current engine is not an exact substitute.",
+    "No parameter files, training data, model weights or executable dependencies were downloaded; parameter provenance and licensing remain to be reviewed separately."
+  ],
+  "runtime_executed": false,
+  "catalog_mutations": 0
+}

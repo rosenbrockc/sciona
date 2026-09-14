@@ -1,0 +1,16 @@
+{
+  "applied": true,
+  "trust_tier": 3,
+  "version_id": "ecfd233d-aa8d-513b-849b-fb197ef20a6e",
+  "graph_sha256": "d8a470648f81c24045c539df9459430279df1ee7049dc3ccfe54174f2160e012",
+  "apply_rows_created": 46,
+  "reapply_rows_created": 0,
+  "rollback_absence_verified": true,
+  "served_catalog_execution": "passed",
+  "served_cdgs": 96,
+  "competition_intakes": 142,
+  "served_derivations": 29,
+  "remaining_without_served_derivation": 113,
+  "catalog_scope": "Configured local Supabase",
+  "coverage_scope": "Mandatory source provenance to served corrected/scoped implementations, not historical winning accuracy."
+}

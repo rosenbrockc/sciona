@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 32,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_vacuum_wave.py": "52604cdb1fb3fa128779f213cb700bc69757faa94b554f62193119064c8d66d3",
+    "tests/physics_ingest/test_vacuum_wave_proof.py": "9717b00db08db4a054e88eb3b43613118019ca4d204c858b1f5e1d175c0598ea"
+  },
+  "provider_sha256": "2bc3f23ff9f5941e89b48502fc5d94a60b38cda30cd8668fbb1b2151ce82ff32",
+  "synthetic_only": true
+}

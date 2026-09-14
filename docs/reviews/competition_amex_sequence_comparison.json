@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_software_pins": {
+    "S4_feature_combined.py": "aca38743b8264103736089292abca7962176bc61d848c7c1af6bb2f2b8084377",
+    "utils.py": "38291db3eca21f9e6eb8f87de166accbf8d178e68e2cdeaa8f0be3c158caaf70"
+  },
+  "checks": {
+    "joint_encoded_channels": true,
+    "prediction_left_padding": true,
+    "neural_right_padding": true,
+    "tabular_complement_only": true,
+    "sequence_lengths": [
+      1,
+      3,
+      13
+    ]
+  },
+  "sha256": {
+    "sciona/amex_sequence.py": "68e91ab9509e468844d638f32eeab6898ead02537b1fc20a6183208fe9f02a3e",
+    "tests/test_amex_sequence.py": "43cc9d3d18a144c9555850b32fea3417ad1310aeda8fed9c495e3d5f95f7dfdf",
+    "scripts/validate_amex_sequence_comparison.py": "65db042f3a6ddce3bec26991174f5eece8a026475da9605d22d393c3b7824d09"
+  },
+  "limits": [
+    "Synthetic encoding and packing comparison only; upstream row-level cross-fit probabilities and downstream neural training remain pending.",
+    "Original code read privately by runtime argument; no source implementation or data copied into repository."
+  ]
+}

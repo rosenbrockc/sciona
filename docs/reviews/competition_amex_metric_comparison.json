@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "comparison_cases": 400,
+  "source_software_sha256": "38291db3eca21f9e6eb8f87de166accbf8d178e68e2cdeaa8f0be3c158caaf70",
+  "sha256": {
+    "sciona/amex_metric.py": "c8605f1f41a6cb6ebb40bb6b3a2cb0d9cfe598a741c36ace79838c3b49ace62d",
+    "tests/test_amex_metric.py": "64d3f5823389406a4d59b9581da3e2d93457b256fc5b2b21bd870a07088f5b3c",
+    "scripts/validate_amex_metric_comparison.py": "d36956295daf52a2bb9276cd8e89af8cfad64377f9f0eaea51269b4e86f3ee7c"
+  },
+  "limits": [
+    "Synthetic checkpoint metric comparison only; both classes explicitly required."
+  ]
+}

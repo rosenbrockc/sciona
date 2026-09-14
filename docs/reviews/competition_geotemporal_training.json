@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "source_version_id": "9bb6428c-0529-56c8-b51d-96e1b4d6990c",
+  "source_content_hash": "b22878a5b3fa77fcf721b4343515a4284b9dd7777758bd9e86b1ed56e5c6790e",
+  "checks": {
+    "fold_local_target_history": true,
+    "heldout_label_isolation": true,
+    "future_context_isolation": true,
+    "expanding_forward_coverage": true,
+    "warmup_explicitly_unvalidated": true,
+    "full_training_refit": true,
+    "validation_mse_from_heldout_predictions": true,
+    "deterministic_repeat": true,
+    "copied_history_and_controls": true,
+    "future_query_gap_enforced": true
+  },
+  "sha256": {
+    "sciona/geotemporal_training.py": "1315c166505f11f2bb1f23c5780d7c91d6121806bce99ed98072373ed6700edb",
+    "sciona/geotemporal_features.py": "56c192e429b985ec6bfaa82c4a9fbdf1a7d060ff315560ee1bbf4179681e5348",
+    "sciona/geotemporal_validation.py": "82256afe9d38ad5570acbb77c0e91d630e2730fd7500e35d7fcbca551fdfa208",
+    "sciona/geotemporal_postprocess.py": "99f4e1aae492346823477a6d7161ac11b7503cb2347cde7e653b7d31b0049855",
+    "tests/test_geotemporal_training.py": "744abc1e10486952195cdd7ca383c1d2643bebf107c963299da016c2f1712a16"
+  },
+  "scope": "Synthetic 32-tree forward validation and full refit. Strict JSON/coordinate boundary, serialized graph and Tier3 review pending.",
+  "limitations": [
+    "Warmup block has no OOF prediction",
+    "Temporal validation permits recurring sites",
+    "Later folds legitimately consume earlier validation labels as historical observations",
+    "No empirical accuracy guarantee"
+  ],
+  "catalog_mutations": 0
+}

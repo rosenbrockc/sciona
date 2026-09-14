@@ -1,0 +1,65 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "kurtosis": "cf45488096497838ac5041bee081637b346abdd0ca9ad395754e07726ae47bd7",
+    "skewness": "9ef83afa0917faa85bdd72c0e0ba2bf5da94e1eaa42ef1357096a0a1c35c1ca7",
+    "inf_theory": "ffb4c63275134675b6b6e94b28ce4fd1e9da9063e4723f217ac3512f3394c296"
+  },
+  "provider_sha256": "b71fd4ad138aba960aee21de3329660db5064cc94be41757b4695b6e118f2973",
+  "validation_sha256": "be91678d4c692c854f4ec9d70fc676f2ea9ab84baaa00a13ecce3b01f5aebb5f",
+  "test_sha256": "0483e02391b226b3b3a40eaba9b6967cd67b85e1ab74a414217e338ba4312539",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 21,
+      "maximum_absolute_error": 1.7763568394002505e-15
+    },
+    {
+      "seed": 10211,
+      "samples": 100,
+      "maximum_absolute_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 8.881784197001252e-16
+    },
+    {
+      "seed": 10212,
+      "samples": 21,
+      "maximum_absolute_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 10212,
+      "samples": 100,
+      "maximum_absolute_error": 1.7763568394002505e-15
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 8.881784197001252e-16
+    },
+    {
+      "seed": 10213,
+      "samples": 21,
+      "maximum_absolute_error": 8.881784197001252e-16
+    },
+    {
+      "seed": 10213,
+      "samples": 100,
+      "maximum_absolute_error": 8.881784197001252e-16
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 1.7763568394002505e-15
+    }
+  ],
+  "limitations": [
+    "Pinned helpers in current Octave; finite-only nanmean compatibility shim uses mean. No original MATLAB toolbox runtime claim.",
+    "Four helper outputs only; low-range masking and full model execution remain separate.",
+    "Random finite windows only in cross-language comparisons; degenerate zero and final-sample behavior tested separately."
+  ]
+}

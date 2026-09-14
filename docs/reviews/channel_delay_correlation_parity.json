@@ -1,0 +1,12 @@
+{
+  "synthetic_only": true,
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "pyriemann_reference_commit": "38c3ec1fae7b2d414ebdc669938b4d00a92d50ee",
+  "reference_limit": "Historically contemporaneous pyriemann source selected; original environment lock is unavailable.",
+  "cases": 10,
+  "exact_source_match": true,
+  "source_hashes": {
+    "preproc.py": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2",
+    "pyriemann_estimation.py": "6048dd6b1ad5f59b866088aa0d781ecf5d0dd62d917a12dcbd1e61c740600a22"
+  }
+}

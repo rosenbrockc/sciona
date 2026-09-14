@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "updates": 128,
+    "resumed_updates": 72,
+    "clipping_boundaries": 3,
+    "rejections": 4
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_adam.py": "3a8b018b2ca2d0491ebe6f8415107c48e80054370d5d71edd1919c4976fd64f9",
+    "scripts/validate_webtraffic_adam.py": "6be2d57117f5f20a30b639e3fbb46cb23fbcd10801ea2b080e0b7f9e2c80de8d",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891"
+  },
+  "equations_source": "https://raw.githubusercontent.com/tensorflow/tensorflow/v1.10.0/tensorflow/python/training/adam.py",
+  "limitations": [
+    "Float32 dense gradients and explicit state; no TF kernel bitwise equivalence.",
+    "Continuation uses private in-memory synthetic serialization, not TF checkpoint format.",
+    "Optimizer step is separate from trainer shared global step; EMA ordering remains unresolved.",
+    "Full model optimizer/checkpoint lifecycle integration remains."
+  ]
+}

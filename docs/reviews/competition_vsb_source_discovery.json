@@ -1,0 +1,13 @@
+{
+  "approved": false,
+  "status": "source_retrieval_pending",
+  "original_version_id": "d79e40e4-45b0-5e74-a83c-c68c91f12afb",
+  "original_hash": "565e511ee8d20ce0b32adf5c8cc726150f235b1f97d5502d62c96cfe339f5ac1",
+  "source_writeup": "https://www.kaggle.com/competitions/vsb-power-line-fault-detection/writeups/mark4h-overview-of-1st-place-solution",
+  "source_notebook": "https://www.kaggle.com/code/mark4h/vsb-1st-place-solution",
+  "findings": [
+    "Primary Kaggle first-place writeup and notebook located; web rendering returned no source text.",
+    "Do not substitute differently ranked GitHub solutions for the winning implementation.",
+    "Notebook code version/license and actual algorithm remain to verify; no notebook/data/model files downloaded."
+  ]
+}

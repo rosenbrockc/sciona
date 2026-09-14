@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "tests_passed": 96,
+    "synthetic_only": true
+  },
+  "sha256": {
+    "sciona/m5_calendar.py": "32f729ea52f80f109ff3ec8f46d595051a14e97f3b13a640f238e23e1ce4470d",
+    "sciona/m5_encoding.py": "83cdef7393eb4d87f1df0ca2717462aa8c94196d0cc644bbe493bbee62eac18a",
+    "sciona/m5_execution.py": "af183997bcbf809b444d4c96342eb6f681fab31e6b686fead191a920c4bc25b8",
+    "sciona/m5_family.py": "51283e76eb1b00eff625ea570e2a194c9774997925f4829e27acb6277f1ffe05",
+    "sciona/m5_forecast.py": "ac4d932b358b89ebfb8f9041d0695d561115a5be414aead8fe11a81f16be2d2f",
+    "sciona/m5_grid.py": "9f3831c77638395b07be10268c30503adbde39a7345217611ad53c7b89ea0787",
+    "sciona/m5_join.py": "4d574d15807afe29c92da95e17cf9f0dd764cf639935b1603682d8e23e074d49",
+    "sciona/m5_lags.py": "c74e2b42dfdd3dacf09bc3c2e1be6f956b9c8252e2c89562693e40b4b206b7c4",
+    "sciona/m5_pooled_training.py": "9c674a5d7a8c9f6c5083a530aaed3fa13836f01885736949cc41f764c5d75ff7",
+    "sciona/m5_precision.py": "7606b0ce072e14bdca3b711562af56386143ea1652ffa779df9f64a733ff64d4",
+    "sciona/m5_preprocessing.py": "76823cb49cedc165ab4a8201f296cf485c9c119eb221f874c240849c30ad9dcd",
+    "sciona/m5_price_block.py": "f1d2623a4956a3f79c12adcef52a8dc53a702fdae9cacbdc2c979925dc27b016",
+    "sciona/m5_prices.py": "12d228b78d17e357fca0dce1a881cb1a3090204065f1a8a8d7782d20f660c512",
+    "sciona/m5_training.py": "77ce1bfb9da5f31f0b68e6142a24686c241e7a45bb72d370f1f897431951bf83",
+    "tests/test_m5_calendar.py": "dbc8417041cf7b0acb7a8c4eee5d8fc0d694bbc5142dec8b9d0e9ab3299cb5ce",
+    "tests/test_m5_encoding.py": "901811c57f7b67d6cb749c0ad87aebf569ebebe5888d21cef1785e3e6325610d",
+    "tests/test_m5_execution.py": "44a420ef1c1f1ecaac3482a03cd95a88ad7278733614f0accc829a57b2acba89",
+    "tests/test_m5_family.py": "a28a8a34163c24f7ce85620f5e15c99289b666c2117accafb09a525f2630c2d4",
+    "tests/test_m5_forecast.py": "6229f38c0529ee8e04dff180e712895b976e7befbc2c8eeaacd5a9fb31b19abf",
+    "tests/test_m5_grid.py": "5e4ebd9a2c8d34466073f88f2bfd9e22d8ac791bc6a47684c43d5171eec445d7",
+    "tests/test_m5_lags.py": "72f9c455daf3003fa4c0c77e865021e061963198036fa99928bcc1c134caec56",
+    "tests/test_m5_pooled_training.py": "f792a3b3d1cbfc28848d7abd0917bedaac92983a2799b12920c4074eee559900",
+    "tests/test_m5_precision.py": "07e4963aa876aca38baa8f181cb569458efca65edb5f9105b6fe26f83682ac5e",
+    "tests/test_m5_preprocessing.py": "cd8038a6acc302f5729f9e9eff24d60b3c38533626bb9dea3f5961212afaa428",
+    "tests/test_m5_price_block.py": "b6f6a8cf6d2bfaf29ebb392c468723b64b505389f6049d0b1d824ca1f5952975",
+    "tests/test_m5_prices.py": "b95564553fcc01a8ace39ae0827543697418ee6ece77f96d936810115b117600",
+    "tests/test_m5_training.py": "943bade4a2c4cca298cffec5b0c7f8393a61831fea9d160a205b12e95206fc71"
+  },
+  "scope": "Synthetic component, pooled training, forecast and private boundary tests; publication remains unqualified."
+}

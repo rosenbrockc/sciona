@@ -1,0 +1,594 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "side": 32,
+      "training": false,
+      "seed": 0,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 1,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 2,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 3,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 4,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 5,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 6,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 7,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 8,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 9,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 10,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 11,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 12,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 13,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 14,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": false,
+      "seed": 15,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 0,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 1,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 2,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 3,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 4,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 5,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 6,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 7,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 8,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 9,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 10,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 11,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 12,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 13,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 14,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 32,
+      "training": true,
+      "seed": 15,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 0,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 1,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 2,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 3,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 4,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 5,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 6,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 7,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 8,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 9,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 10,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 11,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 12,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 13,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 14,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": false,
+      "seed": 15,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 0,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 1,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 2,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 3,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 4,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 5,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 6,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 7,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 8,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 9,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 10,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 11,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 12,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 13,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 14,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 64,
+      "training": true,
+      "seed": 15,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 0,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 1,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 2,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 3,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 4,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 5,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 6,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 7,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 8,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 9,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 10,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 11,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 12,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 13,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 14,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": false,
+      "seed": 15,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 0,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 1,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 2,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 3,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 4,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 5,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 6,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 7,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 8,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 9,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 10,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 11,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 12,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 13,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 14,
+      "exact_image_mask_label_rng": true
+    },
+    {
+      "side": 320,
+      "training": true,
+      "seed": 15,
+      "exact_image_mask_label_rng": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_augmentation.py": "370f2ca831a8e8e4888802eeb60da5ac7781c4c45fe6068382744ead1db4e851",
+    "scripts/validate_hubmap_augmentation.py": "f916e76c3c111df079c0eb262bb035f7467d71b123131b53566fd51a118b0e11",
+    "docs/reviews/competition_hubmap_augmentation_pins.json": "44977ff6956885588f3c30521110e5d038080551f3cf337fd5ec8a73ab9b23c0",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Original Albumentations0.5.2 source under current OpenCV/NumPy/Torch; historical binaries not reproduced.",
+    "Unused package re-exports skipped; old ToTensor runs original code with optional torchvision normalization forbidden.",
+    "Square RGB uint8 images and binary int8 masks at runtime; no real data used.",
+    "Dataset decoding/resizing, DataLoader orchestration and complete graph remain."
+  ]
+}

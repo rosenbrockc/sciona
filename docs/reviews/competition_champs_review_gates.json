@@ -1,0 +1,25 @@
+{
+  "format": "champs-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source_commit",
+    "wrong_license",
+    "wrong_source_reduction",
+    "wrong_gradient",
+    "missing_source_rounding",
+    "missing_optimizer_schedule",
+    "reduced_model_ensemble",
+    "reduced_graph_execution",
+    "altered_provider",
+    "wrong_runtime_dependency"
+  ],
+  "sha256": {
+    "scripts/review_champs_execution.py": "27a806f70a91dbdaa80854297e30c08134a1a8ce6140a29ffef1096df4fd3ee7",
+    "scripts/validate_champs_review_gates.py": "43c432476ed38c8f2ec6af6c3b98498736b090894793f0911efb01a289bcc586"
+  },
+  "limits": "Read-only review injections; transactional publication and served-catalog verification are separate."
+}

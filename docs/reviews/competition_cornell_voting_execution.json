@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "models_compared": 13,
+  "chunks_per_model": 2,
+  "classes": 264,
+  "window_counts_exact": true,
+  "window_decisions_exact": true,
+  "whole_record_decisions_exact": true,
+  "runtime_sha256": "b78d50ae9b7ecf8ccab18dee2d939833e779e66b21e8dfaee0635450c7144323",
+  "validator_sha256": "d24d679572bf5ec37a900d34af5a919a8881bb0e94f90169d5dbeaa2a5240604",
+  "scope": "Synthetic interior events compare independent implementation against notebook event processing. Explicit half-open padding/singleton corrections covered separately; no full model or training claim."
+}

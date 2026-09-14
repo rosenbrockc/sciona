@@ -1,0 +1,26 @@
+{
+  "format": "vsb-review-negative-gates.v1",
+  "result": "passed",
+  "catalog_mutations": 0,
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_blend",
+    "missing_threshold_comparison",
+    "missing_tests",
+    "reduced_training_limits",
+    "missing_models",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_vsb_execution.py": "7d6c9e7cefca96359dda82f79b35b2e85ba12fb334cdb5eb44ddb1ed5e4c2c7a",
+    "scripts/validate_vsb_review_gates.py": "74d2bceebff43458ad829756d90301c534b56fa1328f22da674646086c404977"
+  },
+  "limits": "In-memory read-only review injections; no publication approval."
+}

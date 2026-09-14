@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_mechanical_energy.py tests/physics_ingest/test_mechanical_energy_proof.py -q",
+  "test_source_sha256": {
+    "tests/physics_ingest/test_mechanical_energy.py": "c7e71c67c2c27767b8a3b9a4049231ae1d35aecf1cebde4730de7f8634dc31e5",
+    "tests/physics_ingest/test_mechanical_energy_proof.py": "2f5c1feba9eccbc50e90fb12a1aaa468cc688d935d86dafb6b8cc3c6c215129f"
+  },
+  "provider_sha256": "0e27867d38dfe7f88a21fe961d77e67c55638b98481f84069db08479d0abcfaa"
+}

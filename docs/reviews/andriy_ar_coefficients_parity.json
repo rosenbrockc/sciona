@@ -1,0 +1,180 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "fdf46f8a38076e51809c2f0673458f6067a501a23318e3ee893b1ea39c2db61a",
+  "extracted_block_sha256": "8648f60c5b1ee4854d561f38ed6d66ad58ccf12328bb3aaebb34f5de2295068a",
+  "provider_sha256": "58a73dcdf184a4dd92ec2b4e1c4c1e476447a2260ba22916daa7278d853c8652",
+  "validation_sha256": "460c4484186b07ebb10e52b0fd93102a79b41bac02bd78668678c086d3253da4",
+  "test_sha256": "46c611d83027c7d58e905024e7397a90f33254765b0d8d52a631e91ffa157c42",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 611,
+      "samples": 30,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 1.1102230246251565e-15
+    },
+    {
+      "seed": 611,
+      "samples": 30,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 1.3877787807814457e-15
+    },
+    {
+      "seed": 611,
+      "samples": 30,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 1.3877787807814457e-15
+    },
+    {
+      "seed": 611,
+      "samples": 1920,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 2.3314683517128287e-15
+    },
+    {
+      "seed": 611,
+      "samples": 1920,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 7.771561172376096e-16
+    },
+    {
+      "seed": 611,
+      "samples": 1920,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 1.2073675392798577e-15
+    },
+    {
+      "seed": 611,
+      "samples": 3840,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 1.6653345369377348e-15
+    },
+    {
+      "seed": 611,
+      "samples": 3840,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 9.159339953157541e-16
+    },
+    {
+      "seed": 611,
+      "samples": 3840,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 2.55351295663786e-15
+    },
+    {
+      "seed": 612,
+      "samples": 30,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 612,
+      "samples": 30,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 612,
+      "samples": 30,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 612,
+      "samples": 1920,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 1.5543122344752192e-15
+    },
+    {
+      "seed": 612,
+      "samples": 1920,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 6.38378239159465e-16
+    },
+    {
+      "seed": 612,
+      "samples": 1920,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 2.220446049250313e-15
+    },
+    {
+      "seed": 612,
+      "samples": 3840,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 2.1094237467877974e-15
+    },
+    {
+      "seed": 612,
+      "samples": 3840,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 6.38378239159465e-16
+    },
+    {
+      "seed": 612,
+      "samples": 3840,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 1.6653345369377348e-15
+    },
+    {
+      "seed": 613,
+      "samples": 30,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 8.534839501805891e-16
+    },
+    {
+      "seed": 613,
+      "samples": 30,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 1.1657341758564144e-15
+    },
+    {
+      "seed": 613,
+      "samples": 30,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 1.1657341758564144e-15
+    },
+    {
+      "seed": 613,
+      "samples": 1920,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 1.304512053934559e-15
+    },
+    {
+      "seed": 613,
+      "samples": 1920,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 1.6930901125533637e-15
+    },
+    {
+      "seed": 613,
+      "samples": 1920,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 1.5265566588595902e-15
+    },
+    {
+      "seed": 613,
+      "samples": 3840,
+      "qr_chunk_rows": 17,
+      "maximum_absolute_error": 2.4424906541753444e-15
+    },
+    {
+      "seed": 613,
+      "samples": 3840,
+      "qr_chunk_rows": 1111,
+      "maximum_absolute_error": 6.661338147750939e-16
+    },
+    {
+      "seed": 613,
+      "samples": 3840,
+      "qr_chunk_rows": 10000,
+      "maximum_absolute_error": 7.494005416219807e-16
+    }
+  ],
+  "limitations": [
+    "Numerical QR block only; explicit zero-padding and numeric single-series setup replace iddata/idprep preprocessing.",
+    "Model polynomial property setter replaced with a struct setter; model metadata and covariance handling outside the block are not validated.",
+    "Three explicit QR chunk lengths tested; historical automatic idmsize choice unproven.",
+    "No System Identification Toolbox prediction, initial-state estimation or fit-score parity claim."
+  ]
+}

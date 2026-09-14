@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": {
+    "rpn.py": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751",
+    "roi_heads.py": "dfe9ac02abbbd2b6db522d66d00210ad0d7dac1cc66cf1f0c3e9bd628f37be2c"
+  },
+  "exact_assignment_cases": 128,
+  "images_per_case": 3,
+  "exact_ground_truth_and_duplicate_anchor_matches_included": true,
+  "historical_rpn_empty_ground_truth_rejection_preserved": true,
+  "validator_sha256": "21e5364c9952872d8db230882cadc8eae97b2e1cf456e14e39df772d5ac38d52",
+  "limits": [
+    "Nonempty ROI ground truth only; installed ROI empty handling differs and requires a source guard at integration.",
+    "Both paths use installed box IoU and qualified matcher; complete detector execution remains pending."
+  ]
+}

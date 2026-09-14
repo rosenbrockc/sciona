@@ -1,0 +1,47 @@
+{
+  "repository": "numenta/NAB",
+  "commit": "ea702d75cc2258d9d7dd35ca8e5e2539d71f3140",
+  "pins": [
+    {
+      "software_path": "LICENSE.txt",
+      "sha256": "0a0b4d0b10cb1f7ed9ab2993ef93defc03447e6eba9daca1315dd32dae4877e3"
+    },
+    {
+      "software_path": "requirements.txt",
+      "sha256": "679e6d4923e5574f831a4ade2db713471157ed4a9a22217ab48a02e9ef754232"
+    },
+    {
+      "software_path": "setup.py",
+      "sha256": "6046c92c4bd12ccc7f59a47a2647acfac1c66af9647fe6f842795de550fa2e0d"
+    },
+    {
+      "software_path": "nab/scorer.py",
+      "sha256": "35bb1413e34c141ae414eca94ec0a0d4e3b1a9583c63449a3a38e39159f945a9"
+    },
+    {
+      "software_path": "nab/optimizer.py",
+      "sha256": "42572d5e1cc6065255f133df57d09d4d5a7337f2c7fc08e342b4f81a9f5cad24"
+    },
+    {
+      "software_path": "nab/util.py",
+      "sha256": "5868a377a2ad5d6b4f62514937054bdb01434797b9cd4826a4d59bee5a45053d"
+    },
+    {
+      "software_path": "nab/detectors/base.py",
+      "sha256": "f603ba4a9e8c8e8ed83968f8b1e9288791998abcd3792f47a0325f8f5ba7fc54"
+    },
+    {
+      "software_path": "nab/sweeper.py",
+      "sha256": "281b616a795d17ae517d048a48da2b75db247f7b691b6761f724bd12d8f85255"
+    },
+    {
+      "software_path": "nab/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "software_path": "nab/runner.py",
+      "sha256": "3d7f47578f7b6fa5ecbe013eff98e6cb8a85575d73c222372852c9f1298d0014"
+    }
+  ],
+  "scope": "Selected software and license only; no benchmark records, label inventories or result files fetched."
+}

@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_eigenstate_orthogonality_proof.py -q",
+  "passed": 15,
+  "implementation_sha256": {
+    "tests/physics_ingest/test_eigenstate_orthogonality_proof.py": "fcd496c4cd0487195cf07a338bf2344068bec7f6e445641b654b1125116e4469",
+    "sciona/physics_ingest/eigenstate_orthogonality_proof.py": "1d439543c7a88336e7b86c11a0a86cd7498a3ec64d40257cd6d4351c05354a01"
+  }
+}

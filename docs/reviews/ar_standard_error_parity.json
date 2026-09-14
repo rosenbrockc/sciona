@@ -1,0 +1,20 @@
+{
+  "synthetic_only": true,
+  "cases_passed": 15,
+  "maximum_absolute_error": 0.0,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "statsmodels_reference": "v0.8.0",
+  "source_hashes": {
+    "preproc.py": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2",
+    "statsmodels_ar_model_080.py": "6d4730507514f7b4605e9740e8fab9a647db2e358ef74f4ede504a02c39e2d80"
+  },
+  "implementation_hash": "299bd7b84526fb961691b36e4dc257920e8a0a70e0a758cdfa009c6e9564e674",
+  "validation_script_hash": "1854066d604f56c661ee87bf6b48e0eccf851b48b2b08c203fb1749f18deb4cf",
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "statsmodels": "0.15.0"
+  },
+  "reference_adaptation": "Unmodified historical AR.fit, AR._stackX and ARResults.bse method bodies; property decorators stripped. Current OLS/lag/trend utilities injected. Minimal model/result containers expose original conditional-OLS residual and covariance semantics. Original ARError class unmodified.",
+  "limitations": "Conditional OLS with explicit order and constant trend only; no historical runtime reproduction, maximum-likelihood branch, model selection or predictive-performance validation."
+}

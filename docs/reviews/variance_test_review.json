@@ -1,0 +1,13 @@
+{
+  "test_results": {
+    "tests": 30,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_weighted_population_variance.py": "61bdb30696c8e48e4b04b2ad2a924b441e312098de59b3ac8a275584022b41ec"
+  },
+  "provider_sha256": "3a76feab9c3196514ffccd0e07435532530cfb67400875749e9587c64b4530ef",
+  "synthetic_only": true
+}

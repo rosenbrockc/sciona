@@ -1,0 +1,53 @@
+{
+  "synthetic_only": true,
+  "full_runner_cases": 2,
+  "branch_comparisons_passed": 4,
+  "maximum_absolute_error": 0.0,
+  "graph_digest": "6cac6ad8cccd4c30425fbdf62cc8ee7c04e61c5e2a29c155edfee593c7e10207",
+  "nodes": 12,
+  "edges": 42,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "pyriemann_revision": "38c3ec1fae7b2d414ebdc669938b4d00a92d50ee",
+  "source_hashes": {
+    "models.py": "38905d4d1bd61560b6c273876f060884c47156eedc500d9085e9ca5fe7c1889b",
+    "pyriemann_estimation.py": "6048dd6b1ad5f59b866088aa0d781ecf5d0dd62d917a12dcbd1e61c740600a22",
+    "pyriemann_utils_base.py": "cb97d9806133344b19e48ad23d54050173c72620a0607de372a40a9f3a391c12",
+    "pyriemann_utils_mean.py": "1545419ff4dfc1ac2a0d60ed5edb264a1ec096cde7f6640a809e3c308e9534b2",
+    "pyriemann_utils_tangentspace.py": "f18370271f9387da2f527bd34e24b5cfc5b1e238b88bd51d55c73ce029376edb",
+    "pyriemann_tangentspace.py": "720a810479e01d7a2e2e3e1c9a0f3817f17bb784db1b306090804a7c80ca4b8b",
+    "Alex_Gilberto_models_autocorrmat_TS_XGB.yml": "53626a0381a5ed4c3f0e5dbb2c877272cacadec5005b783a34911feeda617494",
+    "Alex_Gilberto_models_coherence_transposed_TS_XGB.yml": "d562f251c13b0de848898f0cb1250a2fd7e4c65696ef9178e4ee3c77d80351da",
+    "make_blend.py": "6a64446123cfa6d3a867837057cda256cf13442c674317bc239117d00520374b",
+    "preproc.py": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2"
+  },
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1"
+  },
+  "validation_script_hashes": {
+    "validate_riemannian_execution.py": "bc13825f42dc7348688a62e9c7500bcd59da40c19d655ad32636183bb980e041",
+    "validate_channel_tangent.py": "4e64d695e76dee977db2c5600ff2801bd61f97a758a99bf0bf60622bd93721c8",
+    "validate_bci_predictions.py": "19977afa62b3cd53769a300cfd5883d678c335a2223f97ee641d4517bd3dc1ba",
+    "validate_frequency_coherence.py": "7936ee69c3f5963918c98963529eaa6defc78e38c9a6959aa966ab50bb9da28a"
+  },
+  "execution_module_hashes": {
+    "sciona.riemannian_bci_execution": "c04cf611f11b61fde19f52eaefb05c65251f8864158162123f6756aedd905572",
+    "sciona.visualizer.runner": "ff289eda92093a164f1691e2453622579cd6357e6292267833f5873a97ad6aa3",
+    "sciona.services.execution_graph_codec": "1ad42332f8e28adf4ee3f8d53184a4af8351f66304efa1703c63ed32989082a6",
+    "sciona.services.catalog_artifact_retrieval": "f6b6357b8dfc42d1ad253d0be277a440c1284124c6c525d7421b242885dc34e4",
+    "sciona.atoms.riemannian_bci.signal_processing.segment_windows": "cd2ebec9cbcbe8ae456ddbb709aa9f200a2c3f288e71e6272bbb80e7231a0481",
+    "sciona.atoms.audio_speech.atoms": "b7203d541172eee357c40f968bdef12abff0d3b5255775e1076577d67ceb9462"
+  },
+  "provider_hashes": {
+    "sciona.atoms.riemannian_bci.signal_processing.source_inputs.source_riemann_configuration": "f693a88faa75d5d138c54d18b601dcd14f02b22d9df8504e02d178d7a8e56100",
+    "sciona.atoms.riemannian_bci.signal_processing.source_inputs.prepare_segment_windows": "f693a88faa75d5d138c54d18b601dcd14f02b22d9df8504e02d178d7a8e56100",
+    "sciona.atoms.riemannian_bci.covariance_features.delay_correlation.channel_delay_correlations": "3fd849081b38f29dc759f48ad1061981e18341d5accc5e1b31a37449266bf679",
+    "sciona.atoms.riemannian_bci.covariance_features.source_tangent.channel_tangent_features": "2285c5b1712da489859194428862fb0cedb29108cfce10a38ecccba5afb2d0e1",
+    "sciona.atoms.ml.xgboost.competition_bagging.bagged_window_probabilities": "6b86609f1e7ec1c72c665aeab3c7858a29f25e75fabead34c5c06d71de9ea2d6",
+    "sciona.atoms.riemannian_bci.signal_processing.segment_scores.segment_probability_max": "ce9a4e5aaab1df7c5e578a234122e473936afd916ff1dd1404e58ff28c2d37f8",
+    "sciona.atoms.riemannian_bci.covariance_features.frequency_coherence.frequency_band_coherence": "db7f311992fe17c964f945b1871cf5038f10e9d6cb1dcf5c7cf16fb315552130"
+  },
+  "limitations": "Two source branches only; nine other models remain. Python 2 slice/NumPy compatibility and modern sklearn/XGBoost execution, not historical training engine parity or competition performance."
+}

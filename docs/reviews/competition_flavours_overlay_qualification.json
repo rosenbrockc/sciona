@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "full_graph_under_overlay_passed": true,
+  "validation_session": 24245,
+  "runtime_requirement": "Exact reviewed OpenCV4.13.0.92overlay precedes shared site-packages on PYTHONPATH; equivalent provisioning required.",
+  "sha256": {
+    "docs/reviews/competition_flavours_graph_validation.json": "168c19e7882088a59e693bf1e590da197b663670a4ec3703f8bb199ae61b2856",
+    "docs/reviews/competition_flavours_opencv_publisher.json": "c886d2817ea5168e3734717cf0850d1abc30a7bb98e1c481db60598ab8169f56",
+    "docs/reviews/competition_flavours_environment_audit.json": "6c367bd65ed1f3b236093f15aa8975a2657355aec38b85bade002655306b2037",
+    "docs/reviews/competition_flavours_package_file_audit.json": "e7193e7ea83d6bcbe884b959c69d6fe9cd215d92e20f6e95d60a049ec4d97a16",
+    "requirements/flavours-reference.txt": "b095c4c9b6ef3571876bce4dfd8e82a495cb77fcf13bb4ffe19e55f014fbccee"
+  }
+}

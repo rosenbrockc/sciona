@@ -1,0 +1,62 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "epoch": 18,
+      "trained_examples": 4,
+      "sampled_population": 5,
+      "validation_batch_sizes": [
+        2,
+        1
+      ],
+      "checkpoint_roles": [
+        "best_loss",
+        "best_score",
+        "snapshot"
+      ],
+      "exact_metrics_model_optimizer_scheduler_checkpoint": true
+    },
+    {
+      "epoch": 19,
+      "trained_examples": 4,
+      "sampled_population": 5,
+      "validation_batch_sizes": [
+        2,
+        1
+      ],
+      "checkpoint_roles": [
+        "best_score",
+        "snapshot"
+      ],
+      "exact_metrics_model_optimizer_scheduler_checkpoint": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_checkpoint.py": "09f530be7192195dd1f37ae22cb4361818b1faf15efb3a4990741cc2e4ca4e9c",
+    "sciona/hubmap_checkpoint_policy.py": "9034386695a1c0369f441f6a674d0474eb97784ea25653f1307397428e1e1b39",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "sciona/hubmap_epoch.py": "92a61f859118f936de0fe1b943062f94dd8ec134780f6966fe9677b1a0022c50",
+    "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "sciona/hubmap_sampling.py": "857661887790f1b7539cb99040bb1e593cbbd763797cb874301a8a74064bb961",
+    "sciona/hubmap_schedule.py": "4d9290aec4c8cf34308cee346eaed06b94e7ae904d01a19c816cb10ddc4231d6",
+    "sciona/hubmap_training.py": "8bf03836ca9e1246ee03a9b4288504c619ad4a9ee1ead50446d480b4360a6e04",
+    "sciona/hubmap_validation.py": "8a12689e3f016deeb0459ae1da7dc59643f7dff6158a220defa3bd86095bf1f5",
+    "scripts/validate_hubmap_checkpoint_policy.py": "2614f70bb3eee5e17f6a80aa1b484d2652aa087bb29b7b0c30cab9ab7af5c27d",
+    "scripts/validate_hubmap_epoch.py": "10ca208e7e5ee76661beb6b6b049c373bf9b5306bcc1ab92b438862ecbb13f46",
+    "scripts/validate_hubmap_losses.py": "0fba8d784ca0659ca4d7d6ad4ef372f89694dbb76e1e5b43d632f837b8c8774b",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "scripts/validate_hubmap_sampling_schedule.py": "bcd8bff38c9a8b18a412621f1467793840186c874555a70a2268de1e1618b61e",
+    "scripts/validate_hubmap_training.py": "bb241a37b285cf7250dae09b1d1edd97459fd12e65fde7ed909f8adcecd46435",
+    "scripts/validate_hubmap_validation.py": "2b1922ff2001dd955527d911c64ed0640e0c0495e9e019c323bb8d6a169c67e5",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "tests/test_hubmap_checkpoint.py": "538be5dc61fb07014790ba799c90c30809e6625d09d9f6fee1e7edb7d1ed9c21"
+  },
+  "limitations": [
+    "Initialized full network and current CPU float32 execution; original CUDA autocast/GradScaler disabled explicitly.",
+    "Explicit batches and restart schedule; preparation, sampling-to-loader, augmentation and inference not yet connected.",
+    "Model-only warm-start checkpoints; serialized optimizer/RNG resume is not claimed.",
+    "No trained quality or whole-CDG approval."
+  ]
+}

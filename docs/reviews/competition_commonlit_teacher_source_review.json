@@ -1,0 +1,25 @@
+{
+  "source": "https://www.kaggle.com/code/mathislucka/commonlit-two-models",
+  "metadata": {
+    "currentVersionNumberNullable": 3,
+    "title": "commonlit-two-models",
+    "slug": "commonlit-two-models",
+    "currentVersionNumber": 3,
+    "hasCurrentVersionNumber": true
+  },
+  "code_cells": 16,
+  "code_sha256": "e8a198ca555ca947a36ee7d74eb37c94512bb41daa1750da98b03ec1dbb91350",
+  "markdown_license_notices": [],
+  "status": "source_recovered_license_unresolved",
+  "license_findings": "Public kernel pull metadata has no license field; notebook markdown has no license notice; public notebook HTML returned HTTP200 without license text. Do not infer that repository MIT covers the linked notebook.",
+  "scope": "Code cells only retained. No notebook outputs, data-source metadata, corpus files or model weights retained.",
+  "probe": "docs/reviews/competition_commonlit_teacher_probe.json",
+  "upstream_lineage_followup": {
+    "primary_topic_id": 257844,
+    "primary_retrieval_http_status": 200,
+    "upstream_teacher_url": "https://www.kaggle.com/andretugan/commonlit-two-models",
+    "finding": "The winning author directly credits the andretugan teacher notebook. The retained mathislucka notebook is a separate source instance; neither an upstream reuse grant nor source equivalence is established by this link.",
+    "next": "Resolve the upstream notebook license and compare code-only teacher sources before deciding whether reuse or an independently implemented reconstruction is appropriate.",
+    "web_page_result": "Upstream notebook page opened but returned no readable body; no license inferred."
+  }
+}

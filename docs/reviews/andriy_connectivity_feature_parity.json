@@ -1,0 +1,57 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "connectivity_features_ALL": "c5a95f6e241261e2f7e4fc1a85b8bc69340e49b92d6d5d76b68a7cd294724e89",
+    "make_odd": "11653b30204ca85f4ccb57f0d2f1f39624efdf899f00e756adbd0cf1a2b6a4a8"
+  },
+  "provider_sha256": "378930629e9eb09fd4a9729fa8df726b6309d901007e47317e8fee7264d791d4",
+  "validation_sha256": "9c01d9a38378986657c4384227b5f144edc09b7d6c14210502bb71e15034a370",
+  "test_sha256": "8bd5c4555ae754459e8c6e04185fa7eaf8045be311d7455a3a607f2e43b84f58",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 768,
+      "maximum_absolute_error": 4.822300586349026e-07
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 2.6674658136494056e-07
+    },
+    {
+      "seed": 10212,
+      "samples": 768,
+      "maximum_absolute_error": 4.296976715556511e-07
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 2.9364687392785527e-07
+    },
+    {
+      "seed": 10213,
+      "samples": 768,
+      "maximum_absolute_error": 6.915264847418001e-07
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 3.429697041368307e-07
+    }
+  ],
+  "octave_signal_hashes": {
+    "butter": "f3fd50be5e48b6a8cd21ab97eee534d756dcd4c822ec6e213f4ac3a5efd7f2b0",
+    "filtfilt": "bc2206dea8d2a0e2e62a9d3a330b0dc6c6e1e757fdcccfa9e0977a7e6f3d0de6",
+    "pwelch": "7849f80bad5804779cb35c804d098cf3dc62e4557d8e0ffaeda735d538405f44",
+    "cpsd": "0467a1ed182b198f60c5300450f06b34c33d2e9bd833c39f951bb126d765bdd3",
+    "hilbert": "76be340580740377c192796d47fc2029ab30b0de03a7d1ae3b4607973ddb794e",
+    "xcorr": "7952c8bc488d0dfedcfc91b67ae5adc443eb878a6001d819fa984e76f7fe8fe3"
+  },
+  "limitations": [
+    "Pinned source in Octave signal R12+ mode with combnk=nchoosek and nanmean compatibility shims. Historical MATLAB numerical identity unproven.",
+    "Current SciPy Butterworth/filtfilt arithmetic differs from Octave; compare all features at rtol=1e-5, atol=1e-5. Full model execution remains separate."
+  ]
+}

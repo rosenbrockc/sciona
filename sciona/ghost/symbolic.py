@@ -178,7 +178,24 @@ def _eval_srepr(srepr_str: str) -> Any:
         "Add": sp.Add,
         "Mul": sp.Mul,
     })
-    return eval(srepr_str, {"__builtins__": {}}, ns)  # noqa: S307
+    # Quantum state nodes are not re-exported from the top-level namespace.
+    if any(name + "(" in srepr_str for name in ("Bra", "Ket", "InnerProduct", "OuterProduct")):
+        from sympy.physics.quantum import Bra, Ket, InnerProduct, OuterProduct
+
+        ns.update(Bra=Bra, Ket=Ket, InnerProduct=InnerProduct, OuterProduct=OuterProduct)
+
+    def integral_from_ast(*args, **kwargs):
+        # Integral's constructor normalizes the orientation of its limits by
+        # multiplying the integrand by a sign. Global evaluate=False would
+        # retain an artificial factor of one on every deserialization.
+        with sp.evaluate(True):
+            return sp.Integral(*args, **kwargs)
+
+    ns["Integral"] = integral_from_ast
+    # Loading an AST must not simplify it. In particular, cancellation can
+    # erase singularities and Equality(x, x) can collapse into BooleanTrue.
+    with sp.evaluate(False):
+        return eval(srepr_str, {"__builtins__": {}}, ns)  # noqa: S307
 
 
 # ---------------------------------------------------------------------------

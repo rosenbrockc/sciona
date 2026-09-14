@@ -1,0 +1,15 @@
+{
+  "approved": false,
+  "checks": {
+    "color_source_cases": 4,
+    "tta_source_cases": 40,
+    "tta_independent_oracles": 40,
+    "unclipped_output_case": 1,
+    "invalid_inputs_rejected": 6,
+    "float32_saturation_oracles": 2
+  },
+  "source_commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "implementation_sha256": "f15593a2f17359969b3a8ff5f076ef18e004d2310753ca7e27512b71f7276e11",
+  "validator_sha256": "85fe44e967e08a34377b5902a411dec907b6195798b9249694f2d2e03ab0a644",
+  "scope": "Synthetic preprocessing and spatial TTA only. Full temporal models, training and ensemble still pending."
+}

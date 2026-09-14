@@ -1,0 +1,14 @@
+{
+  "runner": "cornell-execution-community.v1",
+  "rollback_rows_created": 40,
+  "rollback_absence_verified": true,
+  "apply_rows_created": 40,
+  "idempotent_reapply_rows_created": 0,
+  "trust_tier": 3,
+  "execution_version_id": "20e9c982-61ed-5080-a9cb-87cf637f3537",
+  "execution_graph_sha256": "cba5624e3f8dbf7f3ebad5eec3b7dc87f5301f232acd49333ff746a70059d849",
+  "served_cdgs": 82,
+  "competition_intakes": 142,
+  "covered": 14,
+  "uncovered": 128
+}

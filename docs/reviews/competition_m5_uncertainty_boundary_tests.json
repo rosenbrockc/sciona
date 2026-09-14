@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "tests_passed": 102,
+  "checks": [
+    "Exact JSON fields and scalar types",
+    "Aligned rectangular units/prices and complete hierarchy roles",
+    "Unique explicit three-partition mapping",
+    "Consecutive ISO dates and 28 future calendar days",
+    "Binary state events and complete state coverage",
+    "Source cleaning and three calendar groups",
+    "Canonical snapshot isolated from caller mutation",
+    "Fingerprint and canonical revalidation before native training",
+    "Prepared repr excludes private input and fingerprint"
+  ],
+  "sha256": {
+    "sciona/m5u_execution.py": "e252c32b7df2d729216626e9da3909ca6b99775eb933e822566af8035a7d8d61",
+    "tests/test_m5u_execution.py": "0cbe643c623fc5199d32095bd85530b200d48d5bd0e179b634529769cfd567a4"
+  },
+  "scope": "Private-input contract and rejection tests. Native graph execution is recorded separately; no catalog mutation."
+}

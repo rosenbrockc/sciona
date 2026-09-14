@@ -1,0 +1,13 @@
+{
+  "approved": false,
+  "source_default_values_preserved": true,
+  "hashes": {
+    "sciona/contrails_defaults.py": "70b6a7bbccafb79b1132000195d60d6d3a44e7ed76e72e1536472092af287094",
+    "sciona/contrails_runtime.py": "9f2f069bf5215137029b1d59b880d175e0dd2e57f5a95a77bb2fc2c25bb95836",
+    "sciona/contrails_lifecycle.py": "ec0fdaf7b6c76b042e077bef65a2260dd1062c156e43e3767a86bb22bc74962f",
+    "tests/test_contrails_runtime.py": "07c53db27f8dcf1115f4654a8769d2277038c4ac6fc18e3fe771998d9deb2330"
+  },
+  "scope": "Version1 boundary and Python-packaged defaults. Runtime boundary tests use lifecycle stand-in; full-model serialized execution still pending. Existing full lifecycle evidence predates packaging-only defaults import change.",
+  "prepared_boundary_refactor": "execute delegates to execute_prepared after validation; ready/config shallow copies preserve prepared input mappings.",
+  "runtime_regression_tests_passed": 8
+}

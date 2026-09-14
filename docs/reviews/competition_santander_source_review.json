@@ -1,0 +1,28 @@
+{
+  "source_version_id": "743c3225-058e-5a7e-ab18-ae5dd1c2b7d4",
+  "source_content_hash": "162915709dcde12f33a88f1d693b169aa8509dbd7e5b29755f89a728d388ee11",
+  "approved": false,
+  "catalog_mutations": 0,
+  "classification": "material_intake_correction_required",
+  "source_scope": "Independent complete Santander uniqueness-feature neural/tree pseudo-label ensemble on the provisioned CPU runtime.",
+  "primary_writeup": "https://www.kaggle.com/competitions/santander-customer-transaction-prediction/writeups/wizardry-1-solution",
+  "stage_mapping": {
+    "fake_data_identification": "Detect singleton values within the query population alone; retain rows containing a singleton. Correct original combined-population and inverted-polarity description.",
+    "real_data_filtering": "Filter query rows only for uniqueness statistics; preserve every query row and its ordering in predictions.",
+    "count_encoding": "Build supervised other-row class-presence categories with self-exclusion and combined labeled/retained-query uniqueness override.",
+    "value_substitution": "Replace globally unique values with the labeled-population feature mean; retain raw, categorical and substituted feature groups.",
+    "shuffle_augmentation": "Preserve feature triplets within class; neural on-the-fly augmentation and tree 16-positive/four-negative shuffled copies plus originals.",
+    "lightgbm_training": "Expand incomplete tree-only stage to initial shared-attention neural ranks, hard pseudo-label selection, regenerated features, ten-fold neural/tree refits and final 2.1:1 rank blend."
+  },
+  "independent_choices": [
+    "Selected pseudo-labeled query rows remain in the unlabeled count reference and join ordinary stratified labeled folds.",
+    "Tree controls and categorical handling are explicit; original rows retained alongside shuffled copies, with feature triplets shuffled together.",
+    "PyTorch CPU port, NumPy permutation generator and explicit seed schedule do not reproduce historical framework/random-state behavior."
+  ],
+  "limits": [
+    "Global supervised feature preparation precedes CV; reported validation scores are not independent estimates.",
+    "Historical full tree configuration, selected-row reference membership and pseudo-fold treatment remain unresolved.",
+    "Original source licenses remain unestablished; implementation is independently written from algorithm specifications, with no third-party script, dataset or model weights copied.",
+    "Complete lifecycle and full pseudo counts exercised on synthetic inputs; original 200-feature width, training volume and competitive accuracy not reproduced."
+  ]
+}

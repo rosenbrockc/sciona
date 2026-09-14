@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_inputs_only": true,
+  "family": "inception_v4",
+  "artifact_sha256": "2e27a338f22439476f1a48dfadfe58ee227f2d0ae126f7758eff70de245b2373",
+  "epochs": 1,
+  "optimizer_steps": 1,
+  "batch_size": 2,
+  "full_resolution": 512,
+  "loss": "SmoothL1Loss beta=1 mean",
+  "optimizer_reference_choice": "Adam default betas/epsilon, constant learning rate 1e-4",
+  "finite_gradients_all_parameter_tensors": 450,
+  "changed_probe_max_absolute_deltas": {
+    "features.0.conv.weight": 0.00010001659393310547,
+    "avg_pool.p": 9.989738464355469e-05,
+    "last_linear.weight": 0.000100000761449337
+  },
+  "aggregate_losses": [
+    2.082246780395508
+  ],
+  "scope": "Actual pretrained backbone, GeM exponent and scalar head update. No augmentation, complete stage budget or eight-model lifecycle qualification.",
+  "sha256": {
+    "sciona/aptos_initialization.py": "049020432c1ff43f11210ecb484d9f231a2846508ed8059533d667214f5411b9",
+    "sciona/aptos_models.py": "71859184e8a87f25115db150acfd3bcd8ffdb3856743d5bb914202db306d8b16",
+    "sciona/aptos_pooling.py": "6c7ffa9346a524370f1e700eb607ca3bbce7829b91e3ef23327c3d4c6466a33f",
+    "sciona/aptos_preprocessing.py": "a9e97fc62963d698966bc97805e6c4bbd104cf74dde5bd167f56853d0dbc7010",
+    "sciona/aptos_training.py": "aefb7e06fd3140a0dc9e861c101d814bfe7b6d1d6687783090c7d522756849af",
+    "scripts/validate_aptos_training.py": "202f63da65655761a539198750b03ed2b70faf9a34b6327a1c799318fef8a6aa",
+    "docs/reviews/competition_aptos_pretrained_mirror_pins.json": "6cc1fbea809c017040be7cd7c637dec87a9d8f99dd06c2dd7600df05987b9012"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "r_version": "R version 4.6.1 (2026-06-24)",
+  "package_versions": [
+    {
+      "package": "xgboost",
+      "version": "3.2.1.1"
+    },
+    {
+      "package": "glmnet",
+      "version": "5.0"
+    },
+    {
+      "package": "LiblineaR",
+      "version": "2.10.24"
+    },
+    {
+      "package": "R.matlab",
+      "version": "3.8.0"
+    },
+    {
+      "package": "Matrix",
+      "version": "1.7.5"
+    }
+  ],
+  "unnamed_importance_features": [
+    "f0",
+    "f1",
+    "f5",
+    "f7",
+    "f4",
+    "f6",
+    "f2"
+  ],
+  "source_numeric_indices": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "source_selection_result": {
+    "status": "accepted",
+    "all_missing": true,
+    "columns": 7
+  },
+  "explicit_one_based_importance_features": [
+    "1",
+    "2",
+    "6",
+    "8",
+    "5",
+    "7",
+    "3"
+  ],
+  "label_cases": [
+    {
+      "type": 5,
+      "positive_first": true,
+      "model_classes": [
+        "1",
+        "0"
+      ],
+      "decision_columns": [
+        "1",
+        "0"
+      ],
+      "probability_columns": {},
+      "positive_mean_decision": 9.936902468447697,
+      "negative_mean_decision": -8.47241596639029,
+      "source_column_positive_mean": 0.9417188575385875,
+      "source_column_negative_mean": 0.05106612872525903
+    },
+    {
+      "type": 6,
+      "positive_first": true,
+      "model_classes": [
+        "1",
+        "0"
+      ],
+      "decision_columns": [
+        "1",
+        "0"
+      ],
+      "probability_columns": [
+        "1",
+        "0"
+      ],
+      "positive_mean_decision": 28.759117997531856,
+      "negative_mean_decision": -24.51878490841069,
+      "source_column_positive_mean": 0.9795755012723174,
+      "source_column_negative_mean": 0.018786728482449225
+    },
+    {
+      "type": 5,
+      "positive_first": false,
+      "model_classes": [
+        "0",
+        "1"
+      ],
+      "decision_columns": [
+        "0",
+        "1"
+      ],
+      "probability_columns": {},
+      "positive_mean_decision": -9.9369024684477,
+      "negative_mean_decision": 8.472415966390292,
+      "source_column_positive_mean": 0.058281142461412486,
+      "source_column_negative_mean": 0.9489338712747409
+    },
+    {
+      "type": 6,
+      "positive_first": false,
+      "model_classes": [
+        "0",
+        "1"
+      ],
+      "decision_columns": [
+        "0",
+        "1"
+      ],
+      "probability_columns": [
+        "0",
+        "1"
+      ],
+      "positive_mean_decision": -28.75911799753297,
+      "negative_mean_decision": 24.518784908411696,
+      "source_column_positive_mean": 0.02042449872768206,
+      "source_column_negative_mean": 0.9812132715175518
+    }
+  ],
+  "ridge_lambda_range": [
+    0.03919377883108629,
+    391.93778831086286
+  ],
+  "ridge_requested_lambda": 0.0001,
+  "ridge_probability_range": [
+    0.004287231281144729,
+    0.9989358648761762
+  ],
+  "ridge_minimum_path_clamp_error": 0,
+  "limitations": [
+    "Synthetic runtime API audit; does not execute complete source model rounds or all-population aggregation.",
+    "Current R package behavior only; historical package equivalence remains unproven."
+  ],
+  "validation_sha256": {
+    "audit_andriy_r_contracts.py": "c20bb2f94cd551a415bdffde7f229422facf5aacfb32164475473b46d9ff8a71",
+    "audit_andriy_r_contracts.R": "b047671496e70881f8406686d054de4c04cfa1c0dca127d1ebac90bac9ffedfe"
+  },
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": {
+    "Andriy_mod_glmnet_5_3.R": "b54aac9694eeb6efa525d4de8b17df27062b173424ac8232ac0f9b2fc5cae2d3",
+    "Andriy_mod_svm_5_7.R": "aae151d53a6e3e8d13034596dc7d087f3e925179f4bf4b3ad8bb34ae707fbed0",
+    "Andriy_mod_xgb_7_5.R": "3b5ad2bf7d12b23d07c54d2c00b93d29cb86157022a8660cfeb7463dd267ee2e"
+  },
+  "compiled_library_sha256": {
+    "data.table/libs/data_table.so": "6e962152fb01c19c68cffdce9558b3386e45072d7fc9ff16f0b90407877b944a",
+    "jsonlite/libs/jsonlite.so": "8fd0fc2fd2a8f153521f4096480956be7b435e9eb5dee01d72d6a96ef59d08a6",
+    "LiblineaR/libs/LiblineaR.so": "04d67d5803414a34be9213c9f0adaf4746e69b4bac97f3f4c1c03b6746ee4029",
+    "xgboost/libs/xgboost.so": "59dbefc2c54ad964b4448acd7ed2b249f2adb70060136c23cd3f2d932350577c",
+    "glmnet/libs/glmnet.so": "82f9f4ef3252ce0e6c7c4fd98e104b3f7ffd74288d376a0fe02f8932eb14e412",
+    "RcppEigen/libs/RcppEigen.so": "949a4204406a690f71c258a7db76b73431b3eca801ffd8bd6748ffbc09e12fcc",
+    "Rcpp/libs/Rcpp.so": "f05b7f2c9a5aeaa9125997c53ee3548eb6292f27cbda72ee9b9d8c78b7cf6e15"
+  }
+}

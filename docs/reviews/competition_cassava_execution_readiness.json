@@ -1,0 +1,54 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "target_tier": 3,
+  "source_version_id": "735c71d1-6f8a-565b-a5c3-f1bcf3a89285",
+  "source_content_hash": "c74ce39f2cea94fe168690a36ac59be792dad72a02f705424dea7a8f24cc2218",
+  "structural_status": "pass",
+  "runtime_status": "pending",
+  "semantic_status": "pending_final_review",
+  "developer_semantics_status": "pending_final_review",
+  "stage_mapping": {
+    "image_augmentation": "Separate source-comparison evidence for ResNeXt, ViT, B4 training and B4/CropNet inference; caller supplies aligned prepared B4 images.",
+    "model_backbone": "Three trainable pretrained families (ResNeXt, ViT, B4) plus frozen official CropNet; intake omits two families.",
+    "robust_loss": "Family-specific objectives replace the unsupported universal robust-loss claim: ResNeXt CE, ViT bi-tempered loss and source B4 focal behavior.",
+    "pseudo_labeling": "Excluded: not established by inspected winning writeup and pinned notebook sources.",
+    "ensembling": "Fivefold means for ResNeXt/ViT, separate B4 full refit with ten-view inference, CropNet unknown-mass distribution, then (ViT+ResNeXt)/2+B4+CropNet."
+  },
+  "limitations": [
+    "Automated Tier 3 Community candidate; no Tier 1 human certification or Tier 2 usage qualification.",
+    "Corrected CPU reconstruction; historical TPU execution, exact historical timm runtime and leaderboard equivalence are unproven.",
+    "Caller establishes physical-image identity and prepared-view provenance. Exact decoded duplicates and key mismatch reject; near-duplicate identities are not inferred.",
+    "ViT validation is kept disjoint from training; B4 final normalization explicitly adapts the full supplied training population.",
+    "Explicit historical-reference timm weights and official CropNet are used; exact winner cached artifacts are not universally proven.",
+    "Synthetic full-resolution execution with batch one and zero torch workers does not establish competitive accuracy or original population-scale performance.",
+    "Caller supplies local reference artifacts and manages private checkpoint outputs; no model artifact is bundled by these provider wrappers.",
+    "Final five-class scores sum to three and are not probabilities. Each invocation retrains the complete workflow."
+  ],
+  "reference_conditions": [
+    "Retain the source and supplemental notices with the reconstruction.",
+    "Caller supplies model artifacts they are entitled to use; integrity checks do not establish usage rights.",
+    "The winner converted EfficientNet artifact remains unapproved for redistribution; no independent weight grant is inferred from software attribution.",
+    "Review any future distribution of external model files or dependency wheels separately.",
+    "Official CropNet and historical-reference timm scope remain explicit; winner runtime/cache equivalence is unproven."
+  ],
+  "required_actions": [
+    "Complete graph_execution_validation",
+    "Incorporate reference-scope conditions into final semantic approval",
+    "Pass transactional publication gates and verify served graph execution"
+  ],
+  "trained_execution_evidence": {
+    "pipeline_validation": "8372ce1db4691964e221cd3bd753377f0f770a1885d64d40ba0f62039ef1eeed"
+  },
+  "provider_sha256": "bf744f33fee70d6514edd40f3883a2cfacc5d2b94de7929329bd4c029ef24453",
+  "serialized_graph_sha256": "30fe0b129a99f14429acc3c583411ace824f6439db06b4c24aa2cc9feedb49fd",
+  "sha256": {
+    "scripts/review_cassava_execution.py": "ec0b5b31b481e264043c64765ce205013a47eb5322e14f5b3c4aa65bbf80df2b",
+    "docs/reviews/competition_cassava_source_review.json": "05c0b39b42f43f52d2451f46c027cb8e94f52c598e3605ca87a4130e1532aabc",
+    "docs/reviews/competition_cassava_provider_structure.json": "5c6cb42ba3a27aca3625622c3c78f4e90fd24d33a6a9640e80499f8a0a82c14e",
+    "docs/reviews/competition_cassava_provider_contract_validation.json": "4a569f116264c978afc286ba8263f9eeaf604dea8a694616ba7f1c445ff5fdd4",
+    "docs/reviews/competition_cassava_duplication_review.json": "c1c73d80475f1f4eb6311311bc3862b92663b8cb70f7ba064322124d299cadb4",
+    "docs/reviews/competition_cassava_reference_scope_review.json": "5630c10acb6364d4b6cb5b036a56e82aa62a2deceefd08b40e657753d2fed5ea",
+    "docs/reviews/competition_cassava_publisher_payload_validation.json": "2b8bcd11be9a277888a707549e3c9691c264f17d0678553adaa34276fcddf39f"
+  }
+}

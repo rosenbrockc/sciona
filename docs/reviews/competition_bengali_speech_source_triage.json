@@ -1,0 +1,48 @@
+{
+  "format": "bengali-speech-source-triage.v1",
+  "intake_version_id": "37e4ea7f-aab7-5849-b241-ea0f34be7ac5",
+  "intake_content_hash": "99b26f7063519a905d81643399138393118ab73d2975232cb73a3118608a4f93",
+  "status": "deferred_complete_training_source_and_notebook_license_unresolved",
+  "version_bound_reference": "https://www.kaggle.com/competitions/bengaliai-speech/discussion/447953",
+  "candidate_winning_writeup": "https://www.kaggle.com/competitions/bengaliai-speech/writeups/chimege-1st-place-solution",
+  "author_primary_reference": "https://www.kaggle.com/tugstugi/discussion",
+  "notebook": {
+    "url": "https://www.kaggle.com/code/tugstugi/bengali-ai-asr-competition",
+    "public_api": "https://www.kaggle.com/api/v1/kernels/pull/tugstugi/bengali-ai-asr-competition",
+    "id": 44634987,
+    "version": 1,
+    "code_cells": 6,
+    "extracted_code_sha256": "01ea364319e5c55f65439c25fb0245273fd74e4b4654c713c551ba2350ff86e8",
+    "outputs_retained": false,
+    "license": "unresolved: public pull metadata does not declare notebook license"
+  },
+  "verified_code_findings": [
+    "HuggingFace automatic-speech-recognition pipeline with 20.1-second chunks, batch4 and Bengali transcription decoder prompt.",
+    "Beam generation uses max_length260 and num_beams4.",
+    "Repetition function removes every occurrence of words whose total count exceeds8.",
+    "Separate AutoModelForTokenClassification punctuation stage averages softmax scores, weights four labels by1.0/1.4/1.0/0.8, reassembles wordpiece tokens and appends punctuation.",
+    "Inference code contains no KenLM or pyctcdecode; notebook does not implement training."
+  ],
+  "source_corrections": [
+    "Intake CTC/KenLM training/decoding description is unsupported by available winner code; retain training objective as unresolved until full training source is inspected.",
+    "Winner comments say only 16kHz conversion as preprocessing, not the intake volume normalization claim."
+  ],
+  "remaining": [
+    "Verify original notebook license directly; later model packaging or fork licenses do not establish it.",
+    "Resolve full model fine-tuning, tokenization and punctuation training code and licenses.",
+    "Review empty-output behavior: source final-character indexing can fail after repetition removal.",
+    "Do not replace full winning training/inference with a generic Whisper wrapper."
+  ],
+  "limits": [
+    "Only extracted software retained locally; no notebook outputs, speech files, text corpus, model weights or archives retained.",
+    "No model or provider implemented, no catalog approval."
+  ],
+  "followup": {
+    "author_repository_checked": "tugstugi/dl-colab-notebooks",
+    "commit": "3622c82dbffc3d651bf931b5055447208bc0a546",
+    "tree_truncated": false,
+    "finding": "No software paths containing Bengali, Whisper or punctuation identifiers in checked tree; earlier author inventory had 12 repositories. This does not prove training code absent elsewhere.",
+    "rules_reference": "https://www.kaggle.com/competitions/bengaliai-speech/rules",
+    "license_limit": "Rules describe OSI-approved code-sharing/winner licensing obligations but do not identify a concrete license for this notebook; no specific license inferred."
+  }
+}

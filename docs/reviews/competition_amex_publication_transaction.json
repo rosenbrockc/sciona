@@ -1,0 +1,19 @@
+{
+  "format": "amex-publication-transaction.v1",
+  "scope": "Configured local catalog only",
+  "synthetic_only": true,
+  "trust_tier": 3,
+  "source_version_id": "d505faaa-7277-5559-b32c-f95c9f1f9d63",
+  "graph_sha256": "361ec002f383b0e770936e525461a15623a8cc559a1d601218590fbc97e27259",
+  "version_id": "78a1dc98-78a0-5b0d-a7af-3f292a5ac78f",
+  "publication_gates_rejected": 6,
+  "rollback_rows": 40,
+  "rollback_absence_verified": true,
+  "apply_rows_created": 40,
+  "reapply_rows_created": 0,
+  "original_intake_status": "draft",
+  "served_cdgs": 101,
+  "competition_intakes": 142,
+  "covered_intakes": 34,
+  "remaining_intakes": 108
+}

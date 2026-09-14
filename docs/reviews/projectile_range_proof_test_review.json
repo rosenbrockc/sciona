@@ -1,0 +1,13 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_projectile_range_proof.py",
+  "test_results": {
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_projectile_range_proof.py": "a771a36a22c391ce7868d66aa61b6d4ac08f1eb625f90d0e0525aaa59bdf037e"
+  }
+}

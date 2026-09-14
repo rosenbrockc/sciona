@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_version_id": "d79e40e4-45b0-5e74-a83c-c68c91f12afb",
+  "source_content_hash": "565e511ee8d20ce0b32adf5c8cc726150f235b1f97d5502d62c96cfe339f5ac1",
+  "source_code_cells_sha256": "ee289da71520cfa781723070f5face629c962e9430fd06bb4f2069a3b72a83b9",
+  "checks": {
+    "aggregate_cases": 3,
+    "aggregate_width": 9,
+    "source_length_fourier_channels": 3,
+    "phase_boundary_cases": 4
+  },
+  "sha256": {
+    "sciona/vsb_measurement.py": "f8607a107d000ec57d770a31604adb52164dbc0365503ee284faf40d931452a6",
+    "tests/test_vsb_measurement.py": "2189d0816e3a261b4ee0eef8fd5615a07f97bda9d49d3545c24c9550ca43496e",
+    "scripts/validate_vsb_measurement_comparison.py": "7c1e8b643cbb367367ecc6d474237d6c1cbe04f25766e37ffc1a3a841a2204ab"
+  },
+  "limits": [
+    "Synthetic comparison to unaccelerated source only; FFT changes summation order and near-boundary floating-point classification may differ.",
+    "Input-length generalization interprets the fundamental as one cycle across each supplied signal.",
+    "NaN missing aggregates intentionally retained for native learner handling; full training and publication remain pending."
+  ]
+}

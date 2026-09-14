@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 12,
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "checks": [
+    "Hidden thresholds enter labels only",
+    "Current/future action and reward isolation",
+    "Opponent reward isolation per eligible perspective",
+    "Whole-game uniqueness across training and validation",
+    "Validation population does not affect training sampling",
+    "Seeded reproducibility and input immutability",
+    "Bounded sampled row output",
+    "Raw and transformed target correspondence"
+  ],
+  "sha256": {
+    "sciona/santa_replay_training.py": "f0033fc23cc0d7d3c777e5a0c69cbcde9e1b74c868bce32717f343be34892921",
+    "sciona/santa_agent_features.py": "b6cd7831b2dfe7b72024f24273092f5bf62ed297c19d30453cfcf04963b2a127",
+    "sciona/santa_threshold_posterior.py": "17228b0cf24f76d530df7858df037fdef80ef2b5d8df5cb0fec010cb2d7b1b7f",
+    "tests/test_santa_replay_training.py": "1c29ee0888732630c03b0a70202a591bbb5056169c8697887af58f6da7b02ad3"
+  },
+  "limitations": [
+    "Caller explicitly selects eligible player perspectives and whole-game split.",
+    "Independent seeded one-in-five sampling replaces the source xorshift sampling; no exact historical row membership claim.",
+    "Replay inputs are bounded in-memory populations; no original replay ingestion or throughput qualification.",
+    "Two LightGBM fitting lifecycle, synthetic closed-loop game execution and Tier 3 gates remain pending."
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_brewster_angle.py": "ca4f057e9da80120bd48f797424924276ebf49b92cf3a0690c9e604730b3287b",
+    "tests/physics_ingest/test_brewster_angle_proof.py": "53d904fd159d8db0f3db4e514ebae0ddcc83cecb356f0a7358082461abd2a0ec"
+  },
+  "provider_sha256": "e5f5af7936aa10edb4d6d8c189201ab046ea5d06197c56038c354ddae55bcdb8",
+  "synthetic_only": true
+}

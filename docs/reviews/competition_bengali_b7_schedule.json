@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_body_sha256": "762fa0cf4ef4de04840a66ea83b023a29ed57ca6745e489e49f02986a9edcb07",
+  "source_markdown_sha256": "e7baa14c4dec0cf1d579fdaa79f5d4f8e2fabd916e14d5da40d52e085fb4f6f4",
+  "branches": 2,
+  "schedule_configurations": 256,
+  "exact_multiplier_checks": 7373,
+  "winner_warmup_duration_recovered": false,
+  "implementation_sha256": {
+    "sciona/grapheme_b7_schedule.py": "7a82e2f87419ca5cf60703ab510c9ec7c52778727816e8a84d881e876e1f6c88",
+    "scripts/validate_bengali_b7_schedule.py": "2b7a43d2c2dc3f55c189396006a8fabb09f4fbea6c342873d5a5408bf374e185"
+  },
+  "limits": [
+    "Formula equality only; synthetic warmup parameters are not attributed to the winner.",
+    "Full B7 training, scheduler/optimizer ordering, normalization and warmup identity remain pending."
+  ]
+}

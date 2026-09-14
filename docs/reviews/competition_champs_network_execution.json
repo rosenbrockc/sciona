@@ -1,0 +1,138 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "variant": "model_H",
+      "parameters": 131445568,
+      "layers": 15,
+      "dimension": 700,
+      "quadruplets": false,
+      "synthetic_loss": 3.3519628047943115,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_I",
+      "parameters": 153638464,
+      "layers": 16,
+      "dimension": 700,
+      "quadruplets": false,
+      "synthetic_loss": 4.715062141418457,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_L",
+      "parameters": 191747006,
+      "layers": 18,
+      "dimension": 750,
+      "quadruplets": true,
+      "synthetic_loss": 5.285199165344238,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_A",
+      "parameters": 84239478,
+      "layers": 10,
+      "dimension": 650,
+      "quadruplets": false,
+      "synthetic_loss": 2.28269624710083,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_F",
+      "parameters": 114426628,
+      "layers": 10,
+      "dimension": 800,
+      "quadruplets": false,
+      "synthetic_loss": 2.4269351959228516,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_B",
+      "parameters": 84239478,
+      "layers": 10,
+      "dimension": 650,
+      "quadruplets": false,
+      "synthetic_loss": 2.28269624710083,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_C",
+      "parameters": 84239478,
+      "layers": 10,
+      "dimension": 650,
+      "quadruplets": false,
+      "synthetic_loss": 2.28269624710083,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_M",
+      "parameters": 95218444,
+      "layers": 11,
+      "dimension": 660,
+      "quadruplets": false,
+      "synthetic_loss": 3.4286510944366455,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_G",
+      "parameters": 97409304,
+      "layers": 11,
+      "dimension": 600,
+      "quadruplets": false,
+      "synthetic_loss": 2.7923219203948975,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_E",
+      "parameters": 87423868,
+      "layers": 10,
+      "dimension": 600,
+      "quadruplets": false,
+      "synthetic_loss": 3.813572883605957,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_D",
+      "parameters": 109167004,
+      "layers": 11,
+      "dimension": 800,
+      "quadruplets": false,
+      "synthetic_loss": 3.209232807159424,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_J",
+      "parameters": 108488466,
+      "layers": 13,
+      "dimension": 650,
+      "quadruplets": false,
+      "synthetic_loss": 2.6437742710113525,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    },
+    {
+      "variant": "model_K",
+      "parameters": 102887892,
+      "layers": 14,
+      "dimension": 600,
+      "quadruplets": false,
+      "synthetic_loss": 2.017007350921631,
+      "finite_backward": true,
+      "optimizer_steps": 1
+    }
+  ],
+  "scope": "Full configured network topology; one SGD probe step each on synthetic tensors. No chemistry preprocessing, original training schedule, saved state parity, or ensemble execution validated.",
+  "source_changes": "None. Module-level imports/launchers excluded; termcolor display replaced with plain text.",
+  "validator_sha256": "47e7e68c7b43caa07e0bb62b8c0eaae132e7a2f5b216de810a40a1cf100e6b61"
+}

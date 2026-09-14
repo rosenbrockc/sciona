@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "component_only": true,
+  "model_fits": 35,
+  "boosting_rounds": 98000,
+  "per_row_oof_coverage": 7,
+  "constant_target_oracle": true,
+  "source_sha256": "99a7af81af8b03e33049acc670552b69030184778bfe85d2a9c4371f63981737",
+  "xgboost_version": "3.4.1",
+  "verifier_sha256": "b9e8d2a6e83ccbc8e489fb4808c8224567aeae1a2ee93d45ec6182a465d3005f",
+  "scope": "Full regression budgets; no full pipeline or competition accuracy claim. Modern exact-tree CPU XGBoost with fixed 0.5 base score; historical implementation parity not established."
+}

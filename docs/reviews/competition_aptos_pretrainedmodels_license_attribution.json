@@ -1,0 +1,48 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "repository": "https://github.com/Cadene/pretrained-models.pytorch",
+  "commit": "ac8682febf8533e7c009425407e84de7b8567109",
+  "archive_sha256": "da5407c51989be95d2d966684188088962b49ce7799457a144a12141f68c43be",
+  "matched_python_files": [
+    "pretrainedmodels/__init__.py",
+    "pretrainedmodels/datasets/__init__.py",
+    "pretrainedmodels/datasets/utils.py",
+    "pretrainedmodels/datasets/voc.py",
+    "pretrainedmodels/models/__init__.py",
+    "pretrainedmodels/models/bninception.py",
+    "pretrainedmodels/models/cafferesnet.py",
+    "pretrainedmodels/models/dpn.py",
+    "pretrainedmodels/models/fbresnet.py",
+    "pretrainedmodels/models/inceptionv4.py",
+    "pretrainedmodels/models/nasnet.py",
+    "pretrainedmodels/models/nasnet_mobile.py",
+    "pretrainedmodels/models/pnasnet.py",
+    "pretrainedmodels/models/polynet.py",
+    "pretrainedmodels/models/resnext.py",
+    "pretrainedmodels/models/resnext_features/__init__.py",
+    "pretrainedmodels/models/resnext_features/resnext101_32x4d_features.py",
+    "pretrainedmodels/models/resnext_features/resnext101_64x4d_features.py",
+    "pretrainedmodels/models/senet.py",
+    "pretrainedmodels/models/utils.py",
+    "pretrainedmodels/models/vggm.py",
+    "pretrainedmodels/models/wideresnet.py",
+    "pretrainedmodels/models/xception.py",
+    "pretrainedmodels/utils.py",
+    "pretrainedmodels/version.py"
+  ],
+  "different_or_missing": [
+    "pretrainedmodels/models/fbresnet/resnet152_load.py",
+    "pretrainedmodels/models/inceptionresnetv2.py",
+    "pretrainedmodels/models/torchvision_models.py"
+  ],
+  "scope": "Repository revision selected by release time, then compared directly to installed sources. Matching file contents establish source correspondence; release timing alone does not.",
+  "notice_path": "docs/licenses/APTOS-pretrainedmodels-BSD-3-Clause.txt",
+  "notice_sha256": "d2e55e943a5b0ae82161e09cfcbe2d11f67013be50af957944314679184cc5fc",
+  "observed_source_differences": {
+    "pretrainedmodels/models/inceptionresnetv2.py": "Publisher sdist adds torch.nn.functional import and dropout in logits; present in the installed and validated runtime.",
+    "pretrainedmodels/models/torchvision_models.py": "Publisher sdist adds torch import and one blank line in load_pretrained.",
+    "pretrainedmodels/models/fbresnet/resnet152_load.py": "Repository-only helper absent from installed/sdist Python file inventory; not an APTOS backbone."
+  },
+  "attribution_status": "Upstream BSD-3-Clause notice preserved. Exact PyPI source identity separately verified for all 27 installed files. Repository snapshot is not claimed byte-identical to the complete publisher sdist; differences explicitly recorded. Model-weight use rights remain separate."
+}

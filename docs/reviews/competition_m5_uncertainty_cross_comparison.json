@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "source_cross_comparisons": 100,
+    "synthetic_only": true
+  },
+  "source_software_sha256": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22",
+  "scope": "Pairwise crosses only; exponential means separately checked against pandas oracle.",
+  "sha256": {
+    "sciona/m5u_exponential.py": "8742f3a02a084a96dd6bf6a1d702a2b723fb0522259f63f8c74908304135428d",
+    "tests/test_m5u_exponential.py": "59bb4b44ac476aae6e86f76f730ac25f82f9631f1c28d1314571be4daaa21e79"
+  }
+}

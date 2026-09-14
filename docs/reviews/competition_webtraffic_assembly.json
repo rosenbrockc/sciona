@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "assemblies": 12,
+    "tensors": 132,
+    "rejected_inputs": 7
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_assembly.py": "28fd1b0b87866e388bb5b3c863919f153b71210813226a0e54a1a81353a3976c",
+    "sciona/webtraffic_features.py": "78695bfc0331cb3e6b3e46fdfed5219a690e347390156dbac06aaaf8a8baf543",
+    "sciona/webtraffic_pages.py": "5b9e00643a86dc38568b7def1b8322051b89036c5d9a342994407ef7a6153442",
+    "sciona/webtraffic_calendar.py": "e2ccf630fa3225e77373d4d8e40805d24ff152e35d877165e5f5d123c10dd205",
+    "scripts/validate_webtraffic_assembly.py": "96a4c94b693b6c7d07e3b731949056a297cae63bb32e5b487a6c6e51344bf683",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "limitations": [
+    "Original NumPy bodies run without numba; legacy NaN and calendar lookup adapted.",
+    "Source undefined/constant-feature NaNs retained; no real data or model weights.",
+    "Neural sampling, training, checkpoint averaging and inference remain unvalidated."
+  ]
+}

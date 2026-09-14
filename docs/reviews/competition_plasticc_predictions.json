@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "approved": false,
+  "checks": {
+    "source_cases": 12,
+    "independent_rows": 144,
+    "input_preservation": 12,
+    "default_input": 12,
+    "zero_mass_semantics": 2,
+    "missing_required_class": 1
+  },
+  "hashes": {
+    "sciona/plasticc_predictions.py": "22fa11fb13ea480be21bb31b04094363434e458cbcb039b6e6edb6e6a74ed0a3",
+    "scripts/validate_plasticc_predictions.py": "e4330978fbd0966eadb3bc818502b1fe8f33eacb910689aa316fb89e73b50e2d",
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  },
+  "scope": "Source task-specific adjustment; synthetic probabilities only",
+  "limitations": [
+    "Not general unknown-object detection or Platt calibration",
+    "Full runtime must validate required classes, alignment and nonzero output mass"
+  ]
+}

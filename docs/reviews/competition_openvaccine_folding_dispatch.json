@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "source_commit": "919295dbc5bcc6a6be904fd3020affc047ccecb3",
+  "source_pins": [
+    {
+      "software_path": "src/arnie/mfe.py",
+      "sha256": "0aac78cf41bf3c4904b436ce90488bdc47b2297c19a084ab912558359c08e819",
+      "url": "https://raw.githubusercontent.com/DasLab/arnie/919295dbc5bcc6a6be904fd3020affc047ccecb3/src/arnie/mfe.py"
+    },
+    {
+      "software_path": "src/arnie/bpps.py",
+      "sha256": "b569441efe599f5be4df19b4ee092995ef0cd1fbf528d3e0ac8cee63964c5f50",
+      "url": "https://raw.githubusercontent.com/DasLab/arnie/919295dbc5bcc6a6be904fd3020affc047ccecb3/src/arnie/bpps.py"
+    },
+    {
+      "software_path": "src/arnie/pfunc.py",
+      "sha256": "96a74e16c7fcb981abd95281bff70f4a4cdd5e81ed694be68260b615f7da1390",
+      "url": "https://raw.githubusercontent.com/DasLab/arnie/919295dbc5bcc6a6be904fd3020affc047ccecb3/src/arnie/pfunc.py"
+    },
+    {
+      "software_path": "src/arnie/utils.py",
+      "sha256": "326ca7913bb4372270b9f9aff7e1babf56d783858b6c829be4c245a5639bcc37",
+      "url": "https://raw.githubusercontent.com/DasLab/arnie/919295dbc5bcc6a6be904fd3020affc047ccecb3/src/arnie/utils.py"
+    }
+  ],
+  "default_viterbi": false,
+  "explicit_viterbi_forwarded": true,
+  "explicit_parameters_forwarded": true,
+  "posterior_cutoff": 1e-10,
+  "command_cases": 3,
+  "engine_executed": false,
+  "scope": "Pinned Arnie subprocess argument construction only; explicit subprocess test double. No folding engine, parameters or biological data executed.",
+  "validator_sha256": "70ec0dacdd81bd8ed0ddb59eaeeb529367c26c9bda53fd8186f8b5d4b18966a3"
+}

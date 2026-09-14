@@ -1,0 +1,26 @@
+{
+  "format": "dfdc-dataset-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_population_loader_cases": 8,
+    "exact_prepared_batches": 14,
+    "python_numpy_torch_rng_continuation_exact": true,
+    "independent_batch_sizes_and_tails": true,
+    "per_access_augmentation": true
+  },
+  "adaptations": [
+    "Default workers0 CPU execution; sourceworkers6/distributedsampler not covered.",
+    "Dataset.reset activates source postshuffleNumPy state; outer lifecycle must isolate all RNG streams.",
+    "Source populator AST plus independentlyvalidated preparation replaces source file-backedDataset."
+  ],
+  "limits": "Synthetic records and no-face hull stand-in; source population and loader batching compared with shared previouslyvalidated sample preparation. Actual dlib and B7 covered by separatecomponent reports. No multiworker, outer lifecycle or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_dataset.py": "757b5f8442b1681551d3b711a256b864dc3712a92d5ee212a4f4ccbc8d8691a6",
+    "sciona/dfdc_population.py": "a2b18eae1aaab9d572bb05a021685c97cfa81754557948f298f2a76763e2314f",
+    "sciona/dfdc_preparation.py": "34e4c21448c215ccd4adbcad8c4b7476aa555be302e957d3cb1936f147466a41",
+    "sciona/dfdc_transforms.py": "5b1cee757b9ceac53c18e61c5aba489fad629f81dbd78f298945ebb452889f6f",
+    "scripts/validate_dfdc_dataset.py": "11708772c4466735955514b4c7b98c0e94444fb7f979895aa9c91ac1d5818ca2",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

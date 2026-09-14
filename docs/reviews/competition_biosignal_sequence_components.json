@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 16,
+  "source_version_id": "1587d081-d47c-5595-8bed-d3d3aa6465af",
+  "source_content_hash": "2ab7a80c92296d3fffeb6187655e52443caf311086b4cdc3ed1efde5fe4406c8",
+  "scope": "Generic five-stage biosignal spectrogram/sequence classification; independent binary dual-branch realization planned.",
+  "implemented": [
+    "Per-recording fixed windows, explicit stride and omitted trailing-sample count",
+    "Segment-mean detrending, periodic Hann, one-sided density-normalized PSD and log1p",
+    "1D waveform CNN and 2D spectrogram CNN with frequency-preserving temporal pooling",
+    "Seeded bounded time/frequency masking with input immutability"
+  ],
+  "checks": [
+    "Window alignment",
+    "Explicit odd/even DFT and Parseval density checks",
+    "Offset and population independence",
+    "Both neural branch gradients and batch independence",
+    "Mask bounds, repeatability and zero-mask identity"
+  ],
+  "pending": [
+    "Subject-disjoint state boundary with explicit sample rate and channel count",
+    "Training-only normalization and augmented weighted training",
+    "Recording aggregation and held-out threshold lifecycle",
+    "Serialized graph and Tier3 review/publication"
+  ],
+  "sha256": {
+    "sciona/biosignal_sequence_features.py": "1c451d7b85429df17c686baa134df0dcb46ac3c00c09d192779fc5217d43d070",
+    "sciona/biosignal_sequence_network.py": "9bd7439b77f3bc96556da67b3b7a846073e328eb3ee2cb6e01c1b8320a5867d7",
+    "tests/test_biosignal_sequence_features.py": "0f9a439ef268e1783a268b2747c21e511d7fec3dc96fb89010793c116a5d75a3",
+    "tests/test_biosignal_sequence_network.py": "b109960511acbe02c36d452f6c8f108b966271ee0260d6f2c120ce14ae78c21a"
+  },
+  "limitations": [
+    "Synthetic signals only; no clinical or historical accuracy claim",
+    "Incomplete windows and FFT segments are omitted explicitly",
+    "No shared state or statistics fitted across populations"
+  ],
+  "catalog_mutations": 0
+}

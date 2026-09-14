@@ -1,0 +1,31 @@
+{
+  "format": "dfdc-record-assembly-validation.v1",
+  "result": "passed",
+  "checks": {
+    "synthetic_pair_records": 20,
+    "original_detection_batches": 2,
+    "original_landmark_calls": 8,
+    "unpaired_original_excluded": true,
+    "annotation_reuse_verified": true,
+    "explicit_shuffle_repeatability": true,
+    "caller_python_rng_preserved": true,
+    "actual_detector_annotation_records": 6
+  },
+  "adaptations": [
+    "Caller clip order and explicit localshuffle seed replace nondeterministic source set/process collection and unseededshuffle.",
+    "Positional references replace source mediaidentities; arrays are runtime-only."
+  ],
+  "limits": "Synthetic inventory expectations and actual constructed-state MTCNN assembly, relying on separately source-validated component gates. No original media, pretrainedquality, full DataLoader/training lifecycle, checkpointselection or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_records.py": "5491a316e5cc53cae7edda6dafa3466e20a5f710732aa2740df77a6e3e82faba",
+    "sciona/dfdc_folds.py": "19a906285411ca326ec162fe47c17368d7804d9bcda271be209d594758d551fd",
+    "sciona/dfdc_training_crops.py": "ab190178ec5f5f8e20b097e6bba00aaee132fc26b525e77c3d5f0893124765f2",
+    "sciona/dfdc_crop_annotations.py": "366a3251cc6c80919f680685fda36c4d725d4a4c519a24e5dafce8bd76b96b80",
+    "sciona/dfdc_difference_mask.py": "12dcbb23b1be1eaca4e0f67b1f2300c3a29da3d75d9659ad9799f51194d76781",
+    "sciona/dfdc_detector.py": "b44391c23d79d6c6724360e49e34450a9d073facba491075879f9bba0d2336a6",
+    "sciona/dfdc_faces.py": "8852942a6a366dd0b8adb5af038cd6f42cc414c013fad24f265f21d954041a68",
+    "sciona/dfdc_mtcnn_networks.py": "f1f3c5d22e9aaddc753016b315281c1e38924e9f58528fbfc35d0935c7d417ec",
+    "sciona/dfdc_mtcnn_cascade.py": "056419d1f931902495d2778cb2e7b214c0a73599eedcdf917e48bbb78bf379a1",
+    "scripts/validate_dfdc_records.py": "4d9e7ccfbd7053cde92f9ee0b0458b636bec95a6f403d19d076dc1098e6076dc"
+  }
+}

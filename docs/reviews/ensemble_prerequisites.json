@@ -1,0 +1,24 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "upstream_component_digests": {
+    "riemannian": "6cac6ad8cccd4c30425fbdf62cc8ee7c04e61c5e2a29c155edfee593c7e10207",
+    "relative_power": "cca4fa851032d89ebabbca30f4069024d049d8492ca6de4598e37ded5655b8e7",
+    "combined_feature": "b9713d2fc7ac20caccd2a75e186f4dec78a519719e51ee000f03640b244fc124",
+    "feng_knn": "b2d6d14b1dd70ed1fdcb1d60cd964834fdb15e99699412a257e7c41ce060f8f6",
+    "feng_xgb": "52c93e5241475c00251a12e84c19dc08398a3bb5ecbac1ad9cdc46180a4cf82a",
+    "feng_expanded": "544856191ba0bc7d5fb625a037d9c91bdfa596a34aae5334137b94f60a4a5c53",
+    "andriy": "9d5ff3e24a795a261fb683c82208b116af79536f8c2194b662edd18fa086b6a9"
+  },
+  "graph_digest": "3ef7247266b95358ec9405b4fd8222a7904a01e1274b862be83d872679869a64",
+  "nodes": 155,
+  "edges": 523,
+  "adapter_versions_verified": 7,
+  "tests_verified": 24,
+  "execution_prerequisites_complete": true,
+  "pending": [],
+  "limitations": [
+    "Integrity/execution prerequisites only; exact catalog versions, interfaces, dependency closure and semantic review still gate publication.",
+    "Current runtime source contracts with declared adaptations; no historical-engine or predictive-quality claim."
+  ]
+}

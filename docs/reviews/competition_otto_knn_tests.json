@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "All ten 2..1024 neighbor counts match direct sorted-label frequencies",
+    "Unsmoothed zero probabilities retained",
+    "Stable reference-order ties and query-chunk independence",
+    "Five-fold OOF exclusion with full-training query reference",
+    "Own-fold label isolation",
+    "Insufficient references and overlapping identities rejected"
+  ],
+  "sha256": {
+    "sciona/otto_knn_models.py": "7f049298cb817d676f268359c404272fe7918e5b56c8727fe3afbfeb93e8f910",
+    "tests/test_otto_knn_models.py": "8c894b2dd4c5b6bf80e4ff6274a570cc5a7676aee4320bd980bda6fa6ecdfc06"
+  },
+  "limitations": [
+    "Explicit metric; per-variant historical metric assignment unresolved.",
+    "Deterministic supplied-reference-order tie convention; original library tie parity not claimed.",
+    "Fixed raw features only; model families 24..33 component implemented, remaining stack and learned features pending."
+  ],
+  "catalog_mutations": 0
+}

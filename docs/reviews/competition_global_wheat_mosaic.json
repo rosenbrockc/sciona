@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "8224574f23ae68f559e7f9a5a33bbb9e207dfd5ed76f6145db16dfb38c02c84c",
+  "exact_cases": 64,
+  "output_size": 1024,
+  "pixels_boxes_loader_order_and_rng_exact": true,
+  "ordinary_wide_auxiliary_and_empty_boxes_exercised": true,
+  "inputs_unchanged": true,
+  "implementation_sha256": {
+    "sciona/wheat_mosaic.py": "90308d23d8a4438a9130329cfea4f99caaa677749c0650637c66585c9548774d",
+    "sciona/wheat_crop.py": "6291dc130f41cd1173672448255dc03e3c46ff2d98b3ac78716ed0b62a318ab9",
+    "scripts/validate_wheat_mosaic.py": "21ee9359cf8faef3f26bf6ec62906d17b3245fc88226359a4c53c0fe3a10faa6"
+  },
+  "limits": [
+    "Mosaic assembly only; single-image sampling, resizing, photometric augmentation and full fits remain pending."
+  ]
+}

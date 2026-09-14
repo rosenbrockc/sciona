@@ -1,0 +1,14 @@
+{
+  "served_cdgs": 88,
+  "competition_intakes": 142,
+  "covered": 21,
+  "uncovered": 121,
+  "version_id": "310bbede-676c-5029-aad1-24273373b656",
+  "graph_sha256": "4a5e403fcdb5da06bf44812043e3a06bb66de2012a3af7dcf9d6eb091651787c",
+  "trust_tier": 3,
+  "rollback_rows": 46,
+  "rollback_absence_verified": true,
+  "applied_rows": 46,
+  "reapplied_rows": 0,
+  "coverage_definition": "Mandatory source provenance to a served derived scope; not historical accuracy."
+}

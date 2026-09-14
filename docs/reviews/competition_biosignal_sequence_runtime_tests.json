@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 34,
+  "serialized_boundary_tests": 13,
+  "source_version_id": "1587d081-d47c-5595-8bed-d3d3aa6465af",
+  "source_content_hash": "2ab7a80c92296d3fffeb6187655e52443caf311086b4cdc3ed1efde5fe4406c8",
+  "stage_mapping": {
+    "subject_safe_windowing": "Caller-supplied disjoint subjects, aligned channels/sample rate, fixed within-recording windows",
+    "spectral_signal_features": "Periodic Hann detrended one-sided density PSD with log1p and training-only balanced channel scaling",
+    "deep_signal_backbones": "Joint 1D waveform and 2D spectrogram CNNs with frequency-preserving pooling",
+    "augmentation_and_loss": "Seeded time/frequency masks and class/recording-balanced BCE with gradient accumulation",
+    "window_aggregation_calibration": "Mean window probability per recording and separate highest-threshold F1 calibration"
+  },
+  "checks": {
+    "explicit_dft_parseval": true,
+    "dual_branch_gradients": true,
+    "mask_bounds_repeatability": true,
+    "recording_balanced_scaling": true,
+    "class_recording_balanced_loss": true,
+    "mean_window_aggregation": true,
+    "calibration_labels_do_not_change_scores": true,
+    "query_batch_independence": true,
+    "independent_f1_search": true,
+    "subject_disjointness": true,
+    "strict_json_boundary": true,
+    "mutated_intermediate_rejected_before_fit": true
+  },
+  "sha256": {
+    "sciona/biosignal_sequence_contract.py": "17d7abf7e31b8d1da580c8ed7e80fef66e6fc1f5f9e5855e7ad208b077b8495f",
+    "sciona/biosignal_sequence_features.py": "1c451d7b85429df17c686baa134df0dcb46ac3c00c09d192779fc5217d43d070",
+    "sciona/biosignal_sequence_graph.py": "94444d9db8296675ed1f817c77a0c312f38d238664e0cd1c05ec0890ca464c4f",
+    "sciona/biosignal_sequence_network.py": "9bd7439b77f3bc96556da67b3b7a846073e328eb3ee2cb6e01c1b8320a5867d7",
+    "sciona/biosignal_sequence_training.py": "c2796713460a1cfc36c6f3ed821b45aeece87edcfa772835880c14d1e470827d",
+    "tests/test_biosignal_sequence_contract.py": "fabf48112750d0d6effb7686ec8a9924dfcd87915cd41fa129f1a44eccf03c6e",
+    "tests/test_biosignal_sequence_features.py": "0f9a439ef268e1783a268b2747c21e511d7fec3dc96fb89010793c116a5d75a3",
+    "tests/test_biosignal_sequence_network.py": "b109960511acbe02c36d452f6c8f108b966271ee0260d6f2c120ce14ae78c21a",
+    "tests/test_biosignal_sequence_training.py": "e92abca363c1ad97f33a0677116a84f097dfb467ad5a50bf4651a493e89dfe0f",
+    "scripts/biosignal_sequence_synthetic.py": "caa410671452cb311a95d868eede1d4629a9f5c6549418d9671cb9e6811ab696"
+  },
+  "scope": "Synthetic signal lifecycle only; no clinical, historical or real-data accuracy claim. Tier3 review pending."
+}

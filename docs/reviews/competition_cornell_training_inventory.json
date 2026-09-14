@@ -1,0 +1,347 @@
+{
+  "source_commit": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59",
+  "inference_code_sha256": "dcf21b634705e83e3fbfcde448146619688449c53ad5a3e4c8bd4bdce9a34bd9",
+  "members": [
+    {
+      "ordinal": 0,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_nomix_fold0.py",
+      "configuration_sha256": "15bbabd9fa8a2b4120b3fd0e61e4b5d81284992505e8d6cb213cff0990eb71d0",
+      "parameters": {
+        "fold": 0,
+        "aug_name": "default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 1,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_nomix_fold1.py",
+      "configuration_sha256": "043518a0867c61d873db91dd9ed60f47bd2a1bef748b3568762e30668f213d2c",
+      "parameters": {
+        "fold": 1,
+        "aug_name": "default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 2,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_nomix_fold2_augd.py",
+      "configuration_sha256": "b9a2b3984b78fde91ff0a289c527744df3bb589f45e68cb8168c3e4906e745ec",
+      "parameters": {
+        "fold": 2,
+        "aug_name": "default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss_augd",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0,
+          "primary_drop_out_factor": 0.3
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 3,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_nomix_fold3_augd.py",
+      "configuration_sha256": "25452d4a40b8be93fcbdb79ba4caf0e356c48e52999a8c7cd927c03d1ac06e0d",
+      "parameters": {
+        "fold": 3,
+        "aug_name": "default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss_augd",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0,
+          "primary_drop_out_factor": 0.3
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 4,
+      "software_configuration": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold0.py",
+      "configuration_sha256": "64b58edc40b6dd856e0467f695219a055deb7ca2d5d802b217f6641d145193ea",
+      "parameters": {
+        "fold": 0,
+        "aug_name": "secondary_default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 5,
+      "software_configuration": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold1.py",
+      "configuration_sha256": "6d73e83c7e758cd04848cc139b26ff1af00b2dfb8302cb4ecbb8b4e60270d1ba",
+      "parameters": {
+        "fold": 1,
+        "aug_name": "secondary_default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 6,
+      "software_configuration": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold2.py",
+      "configuration_sha256": "4c8c447ebbed66696869c5e606c567880381a88c9ac568cfb51f7cdc7fabe5b2",
+      "parameters": {
+        "fold": 2,
+        "aug_name": "secondary_default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 7,
+      "software_configuration": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold3.py",
+      "configuration_sha256": "14fd58e1c0b70cdbfaadbc43341747cd5befee24d16ed42f603bea32d674f468",
+      "parameters": {
+        "fold": 3,
+        "aug_name": "secondary_default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 8,
+      "software_configuration": "src/config_params/final_sed_5_fold/final_5fold_sed_dense121_nomix_fold4.py",
+      "configuration_sha256": "71da3b778e8a352cef90f12d20f8df44703078fb2b44dd2cfbe24066fc8b58ef",
+      "parameters": {
+        "fold": 4,
+        "aug_name": "secondary_default",
+        "apply_mixup": false,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.001,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": false,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 9,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_mix_fold0_2.py",
+      "configuration_sha256": "8e34bf9a297ee64eaaf2ada5b434cfa565e43269f46c1e8585344a7977cef069",
+      "parameters": {
+        "fold": 0,
+        "aug_name": "default",
+        "apply_mixup": true,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.0005,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": true,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 10,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_mix_fold1_2.py",
+      "configuration_sha256": "fbd01698e375f3d3ad6b411d5d6baa299efca50e2773e9abff7da243b4f2ad50",
+      "parameters": {
+        "fold": 1,
+        "aug_name": "default",
+        "apply_mixup": true,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.0005,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": true,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 11,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_mix_fold2_2.py",
+      "configuration_sha256": "88f8254a20c6abe23281449e6b3fe20756bf6b89d221858a07ddfa85b9603dab",
+      "parameters": {
+        "fold": 2,
+        "aug_name": "default",
+        "apply_mixup": true,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.0005,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": true,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    },
+    {
+      "ordinal": 12,
+      "software_configuration": "src/config_params/final_sed/final_sed_dense121_mix_fold3_2.py",
+      "configuration_sha256": "8223d7b62a249fe07b6634bb8d51c6beb9b9201d47fdd23eca95e17e33b8bbe0",
+      "parameters": {
+        "fold": 3,
+        "aug_name": "default",
+        "apply_mixup": true,
+        "criterion_name": "sed_scaled_pos_neg_focal_loss",
+        "criterion_params": {
+          "gamma": 0.0,
+          "alpha_0": 1.0,
+          "alpha_1": 1.0,
+          "secondary_factor": 1.0
+        },
+        "scheduler_name": "warmup_with_cosine",
+        "lr": 0.0005,
+        "PERIOD": 30,
+        "loads_prior_checkpoint": true,
+        "run_params": {
+          "max_epochs": 50,
+          "epoch_length": null
+        },
+        "load_model_only": true
+      }
+    }
+  ],
+  "scope": "Inference configuration names matched to pinned training software; does not prove checkpoint bytes or completed training runs. Model checkpoint paths omitted."
+}

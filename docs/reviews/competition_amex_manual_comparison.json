@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_software_sha256": "6de0a4d65a17a0a25e10c8fdf19fa8efca6babd94aef1f6aabf71a72334a8911",
+  "compared_blocks": 9,
+  "sha256": {
+    "sciona/amex_categorical.py": "613e98a20408e36fc3c9ad499439068749674cd0349b781c6061f1c16a71a2c5",
+    "sciona/amex_manual.py": "3ec5930a9f06e2654153371b2f3b3f4271e4a376a2f4e814a471ab3a15547b9e",
+    "sciona/amex_numeric.py": "aeefcd3e3aa1ccd52e904c79b99b52f348a4727fce78e73ecd03acb9cb0afa73",
+    "sciona/amex_ranks.py": "029c61b4bc1e6ecb81e0545f205417e2e032c670126e2b3e24004a4ee049cd63",
+    "tests/test_amex_manual.py": "fa84fd26b5cb4ebc6af5bc583d85ba8fa0f38aa5890b1d44468cf8a11c840af9",
+    "scripts/validate_amex_manual_comparison.py": "bdda5039c55dbd8adb88d429b5eb23616e6b07cc2273f8351a18478bb519d512"
+  },
+  "limits": [
+    "Synthetic joint population comparison of manual blocks only. Inputs already denoised and category-mapped; final learner concatenation remains pending.",
+    "Explicit runtime numeric/category/month/time/fill roles generalize private source schema; no source dataset contents included."
+  ]
+}

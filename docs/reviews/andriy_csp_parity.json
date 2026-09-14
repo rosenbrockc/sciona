@@ -1,0 +1,63 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "csp": "dd045065f6b0562ebcb86ce922c2104305b6e468f3a9fdd55cdd7cab588365f0",
+    "spatFilt": "51605fe7d23925e8a4cf4a19f2612ebb3182902b529218e529898ff041cc4611"
+  },
+  "provider_sha256": "a80839e8c411a8e04f98437a48fc9d29325b099d74a13c68577bb746bdab8e58",
+  "validation_sha256": "17567e19c9aad763da01ec91ea1a744135b5114edb3bc70f566855b8ef5085b6",
+  "test_sha256": "f0067535566177b878fffd56d02e613664ae23c540cf3d3efe502b713a68ffd1",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "seed": 581,
+      "training_samples": 300,
+      "aligned_filter_error": 1.021405182655144e-13,
+      "aligned_projection_error": 6.572520305780927e-14,
+      "supplied_filter_projection_error": 0.0
+    },
+    {
+      "seed": 581,
+      "training_samples": 3840,
+      "aligned_filter_error": 2.1938006966593093e-13,
+      "aligned_projection_error": 1.5987211554602254e-14,
+      "supplied_filter_projection_error": 0.0
+    },
+    {
+      "seed": 582,
+      "training_samples": 300,
+      "aligned_filter_error": 8.526512829121202e-14,
+      "aligned_projection_error": 5.861977570020827e-14,
+      "supplied_filter_projection_error": 0.0
+    },
+    {
+      "seed": 582,
+      "training_samples": 3840,
+      "aligned_filter_error": 3.019806626980426e-13,
+      "aligned_projection_error": 2.842170943040401e-14,
+      "supplied_filter_projection_error": 0.0
+    },
+    {
+      "seed": 583,
+      "training_samples": 300,
+      "aligned_filter_error": 5.551115123125783e-14,
+      "aligned_projection_error": 4.263256414560601e-14,
+      "supplied_filter_projection_error": 0.0
+    },
+    {
+      "seed": 583,
+      "training_samples": 3840,
+      "aligned_filter_error": 1.4566126083082054e-13,
+      "aligned_projection_error": 7.815970093361102e-14,
+      "supplied_filter_projection_error": 0.0
+    }
+  ],
+  "limitations": [
+    "Source eigenvector signs aligned for fitted-filter comparison; supplied-filter projection compared without alignment.",
+    "Provider rejects singular/ill-conditioned class covariances and numerically repeated eigenvalues.",
+    "Current Octave generalized eigenvector scaling; historical MATLAB scaling and downstream AR sign invariance unproven.",
+    "Caller selection, preprocessing, AR and model execution remain separate."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_helmholtz.py": "bed3ecfba5094e6d8a32186221307c145b2c4f47662c97e48f0cb5750cac30d5",
+    "tests/physics_ingest/test_helmholtz_proof.py": "5205c217000381222bd98382022ad6496a7de9d5e8f92b5f33ab614cd8505b2f"
+  },
+  "provider_sha256": "8305788690f14fef83056bb64a6329e76eb8880adaf765bc5561e57648a36a86",
+  "synthetic_only": true
+}

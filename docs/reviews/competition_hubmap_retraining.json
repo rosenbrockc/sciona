@@ -1,0 +1,25 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_population_and_validation_cases": 12,
+  "discarded_pseudo_tiles": 34,
+  "source_ast_identical": [
+    "dataset.py",
+    "run.py"
+  ],
+  "augmentation_recipe_ast_identical": true,
+  "implementation_sha256": {
+    "sciona/hubmap_retraining.py": "ca98b27ef53c2dcd3f9ec67b30e29182a263ed4aeb5a8a32518bdfb7509f9c27",
+    "sciona/hubmap_raw_training.py": "605e089d2c233bc52b4417b86b58fb20bfc21e1dab7b2c602df26be9e5f2926c",
+    "sciona/hubmap_raw_population.py": "a32bacc34b571bd0452e2eebef41c73d6bfd84ec3f541302a441883c9c96752b",
+    "sciona/hubmap_preparation.py": "6d879b22aafa81cbbc091727a1d35078a4a8f885160e8cd258f8050a0406122c",
+    "sciona/hubmap_tiling.py": "514df1fdf3a50f97ff409bac085241345a9fb738c387d6bc319e4f7c9c540f8d",
+    "scripts/validate_hubmap_retraining.py": "b2c9fb388bee3716879719b4299c6d26ab94cefb0577567494c6bfb22dd32bd8",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Original pseudo bin/presence filter and training append executed; raw tile numerics have separate source evidence.",
+    "Runtime ordered pseudo source collections; original private identities not embedded.",
+    "Full pseudo-augmented training execution, pseudo preparation orchestration and final graph publication remain."
+  ]
+}

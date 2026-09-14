@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 14,
+  "hashes": {
+    "sciona/openvaccine_lifecycle_contract.py": "b69c4d1053bd3e55d3748fd93a861d6e0be179945a163adb90b23ad55332b778",
+    "sciona/openvaccine_lifecycle.py": "edd23436cf75576be6e001b53e2a4ae9504070e0e7b2eb65cd42a2007dced3f4",
+    "tests/test_openvaccine_lifecycle_contract.py": "af0a612e305e3fb40c65ae3d7cc313ef52de2a0b0fbaf4f14e15f325e51a5f51"
+  },
+  "scope": "All raw population and later-round plans validated before folding/model execution; full current lifecycle hash will be revalidated through graph execution.",
+  "full_lifecycle_revalidation_pending": false,
+  "superseding_full_execution": "competition_openvaccine_graph_execution.json"
+}

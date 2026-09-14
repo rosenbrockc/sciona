@@ -1,0 +1,25 @@
+{
+  "format": "biosignal_sequence-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "calibration_leakage",
+    "missing_f1_validation",
+    "query_population_leakage",
+    "missing_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_biosignal_sequence_execution.py": "fb21af48cbf9e0573c4eab294b3052fbff7d363da5079e84351340a2862182df",
+    "scripts/validate_biosignal_sequence_review_gates.py": "6abb8015a4ffb4f833b02f31628faae054daaf1c7a65136a6373cc6ac4f396c8"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

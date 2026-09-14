@@ -1,0 +1,15 @@
+{
+  "format": "flavours-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_validation:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "514e496430c380c9b416ee9bda8100225312e51dffeebe033eab2a1001009c00",
+  "validator_sha256": "e87ba33e389a6cb3f5f71b649b41220b5bfb4a41e54af1a821eefa406f3e1648",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

@@ -1,0 +1,41 @@
+{
+  "repository": "https://github.com/Mcompetitions/M5-methods",
+  "commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "files": {
+    "Code of Winning Methods/A1/0. README.md": "6a1a762967c87ecbda42639052b669edd6b4dd3005cec3e343aa6752f2fbf195",
+    "Code of Winning Methods/A1/3. code/1. preprocessing/1. preprocessing.py": "a3d669ed6aaf55b7d15f57cee1922dfa9e9fc3308a0bda9599114b44c4ce96b5",
+    "Code of Winning Methods/A1/3. code/2. train/1-1. recursive_store_TRAIN.py": "86c72937a6245b19c4e039d845c45f689206e3940802325714807186df936ca2",
+    "Code of Winning Methods/A1/3. code/2. train/1-2. recursive_store_cat_TRAIN.py": "1542c68bb17c5e4c98c38ffa262cd317c594fe92c1d21996527f7d17ea508ba9",
+    "Code of Winning Methods/A1/3. code/2. train/1-3. recursive_store_dept_TRAIN.py": "fc72b8af847e384942cd94c2e905e4f7dda7f598dde3aa39dec9729fbca350d1",
+    "Code of Winning Methods/A1/3. code/2. train/2-1. nonrecursive_store_TRAIN.py": "7e414f5c886362cf4beee4c8f76ed4130274428d288e9977595f3263662b79bb",
+    "Code of Winning Methods/A1/3. code/2. train/2-2. nonrecursive_store_cat_TRAIN.py": "5a32a3474badf871a59887f45fafa9dfaa3b03a2c5d11c7679e3381816388546",
+    "Code of Winning Methods/A1/3. code/2. train/2-3. nonrecursive_store_dept_TRAIN.py": "df3ab21865126d8975118d806784f6a54380944bcc83819790e9f12fbffc404e",
+    "Code of Winning Methods/A1/3. code/3. predict/1-1. recursive_store_PREDICT.py": "35df618fa1b549e124eb93040241f71320f7d58663114a82841a395105289ea5",
+    "Code of Winning Methods/A1/3. code/3. predict/1-2. recursive_store_cat_PREDICT.py": "731cbe8270576ce8af596689baecf5fa32b11700ca0b72b932f54865a0f36fea",
+    "Code of Winning Methods/A1/3. code/3. predict/1-3. recursive_store_dept_PREDICT.py": "0ee8bd0a49aa8d8d9422a9ae6dbcf2913ef97fd43657f2560fa54a9a0af47fdf",
+    "Code of Winning Methods/A1/3. code/3. predict/2-1. nonrecursive_store_PREDICT.py": "0019d62b78fda25fb77b30510708e5af93718a0e5b5f384d2821f5eb9c15d0cc",
+    "Code of Winning Methods/A1/3. code/3. predict/2-2. nonrecursive_store_cat_PREDICT.py": "2b9d49d07bcb24ca12cebeca724bec93bf8d9b802faa99beac45176a9a078e31",
+    "Code of Winning Methods/A1/3. code/3. predict/2-3. nonrecursive_store_dept_PREDICT.py": "3abc353d60fb7e070e34c849ddcaa0b4fa846cc5246ccc9237baf438a83fc8cd",
+    "Code of Winning Methods/A1/3. code/3. predict/3-1. Final ensemble.py": "6fc879d24ddf726771bef2b7f35fedef5d638f57d19eddad55f0d518c3f61164"
+  },
+  "git_blobs": {
+    "Code of Winning Methods/A1/0. README.md": "05d7bab35a005af0ca3d228d231cae338198930b",
+    "Code of Winning Methods/A1/3. code/1. preprocessing/1. preprocessing.py": "b8105e49ddbbbc2ee2814c5d1444987c0ab1f43c",
+    "Code of Winning Methods/A1/3. code/2. train/1-1. recursive_store_TRAIN.py": "257c8bf38f1305805059e4bfddfb482ea0f0aa74",
+    "Code of Winning Methods/A1/3. code/2. train/1-2. recursive_store_cat_TRAIN.py": "177e67111849cf7910b691f4e8fb96389a9332d6",
+    "Code of Winning Methods/A1/3. code/2. train/1-3. recursive_store_dept_TRAIN.py": "8172e904630649bccba83163a6ab4db8191438b9",
+    "Code of Winning Methods/A1/3. code/2. train/2-1. nonrecursive_store_TRAIN.py": "dd3276324c75ef551b2882cf1e2ebf53c4ba237e",
+    "Code of Winning Methods/A1/3. code/2. train/2-2. nonrecursive_store_cat_TRAIN.py": "eaeaea10aca1326363ccf589693e8d050bbfcd7b",
+    "Code of Winning Methods/A1/3. code/2. train/2-3. nonrecursive_store_dept_TRAIN.py": "bd7445afcf34bee57af3c4961df06e4ccdfdade4",
+    "Code of Winning Methods/A1/3. code/3. predict/1-1. recursive_store_PREDICT.py": "d66fc26baccb074db68db88fa559ffb25e502a0b",
+    "Code of Winning Methods/A1/3. code/3. predict/1-2. recursive_store_cat_PREDICT.py": "96120f4aa933277dacd23e64e7ac4e2d1a926afb",
+    "Code of Winning Methods/A1/3. code/3. predict/1-3. recursive_store_dept_PREDICT.py": "5c81d8e993158d61601c551635856690c8a4403b",
+    "Code of Winning Methods/A1/3. code/3. predict/2-1. nonrecursive_store_PREDICT.py": "26f66079e310bdbeb96f9349cc8d9e5308b5fcc4",
+    "Code of Winning Methods/A1/3. code/3. predict/2-2. nonrecursive_store_cat_PREDICT.py": "a10900496c7df3ec8eaad446f6b05009ae164e8c",
+    "Code of Winning Methods/A1/3. code/3. predict/2-3. nonrecursive_store_dept_PREDICT.py": "68d88a0ad04ccbb33e7f1f446bd5e1210d0b8b05",
+    "Code of Winning Methods/A1/3. code/3. predict/3-1. Final ensemble.py": "7b3e5701e98ce8873f49ef5e1eb85804d4d73b1b"
+  },
+  "approved": false,
+  "license_status": "unresolved",
+  "scope": "A1 public software and README only; no data, logs, model or submission files"
+}

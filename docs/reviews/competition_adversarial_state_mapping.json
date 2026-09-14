@@ -1,0 +1,40 @@
+{
+  "format": "adversarial-state-mapping-validation.v1",
+  "result": "passed",
+  "checks": {
+    "inception_v3": {
+      "tensors": 388,
+      "scopes": 4,
+      "full_output_input_gradient_exact": true
+    },
+    "inception_v4": {
+      "tensors": 608,
+      "scopes": 1,
+      "full_output_input_gradient_exact": true
+    },
+    "inception_resnet": {
+      "tensors": 908,
+      "scopes": 2,
+      "full_output_input_gradient_exact": true
+    },
+    "resnet101": {
+      "tensors": 544,
+      "scopes": 1,
+      "full_output_input_gradient_exact": true
+    }
+  },
+  "invalid_states_rejected": 12,
+  "limits": "Complete synthetic inverse-layout round trips and source-name anchors; no real pretrained checkpoint or TensorFlow checkpoint binary reader. Caller must supply exact decoded model variables; optimizer slots and unrelated tensors rejected. Historical variable names remain source-derived rather than checkpoint-verified.",
+  "sha256": {
+    "sciona/adversarial_state_mapping.py": "138758b19da6ffed43fb17e0065322e34732a3eb4d1cc16637f6c9f6e6ad8a3e",
+    "scripts/validate_adversarial_state_mapping.py": "4b271db6a8d4e82ae3146cc2ec08e23d49b9c0c670571a23c2132dff9c4be4fa",
+    "sciona/adversarial_inception_v3.py": "cf2adb7d1b3309bd3665013f8cf0c847302353be52c677b8f619efc7c7b97b71",
+    "sciona/adversarial_inception_v4.py": "2f98b52b06d85aabf2a8d616c4a3e09888fe95c5f15731d9e23934a25c77fc3a",
+    "sciona/adversarial_inception_resnet.py": "22364cb662b390ebc1d53830ee76d37ded16c61daed09b44b760778c75cdb0b5",
+    "sciona/adversarial_resnet.py": "5a60047ce948db4e88f75784da8d767afbc14ef7031a7b2c4fde6358110a092b",
+    "sciona/adversarial_inception_v3_topology.json": "59052d911d13a47fb8c9e048e4de3e7fa66d8b4439d715caa1959ad0229c79ed",
+    "sciona/adversarial_inception_v4_topology.json": "f33a8109dc4c934b29dbc6677fdb19b23f15fc5583086d90ad60c67af92ae8a4",
+    "sciona/adversarial_inception_resnet_topology.json": "c2da0c58a5542e8b9aabee0897b58dc3b263acdf059ee6372c60a9087ca54903",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  }
+}

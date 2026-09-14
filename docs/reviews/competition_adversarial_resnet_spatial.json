@@ -1,0 +1,15 @@
+{
+  "format": "adversarial-resnet-spatial-validation.v1",
+  "result": "passed",
+  "checks": {
+    "source_helper_cases": 16,
+    "independent_scalar_values_input_and_weight_gradients": true,
+    "stride_one_then_subsample_equivalence": true
+  },
+  "limits": "CPUfloat64 synthetic single-channel convolution; pinned source helper with Torch conv/pad adapter. No TensorFlow binary, batchnorm, full ResNet or full attack claim.",
+  "sha256": {
+    "sciona/adversarial_resnet_spatial.py": "023d6fe17962eea7025a8472ea028f9ee7fac8e3836f74d6d0e64ca66a3bfb39",
+    "scripts/validate_adversarial_resnet_spatial.py": "00b85bc2d1a0428d9941895457b2b702b123e3bc172728f9fcdb88af97c9f092",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  }
+}

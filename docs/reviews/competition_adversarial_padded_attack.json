@@ -1,0 +1,27 @@
+{
+  "format": "adversarial-padded-attack-validation.v1",
+  "result": "passed",
+  "checks": {
+    "full_neural_batch_size": 10,
+    "real_entries": 1,
+    "padded_entries": 9,
+    "targeted_small_full_iterations": 40,
+    "full_models": 2,
+    "caller_slim_states_used": true,
+    "only_real_entry_encoded": true,
+    "decoded_PNG_matches_source_scaling": true,
+    "normalized_projection_bound": true,
+    "input_and_rng_unchanged": true
+  },
+  "limits": "Synthetic supplied model states with BN beta=.1, no pretrained claim. Full padded targeted-small lifecycle; padded8/5-model branches not tested here. Source saved PNG stretching does not guarantee pixel epsilon bound. Degenerate zero-normalization states explicitly reject.",
+  "sha256": {
+    "sciona/adversarial_rgb_attack.py": "36e6cfd383b530a2bf239476d47dbf86ac446994ffd669d4153e431a5718b689",
+    "scripts/validate_adversarial_padded_attack.py": "0c6d4d68d15501422a1d787209b9debf557b23db35fd5d75850220baa98a904a",
+    "sciona/adversarial_image_boundary.py": "8d7fcbb8d939e81441d98367a0c22dfcbcebce250024b466868a95d7ada90566",
+    "sciona/adversarial_lifecycle.py": "19c0bb800a9030b2937cef485d80f5e3ee4e72d8bde124a6a3eebb2517ab3fd5",
+    "sciona/adversarial_ensemble.py": "454f159958dfeb3a5ececfffdeb3c176be5348a30e1dc0534519a018566521eb",
+    "sciona/adversarial_state_mapping.py": "138758b19da6ffed43fb17e0065322e34732a3eb4d1cc16637f6c9f6e6ad8a3e",
+    "docs/reviews/competition_adversarial_lifecycle.json": "b4a5679637fcdd07dc35f65ec0854121407a36b71466f87b6cb46aaf9ef4972a",
+    "docs/reviews/competition_adversarial_image_boundary.json": "729423b39d0e96ea5159dac69e5a0522703fe2e716b5345968bc1b520c62a70e"
+  }
+}

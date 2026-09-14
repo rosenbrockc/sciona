@@ -1,0 +1,128 @@
+{
+  "atoms": [
+    {
+      "artifact_id": "00ea3d2d-f2e9-5c4e-bb4c-34c513f1f73d",
+      "version_id": "dc0a926f-9da6-5134-a096-6a3e7be127fa",
+      "fqdn": "sciona.atoms.ml.sklearn.neighbors.feng_knn.feng_knn_segment_probabilities",
+      "runtime_fqdn": "sciona.atoms.ml.sklearn.neighbors.feng_knn.feng_knn_segment_probabilities",
+      "source_sha256": "3751d91bef60a80d6ee0a6d057d23603e0ee8a3ec56d5e1cc4a70205093d428d",
+      "intake_evidence_sha256": "9e401246359c8a1c789dbd1c13d9be2e9f97c37c844d6e253291384f9637445d",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves float32 feature loading, segment/window row order, negative-infinity/NaN cleanup, separate train/prediction scalers, forty distance-weighted Manhattan neighbors and mean window probabilities. Nine contract tests and fifteen exact source cases pass.",
+      "review_limitations": [
+        "Community Tier 3 automated review only; no Tier 1 certification or Tier 2 usage claim.",
+        "Current numerical libraries and synthetic source parity; no historical-engine, clinical or predictive-performance claim.",
+        "Source prediction scaling depends on the entire prediction batch; caller supplies one population and actual 600-second clips.",
+        "One model branch only; full ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "15a43f0c-f624-5dcd-b73f-151d3a4e20ab",
+      "version_id": "47418509-7ef2-5e8b-bc95-4c94a14162b3",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_fft.feng_fft_features",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_fft.feng_fft_features",
+      "source_sha256": "e5593bd48d977ec52de539fb4f1f3a2a0304cc64737df910d7fc492cf0df5740",
+      "intake_evidence_sha256": "82d10cd5c1ff99e1ec0ee4b2ae755a9cb4c147bcfbd2736d210605ffb2e5c85e",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves six half-open mean log-magnitude FFT bands and population standard deviation on ordered nonoverlapping windows; source undefined log values remain for classifier cleanup. Eight contract tests and fifteen exact source cases pass.",
+      "review_limitations": [
+        "Community Tier 3 automated review only; no Tier 1 certification or Tier 2 usage claim.",
+        "Current numerical libraries and synthetic source parity; no historical-engine, clinical or predictive-performance claim.",
+        "Source prediction scaling depends on the entire prediction batch; caller supplies one population and actual 600-second clips.",
+        "One model branch only; full ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "a4d75c15-a24b-5d04-a9b8-3d6285462411",
+      "version_id": "b22bac76-f0cf-5e58-a3b7-7cba9d6bda8b",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_filter.feng_resample_filter",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_filter.feng_resample_filter",
+      "source_sha256": "3a581686d8e7ef87bb649f545cff292498ab9dff4e1145ba93ba5d3e4e8c9590",
+      "intake_evidence_sha256": "ff9e9c109b396f25f0dfb4c5d3bc9638499ce7ce03ceda7324d1ef3d34867a08",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Source float32 loading, Fourier resampling to 400 Hz, fifth-order causal Butterworth bandpass and zero-state filtering. Twelve contract tests and ten exact source cases including 600-second duration pass.",
+      "review_limitations": [
+        "Community Tier 3 automated review only; no Tier 1 certification or Tier 2 usage claim.",
+        "Current numerical libraries and synthetic source parity; no historical-engine, clinical or predictive-performance claim.",
+        "Source prediction scaling depends on the entire prediction batch; caller supplies one population and actual 600-second clips.",
+        "One model branch only; full ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "131a7a31-bb22-5b52-a373-0b1ca14a6ac4",
+      "version_id": "60b88f2c-64bf-5ce4-828a-8fd660e1b976",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_feature_partitions",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_feature_partitions",
+      "source_sha256": "87aa4c9c5814111666ff855e1d1bb3dbb56732ff8647c7af94f5f6e11d74faa8",
+      "intake_evidence_sha256": "e32f2e904f0b51e4d6669c06ce6f136c994205ade542d5a86b23d17a536aa1c9",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Requires source-duration filtered segments with matching channels; stacks segment/channel/feature/window tensors without reordering. Ten partition tests and three exact serialized source cases pass; delegated FFT version is recorded.",
+      "review_limitations": [
+        "Community Tier 3 automated review only; no Tier 1 certification or Tier 2 usage claim.",
+        "Current numerical libraries and synthetic source parity; no historical-engine, clinical or predictive-performance claim.",
+        "Source prediction scaling depends on the entire prediction batch; caller supplies one population and actual 600-second clips.",
+        "One model branch only; full ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "bcf6d4e3-6f71-587c-a31d-503407a4310c",
+      "version_id": "f7afbe65-a760-5a47-a947-5e2922629366",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_filter_partitions",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_filter_partitions",
+      "source_sha256": "87aa4c9c5814111666ff855e1d1bb3dbb56732ff8647c7af94f5f6e11d74faa8",
+      "intake_evidence_sha256": "21b20105626b5c6d2ab8aea0ef1abd2a2116b614870b57091ee813827ae2a3c4",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves ordered nonempty matching-channel partitions, fixed 600-second source duration and independent filtering states. Exact delegated filter version is recorded; full serialized signal-to-score source parity passes.",
+      "review_limitations": [
+        "Community Tier 3 automated review only; no Tier 1 certification or Tier 2 usage claim.",
+        "Current numerical libraries and synthetic source parity; no historical-engine, clinical or predictive-performance claim.",
+        "Source prediction scaling depends on the entire prediction batch; caller supplies one population and actual 600-second clips.",
+        "One model branch only; full ensemble remains incomplete."
+      ]
+    }
+  ],
+  "tests_passed": 39,
+  "test_source_hashes": {
+    "test_feng_resample_filter.py": "9c0aa7b29e12b911de9fec9fd495ff21850967749650e7c18f3f5dbaf6963d04",
+    "test_feng_fft_features.py": "ccdfac860002bd30c4bfce0d7284a61bee7250836250e88101346e7db393763e",
+    "test_feng_knn.py": "0441d7f5469529965e86b5eea22b63edd30476077d31febdf992b7ba4900ee9e",
+    "test_feng_partitions.py": "47c00e7881283f8d9d5ee236525a79bd68355b084e591cf2178d1787d0ef44b7"
+  },
+  "execution_evidence": "feng-knn-execution-intake.v1",
+  "scope": "Five exact provider versions supporting one population of the Feng base KNN source branch."
+}

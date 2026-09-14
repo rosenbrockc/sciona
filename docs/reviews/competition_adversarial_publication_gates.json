@@ -1,0 +1,15 @@
+{
+  "format": "adversarial-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "494b3c2babc1da1990d5a8838583ace29790254604cbf8e29be61923424b9d16",
+  "validator_sha256": "f0ec96110a121aee997996a0eff35e64bdd5d433ae4c5df446f56a6276b6d97d",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

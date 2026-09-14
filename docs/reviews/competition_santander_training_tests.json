@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "checks": [
+    "All requested folds and seeds trained",
+    "Exact repeated prediction",
+    "Best validation AUROC checkpoint restored",
+    "First-best tie selection",
+    "Mean query ranks independently calculated",
+    "Legacy cosine phase values",
+    "Invalid controls",
+    "Singleton-tail row preservation"
+  ],
+  "sha256": {
+    "sciona/santander_training.py": "bd32ce0626d4e034a93592495b8e2b7e1a1045058a75aa4356fbeafa26928737",
+    "tests/test_santander_training.py": "083e19ee2efe774df3a481b86e8a7390b6a5b20cc80babe930d85950c51012ff"
+  },
+  "limits": "Synthetic neural branch tests only; full winning ensemble not established."
+}

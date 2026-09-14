@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 6,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Exactly seven cluster assignments",
+    "Hand zero/above-half/below-minus-half row counts",
+    "Cluster assignment distance oracle",
+    "Reference-only scaling and clustering",
+    "Query independence and seeded repeat",
+    "Invalid cluster banks rejected"
+  ],
+  "sha256": {
+    "sciona/otto_augmented_features.py": "17568a237b96a2db6e2152892699dfd782461a982059060523aa3eb36226776f",
+    "sciona/otto_clustering.py": "227611641be342eb0245a128d4ac4954665d1332bb44af14b286b32d9c265ed7",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "tests/test_otto_augmented_features.py": "bb54af47b82490b80b0e87bd6f1989d7f768983b6db1d13d040ccf6fbbd16c1b"
+  },
+  "limitations": [
+    "Historical cluster counts/encoding and fitting scope unresolved.",
+    "Numeric assignment columns are explicit independent choice.",
+    "Augmented multiclass fitting and OOF orchestration pending; no added full model-family coverage yet."
+  ],
+  "catalog_mutations": 0
+}

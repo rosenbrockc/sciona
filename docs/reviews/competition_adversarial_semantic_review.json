@@ -1,0 +1,136 @@
+{
+  "format": "adversarial-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "cebbfc7d-e32e-5f52-9ec2-e1de0d955501",
+  "source_hash": "d6b977ae079c82dec43ffdf88f64fb9089c17e587c3ee4c36f5411aa0b28828b",
+  "source_commits": {
+    "non_targeted": "5c68162e05de7afed2e3d33115df43e2a7a1c3da",
+    "targeted": "7da707fe568053a9e2735fcc692c8f0ad7e122a1"
+  },
+  "serialized_graph_sha256": "2e7db7d5d1134a6df3e1b6c91f27b343ce02af56accd21173a57a52da21f9dd5",
+  "provider_sha256": "4f3c569667377520c79c8fd937f1e5f311c664caa010fb340002578219f5fc2e",
+  "provider_package_sha256": "9630772be5b4898ccd843849c729863041fc722777484523ef2adda654a20679",
+  "intake_stage_mapping": [
+    {
+      "intake": "ensemble_prediction_label_inference",
+      "realization": "Unweighted eight-model probabilities on iteration0 then fixed labels",
+      "evidence": [
+        "losses",
+        "ensemble",
+        "lifecycle"
+      ]
+    },
+    {
+      "intake": "adaptive_epsilon_attack_strategy",
+      "realization": "Separate targeted epsilon>=8 five-model20steps versus epsilon<8 two-model40steps; non-targeted eight-model10step default",
+      "evidence": [
+        "updates",
+        "lifecycle",
+        "padded_attack",
+        "graph_execution"
+      ]
+    },
+    {
+      "intake": "ensemble_logit_fusion_with_asymmetric_weights",
+      "realization": "Source-ordered main and auxiliary weighted logits across actual full backbones",
+      "evidence": [
+        "losses",
+        "ensemble"
+      ]
+    },
+    {
+      "intake": "auxiliary_logit_loss_fusion",
+      "realization": "Inference auxiliary heads retained; main CE plus0.4 auxiliary CE",
+      "evidence": [
+        "inception_v3",
+        "inception_v4",
+        "inception_resnet",
+        "losses",
+        "graph_execution"
+      ]
+    },
+    {
+      "intake": "momentum_iterative_gradient_accumulation",
+      "realization": "Actual neural input gradients,mean-absolute non-targeted normalization and recurrent momentum",
+      "evidence": [
+        "updates",
+        "ensemble",
+        "lifecycle"
+      ]
+    },
+    {
+      "intake": "std_normalized_momentum_gradient",
+      "realization": "Targeted population-std input-gradient normalization and post-accumulation renormalization",
+      "evidence": [
+        "updates",
+        "lifecycle"
+      ]
+    },
+    {
+      "intake": "rounded_clipped_perturbation_step",
+      "realization": "Targeted half-even rounding,step clipping and fixedoriginalprojection;non-targeted sign ascent",
+      "evidence": [
+        "updates",
+        "lifecycle",
+        "image_boundary"
+      ]
+    }
+  ],
+  "limitations": [
+    "Automated Tier3 Community execution reconstruction; no Tier1 human certification or Tier2 usage qualification. Original intake remains draft.",
+    "Intake cites the momentum paper and detailed algorithms but contains no explicit repository reference field. Author repository correspondence is an assessed provenance link, not an invented version-bound catalog URL.",
+    "Full source-shaped299RGB1001class backbones and auxiliary heads execute. CPU Torch/NCHW operations and initializers adapt unspecified historical TF binaries; numerical reduction and max-pool tie-gradient parity unverified.",
+    "Exact caller model states or explicit random initialization required. Synthetic tests do not establish pretrained attack effectiveness or historical checkpoint authenticity. Named-tensor conversion is not TensorFlow checkpoint binary decoding.",
+    "Undefined zero gradient/variance normalization explicitly rejects instead of source NaNs; no stabilizing epsilon. Synthetic padded targeted evidence uses supplied nonzero BN offsets, not a silent initialization change.",
+    "Source ten-entry zero padding,zero target padding,and real-entry trimming preserved. Evidence executes full10/20/40schedules and padded batches in all branches; real graph runner evidence covers five-model targeted-large.",
+    "Source SciPy reference imsave stretches per-image min/max and maps constantfloatimages to black. Only normalized outputs have epsilon projection guarantee; saved PNG pixel perturbation bound is NOT guaranteed.",
+    "TensorFlow1.4/SciPy0.19.1 are explicit reference versions, not asserted competition versions. PNG decoded pixels checked with current Pillow; historical bytes unverified.",
+    "Sequential per-model VJP recomputation preserves ensemble objective but can change floating summation order. Direct full two-model autograd comparison passed; historical TF whole-ensemble parity unverified.",
+    "Runtime arrays,states and PNGs are private caller data; only synthetic aggregate evidence retained. No downloads or payload logging. Graph validation captures intermediate persistence only in memory.",
+    "Installed numerical dependencies pinned; clean installation untested. Matcher supplies broader runner dependencies. RNG checks start after provider discovery; unrelated cold imports may affect NumPy state."
+  ],
+  "dependencies": {
+    "torch": "2.11.0",
+    "numpy": "2.4.2",
+    "Pillow": "11.3.0"
+  },
+  "finding": "Complete source-specific computational closure and actual serialized graph evidence support Tier3 selection with explicit initialization and stated numerical/output limits. Initial implementation-required reviews remain historical and are superseded for computational readiness. Catalog mutation and served verification gates remain separate.",
+  "evidence_sha256": {
+    "competition_adversarial_backbone_review.json": "ae2ac0632a17b28882d54efe4e233cc22069759f4e62fb7a316deb13719b6b99",
+    "competition_adversarial_ensemble.json": "b65481125f30b379917066193dde24a5539b823abdd25654574a94fba74406ad",
+    "competition_adversarial_environment.json": "f45601a86b1b0efdb287cd85f94538f30c9c46b83fe60b0e15033c151dc1cde5",
+    "competition_adversarial_graph_contract.json": "2efb6d2cebc414ba790597f80d4ad487c4ba18e38bfbb39f4d6a2a4f81c27e3c",
+    "competition_adversarial_graph_execution.json": "99a1ea708e94207bd841177e1fb4b9b22cf80c6127997ef766b6be687305cee9",
+    "competition_adversarial_image_boundary.json": "729423b39d0e96ea5159dac69e5a0522703fe2e716b5345968bc1b520c62a70e",
+    "competition_adversarial_inception_ops.json": "ef73e4f293dd4ba6198e64f92e60b8d2a3b3baad474048ed565634a7afb13c53",
+    "competition_adversarial_inception_resnet.json": "6b7ed5653906b8b5eb72dd6aff45114aa78195d359a8a08d33a3b8032c19f8fa",
+    "competition_adversarial_inception_v3.json": "349746b52e30dbeec9b938a710c96434a941db4d0ae6c11bda047721cb401238",
+    "competition_adversarial_inception_v4.json": "df746d86a2e320569ae12b2657c74c0f7463e618311cda45433d9e89792c158d",
+    "competition_adversarial_json_execution.json": "9cd9c6d7eccff87f32296dacea23ddda2b83fe6ee8fb7638dd9e7f6af50e5ec4",
+    "competition_adversarial_lifecycle.json": "b4a5679637fcdd07dc35f65ec0854121407a36b71466f87b6cb46aaf9ef4972a",
+    "competition_adversarial_losses.json": "c374780735ca0f7394686f4586c64ac95d24309c3c6766b2ddb6ad0cc32e2c11",
+    "competition_adversarial_normalization.json": "4f59c39efdddedfc71c663b4f9e529f8a2000ae4680e3754f498ca7a82a9461d",
+    "competition_adversarial_padded_attack.json": "95c9c60df74cffa25c71fc7c1753e1e26b61c5a7a5b3289ffeb014ca7ba46631",
+    "competition_adversarial_pooling_reference.json": "22622e875d9733f5201b11a4cd968be11d1b24d2457e3aa08fe536cdf405ac41",
+    "competition_adversarial_resnet.json": "3ed277af97fe969e8aad311d4814cf3a6743a40cb7fb84d0fecc186055e5d21f",
+    "competition_adversarial_resnet_spatial.json": "51f062c80f53f15cbed03f1962533594af04aa19f86d2360d6fceee112029612",
+    "competition_adversarial_runtime_boundary.json": "79afb5c0bc8933eb98d8b8d945fad09e10ca91acca978414da4417da3fabf867",
+    "competition_adversarial_scipy_reference.json": "040b6f1bcade5f010f32363f0a6c7ee751bc7be8b0b4669fc0de11a74a49a7a9",
+    "competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55",
+    "competition_adversarial_source_review.json": "1274a7c91ca37ed9da6de4c0b5f9415d437e3f2e8a9f630a0a14dce6ee107d22",
+    "competition_adversarial_state_mapping.json": "c8f674c1a832d52f010495706c07b7d7a044bd55426e20d29d32d3e9f5e0f803",
+    "competition_adversarial_tensorflow_reference.json": "a6a8f94d91170a80fecb0c90c2dac44673e2c9a0a4ef911390130581eec75926",
+    "competition_adversarial_updates.json": "2c88e4def426844f6147a595a8bf38287b4ab21eff3bbcc5e98f717c30498534"
+  },
+  "auxiliary_sha256": {
+    "requirements/adversarial-execution.txt": "3bc6d3161a1f8d4295d0b19395dc30c42a1bffb7e4d99602504cba6dd5543b82",
+    "scripts/review_adversarial_execution.py": "4c6e9940ffab281e21ccace36f98795564075215db2453d8e35c2394ba8aaeef",
+    "docs/licenses/Adversarial-SciPy-reference-BSD.txt": "142b6deb0132be1adba8d9ba9f9027629f5a9573be3a829ed8a53733473ae0a1",
+    "docs/licenses/Adversarial-TensorFlow-reference-Apache-2.0.txt": "d7c9068d896188264b60827b8cd1e25fdb9f5b5cad0b1589e90b96c87729c404",
+    "docs/licenses/Adversarial-non_targeted-Apache-2.0.txt": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c",
+    "docs/licenses/Adversarial-targeted-Apache-2.0.txt": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+  },
+  "catalog_mutations": 0
+}

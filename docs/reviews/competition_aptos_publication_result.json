@@ -1,0 +1,33 @@
+{
+  "applied": true,
+  "target_tier": 3,
+  "rollback_validated": true,
+  "rollback_transient_rows_created": 82,
+  "post_rollback_target_counts": {
+    "artifacts": 0,
+    "atoms": 0,
+    "artifact_versions": 0,
+    "artifact_audit_evidence": 0,
+    "reference": 0
+  },
+  "served_cdgs_after_rollback": 104,
+  "publisher_sha256": "fd7ce57b866d9d76cbb045a920a87d9623cea5b75e45cc9b8b5837a72763410f",
+  "rows_created": 82,
+  "provider_versions": 2,
+  "execution_cdgs": 1,
+  "graph_sha256": "5d81a258553ad5e1737ee9ec38799315a20ee1bde92e67fa986f2902ca9ffebe",
+  "version_id": "c71a9540-6a18-5483-86a4-8ec1903dd800",
+  "served_cdgs": 105,
+  "competition_intakes": 142,
+  "covered_intakes": 38,
+  "remaining_intakes": 104,
+  "served_execution_verification": "passed",
+  "reapply_rows_created": 0,
+  "served_verification_report_sha256": "234a2a7636fe16ecec7c268060c9aeefd563b8c2e9a50e76e2df06bd4716185e",
+  "served_verification_summary": {
+    "model_count": 8,
+    "training_stage_fits": 16,
+    "optimizer_updates": 280,
+    "synthetic_only": true
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "format": "adversarial-lifecycle-validation.v1",
+  "result": "passed",
+  "checks": {
+    "non_targeted": {
+      "complete_iterations": 10,
+      "full_models": 8,
+      "independent_momentum_checks": 10,
+      "fixed_original_projection_bounds": true,
+      "input_unchanged": true
+    },
+    "targeted_large": {
+      "complete_iterations": 20,
+      "full_models": 5,
+      "independent_momentum_checks": 20,
+      "fixed_original_projection_bounds": true,
+      "input_unchanged": true
+    },
+    "targeted_small": {
+      "complete_iterations": 40,
+      "full_models": 2,
+      "independent_momentum_checks": 40,
+      "fixed_original_projection_bounds": true,
+      "input_unchanged": true
+    }
+  },
+  "limits": "Full actual randomly initialized ensembles on one synthetic normalized299RGB example. No pretrained attack-quality or historical TensorFlow numerical equivalence claim. Batch10 padded-tail/image-file quantization and serialized provider execution remain unvalidated.",
+  "sha256": {
+    "sciona/adversarial_lifecycle.py": "19c0bb800a9030b2937cef485d80f5e3ee4e72d8bde124a6a3eebb2517ab3fd5",
+    "scripts/validate_adversarial_lifecycle.py": "cd121ea3c6bd25f8b2862671abb30491b3d68fac84a79dd5615d2e6904d203f3",
+    "sciona/adversarial_ensemble.py": "454f159958dfeb3a5ececfffdeb3c176be5348a30e1dc0534519a018566521eb",
+    "sciona/adversarial_updates.py": "7fb8d70efd285d9f43edceacaa9e348aace10e0eddcf97b410c28012931c45aa",
+    "docs/reviews/competition_adversarial_ensemble.json": "b65481125f30b379917066193dde24a5539b823abdd25654574a94fba74406ad",
+    "docs/reviews/competition_adversarial_updates.json": "2c88e4def426844f6147a595a8bf38287b4ab21eff3bbcc5e98f717c30498534"
+  }
+}

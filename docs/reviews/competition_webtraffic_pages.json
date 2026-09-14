@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "extractions": 16,
+    "groupings": 8,
+    "encodings": 24,
+    "constant_encodings": 8
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_pages.py": "5b9e00643a86dc38568b7def1b8322051b89036c5d9a342994407ef7a6153442",
+    "scripts/validate_webtraffic_pages.py": "6ec08ce3c3e279f8c83f26038eff8a08724f9ae11474eea3726f12d9f6e35a5d",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "limitations": [
+    "Sorted runtime object-string arrays required for source grouping; no real page names used.",
+    "One-hot features use sample standard deviation; constant categories produce source NaNs.",
+    "Full feature assembly, neural training and final ensemble remain."
+  ]
+}

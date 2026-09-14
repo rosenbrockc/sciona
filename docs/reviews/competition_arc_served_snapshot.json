@@ -1,0 +1,10 @@
+{
+  "format": "arc-served-snapshot.v1",
+  "read_only": true,
+  "counts": {
+    "served_cdgs": 79,
+    "competition_intakes": 142,
+    "covered_intakes": 11,
+    "uncovered_intakes": 131
+  }
+}

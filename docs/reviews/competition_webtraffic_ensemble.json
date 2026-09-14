@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "ensembles": 16,
+    "checkpoint_means": 48,
+    "boundary_values": 7
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_ensemble.py": "bd0fc3b92458a8ded510e3c737607d106852cd535a312169fec768015c244f30",
+    "scripts/validate_webtraffic_ensemble.py": "ac64f7d7e86dc62889f2211881f729c40c128c16a0acf50267f2813a521626ee",
+    "docs/reviews/competition_webtraffic_notebook_pin.json": "354aea1200ca97c3a92ff149b33abb7bb5523df395a1fbae58c3cb23eff2d2f9",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "limitations": [
+    "Arithmetic only; no TensorFlow checkpoint restoration or neural inference validated.",
+    "Runtime prediction frames require matching unique page/column axes.",
+    "Notebook append adapted to pandas concat; rounding retains source ties-to-even behavior.",
+    "File export and source-specific submission selection not executed."
+  ]
+}

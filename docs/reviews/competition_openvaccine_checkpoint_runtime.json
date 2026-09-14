@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "full_model": "gru",
+  "trained_optimizer_steps": 1,
+  "prediction_and_model_state_exact": true,
+  "optimizer_state_exact": true,
+  "negative_cases": 4,
+  "scope": "Reusable private checkpoint integrity and full model/Adam restoration; no random-stream or complete lifecycle persistence claim.",
+  "runtime_sha256": "127e49d0b64b15fef4ddd392d8e24adfc4b10af39836d5eeb6b9b849d119db30",
+  "validator_sha256": "5eb406ae40e2b5d1e09002f920e99674a76e2c50f596cae59d0adee5ceff2557"
+}

@@ -1,0 +1,74 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "height": 12,
+      "width": 12,
+      "resolution": 8,
+      "input_resolution": 8,
+      "padding": 2,
+      "tiles": 16,
+      "exact": true
+    },
+    {
+      "height": 11,
+      "width": 13,
+      "resolution": 8,
+      "input_resolution": 16,
+      "padding": 2,
+      "tiles": 12,
+      "exact": true
+    },
+    {
+      "height": 7,
+      "width": 9,
+      "resolution": 8,
+      "input_resolution": 4,
+      "padding": 0,
+      "tiles": 2,
+      "exact": true
+    },
+    {
+      "height": 3,
+      "width": 3,
+      "resolution": 8,
+      "input_resolution": 16,
+      "padding": 2,
+      "tiles": 1,
+      "exact": true
+    },
+    {
+      "height": 512,
+      "width": 512,
+      "resolution": 1024,
+      "input_resolution": 320,
+      "padding": 256,
+      "tiles": 4,
+      "exact": true
+    },
+    {
+      "height": 513,
+      "width": 519,
+      "resolution": 1024,
+      "input_resolution": 320,
+      "padding": 256,
+      "tiles": 4,
+      "exact": true
+    }
+  ],
+  "exact_tensors_coordinates_python_rng": true,
+  "implementation_sha256": {
+    "sciona/hubmap_inference_tiles.py": "8d1558a118885d6e9f636b4f85258a924a8e2d411a51e53bb5434ae352879909",
+    "scripts/validate_hubmap_inference_tiles.py": "9a81b9b199e39b6fc17c83813f11fcddd7089004cf518da63c53d0aa68ca74a7",
+    "scripts/validate_hubmap_augmentation.py": "f916e76c3c111df079c0eb262bb035f7467d71b123131b53566fd51a118b0e11",
+    "docs/reviews/competition_hubmap_pseudo_pins.json": "e4aa409b4f7e53f69646dd49bee490ddedb65984e1d5c4e27df9e5c7e43942a9",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_augmentation_pins.json": "44977ff6956885588f3c30521110e5d038080551f3cf337fd5ec8a73ab9b23c0"
+  },
+  "limitations": [
+    "Original dataset with synthetic array-backed raster windows; TIFF/subdataset codecs excluded.",
+    "Original Albumentations0.5.2 under current numerical libraries; historical binaries excluded.",
+    "Inference input stage only; full network shortcut/checkpoint and full CDG gates remain."
+  ]
+}

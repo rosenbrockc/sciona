@@ -1,0 +1,73 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "ar": "fdf46f8a38076e51809c2f0673458f6067a501a23318e3ee893b1ea39c2db61a",
+    "compare_new": "f20f0e2f8ef12591ba32f1393a25e3bf770b9ac366e77f17d54b5d53cf83aa67",
+    "ar_prediction_error": "02ba2216f13dd1a97c3e358c0f6eb6b8b106a92c9a8c1854fb148a7d2c450d3b",
+    "SPC_extract_featuresAR": "7df7b7a3704f33f4914fb98b38871e502250834b973bfaf3b6cc21277772a0ee"
+  },
+  "provider_sha256": {
+    "andriy_ar_coefficients.py": "58a73dcdf184a4dd92ec2b4e1c4c1e476447a2260ba22916daa7278d853c8652",
+    "andriy_ar_features.py": "3c34d4644c261f08f3ee9757d07e4c579b2cbdf426072f87fedeaa15e0333868"
+  },
+  "validation_sha256": "116ef524ba870cdd6bba96f35ade448789d482789273c72cdb5012df5f9363d1",
+  "test_sha256": "0b3540bd70551e34090bbc6e65c4df75d65754f6c440824a184b8aff50e424ac",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "seed": 631,
+      "samples": 41,
+      "maximum_absolute_error": 2.1316282072803006e-14
+    },
+    {
+      "seed": 631,
+      "samples": 3840,
+      "maximum_absolute_error": 8.881784197001252e-14
+    },
+    {
+      "seed": 631,
+      "samples": 7680,
+      "maximum_absolute_error": 1.5543122344752192e-13
+    },
+    {
+      "seed": 632,
+      "samples": 41,
+      "maximum_absolute_error": 2.0179413695586845e-12
+    },
+    {
+      "seed": 632,
+      "samples": 3840,
+      "maximum_absolute_error": 1.3322676295501878e-13
+    },
+    {
+      "seed": 632,
+      "samples": 7680,
+      "maximum_absolute_error": 2.1094237467877974e-13
+    },
+    {
+      "seed": 633,
+      "samples": 41,
+      "maximum_absolute_error": 3.197442310920451e-14
+    },
+    {
+      "seed": 633,
+      "samples": 3840,
+      "maximum_absolute_error": 9.992007221626409e-14
+    },
+    {
+      "seed": 633,
+      "samples": 7680,
+      "maximum_absolute_error": 1.9184653865522705e-13
+    }
+  ],
+  "initial_state_contract": "Least-squares one-step prediction error; history-shift realization, pseudoinverse cutoff p*eps*smax.",
+  "documentation_url": "https://www.mathworks.com/help/ident/ref/predictoptions.html",
+  "limitations": [
+    "Source window split, masks, sentinels, QR block and fit formula retained; toolbox model and prediction calls replaced explicitly.",
+    "State-space reference solves initial history then propagates states; provider projects onto the observable output subspace.",
+    "Historical MATLAB state realization, rank decisions, idprep and predict numerical behavior are unproven.",
+    "Finite-input contract excludes source NaN/inf repair. Low-range RNG side effects are not reproduced. Full model execution remains separate."
+  ]
+}

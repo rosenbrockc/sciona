@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Actual three-dimensional t-SNE optimization on log1p values",
+    "Seeded repeatability and finite objective",
+    "Complete declared population used once",
+    "Identity-preserving coordinate lookup with defensive copies",
+    "Unknown rows rejected rather than projected",
+    "Invalid identities, perplexity, iterations and negative values rejected"
+  ],
+  "sha256": {
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0",
+    "tests/test_otto_tsne.py": "c3194a90e94b96c8a1b15b66f735751d0cc798e6320d5b3006d70b43629857ac"
+  },
+  "limitations": [
+    "Historical embedding implementation, controls and population scope remain unresolved.",
+    "Explicit fixed-population embedding is transductive if query rows are included; no query-population isolation claim.",
+    "No out-of-sample mapping; new rows require new embedding.",
+    "Two clustering features, classifier assembly and full-stack publication pending.",
+    "Source entry ten still has unresolved five-feature versus nine-score interpretation."
+  ],
+  "catalog_mutations": 0
+}

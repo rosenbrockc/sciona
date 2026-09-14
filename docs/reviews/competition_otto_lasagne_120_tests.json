@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "native_models_fitted": 240,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entries": [
+    19,
+    20
+  ],
+  "checks": [
+    "Full 120-run two-hidden-layer CPU ensemble",
+    "Full 120-run three-hidden-layer CPU ensemble",
+    "Varying explicit epoch schedules",
+    "Native nine-class synthetic learning",
+    "Independent averaging over all 120 member probability matrices",
+    "Incomplete schedule, constant schedule and wrong hidden-depth contracts rejected before worker"
+  ],
+  "sha256": {
+    "sciona/otto_lasagne_120.py": "8050c83e838da8b600c461dc7bb41ca35b185dc9aff5fcaee99aa2fe0093f0bb",
+    "sciona/otto_lasagne_120_worker.py": "9d266086caa634d0fa394141f1774a04cd2515a7b164a39698df4a98b8b7e836",
+    "tests/test_otto_lasagne_120.py": "b85a43859cf04e27da28b77428596227e0bbe7d48bde9fb71c23dd016c0958bf",
+    "sciona/otto_lasagne_worker.py": "f2d8519cd416816300377db90181bcc3161fbda184244f55406d2e032b014489",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b"
+  },
+  "limitations": [
+    "CPU validation only; original source designates GPU execution, which remains unverified.",
+    "Two/three hidden layers are an explicit independent interpretation; historical layer-count convention and architecture unresolved.",
+    "Historical input transform and epoch schedule unresolved; caller must specify them.",
+    "Full five-fold 720-fit lifecycle per architecture and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

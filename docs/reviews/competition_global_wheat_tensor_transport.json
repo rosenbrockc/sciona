@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "workers": 16,
+  "samples": 32,
+  "tensor_transport_exact": true,
+  "implementation_sha256": {
+    "scripts/validate_wheat_tensor_transport.py": "6fdc873e56617618697f069cbc124fba94af3e39eabb48a899764251e957cc66"
+  },
+  "sandbox_probe": "failed: shared memory Operation not permitted",
+  "unrestricted_probe": "passed",
+  "fit_restart": "First run stopped while awaiting its first batch; no completed epoch or checkpoint. Fresh run uses unchanged fit controls outside sandbox.",
+  "limits": [
+    "Transport qualification only; no fit completion or publication claim."
+  ]
+}

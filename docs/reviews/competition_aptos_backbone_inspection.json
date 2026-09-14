@@ -1,0 +1,49 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "pretrained_weights_used": false,
+  "runtime": {
+    "pretrainedmodels": "0.7.4",
+    "torch": "2.11.0",
+    "munch": "4.0.0"
+  },
+  "families": {
+    "inception_resnet_v2": {
+      "factory": "inceptionresnetv2",
+      "pool_attribute": "avgpool_1a",
+      "feature_width": 1536,
+      "source_classifier_width": 1000,
+      "input_size": 512,
+      "parameters_with_original_head": 55843464,
+      "factory_module_sha256": "eba4e193378f11515444399c3b63d40dc3e5ccd645f2b956710eb8212f2a572d"
+    },
+    "inception_v4": {
+      "factory": "inceptionv4",
+      "pool_attribute": "avg_pool",
+      "feature_width": 1536,
+      "source_classifier_width": 1000,
+      "input_size": 512,
+      "parameters_with_original_head": 42679816,
+      "factory_module_sha256": "35d027d3315bcc572714ecb3740bdfb200cba7e624c7bdc0fe19ba1c6d8af51d"
+    },
+    "seresnext50": {
+      "factory": "se_resnext50_32x4d",
+      "pool_attribute": "avg_pool",
+      "feature_width": 2048,
+      "source_classifier_width": 1000,
+      "input_size": 512,
+      "parameters_with_original_head": 27559896,
+      "factory_module_sha256": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243"
+    },
+    "seresnext101": {
+      "factory": "se_resnext101_32x4d",
+      "pool_attribute": "avg_pool",
+      "feature_width": 2048,
+      "source_classifier_width": 1000,
+      "input_size": 384,
+      "parameters_with_original_head": 48955416,
+      "factory_module_sha256": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243"
+    }
+  },
+  "scope": "Actual uninitialized legacy backbone construction and pooling/head inspection; original winner library version and pretrained artifacts remain unproven. Isolated munch dependency leaves published runtime unchanged."
+}

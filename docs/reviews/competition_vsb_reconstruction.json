@@ -1,0 +1,137 @@
+{
+  "status": "partial_independent_reconstruction",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "d79e40e4-45b0-5e74-a83c-c68c91f12afb",
+  "source_content_hash": "565e511ee8d20ce0b32adf5c8cc726150f235b1f97d5502d62c96cfe339f5ac1",
+  "original_stage_ids": [
+    "wavelet_denoising",
+    "peak_detection",
+    "peak_feature_extraction",
+    "signal_to_matrix_transform",
+    "tabular_model",
+    "dl_model",
+    "weighted_blend"
+  ],
+  "baseline_implementation": "sciona/vsb_baseline.py",
+  "evidence": "competition_vsb_source_numerics.json",
+  "next_actions": [
+    "Prepare exact-source Tier 3 publisher and six publication rejection gates.",
+    "Run rollback and verify absence, apply idempotently and execute served catalog graph."
+  ],
+  "limits": [
+    "Complete preprocessing implemented and synthetic-compared; no full pipeline approval.",
+    "Original source code reuse terms unresolved; no source code copied into repository."
+  ],
+  "peak_selection": {
+    "implementation": "sciona/vsb_peaks.py",
+    "evidence": "competition_vsb_peak_comparison.json",
+    "status": "source_compared",
+    "combined_component_tests_passed": 26
+  },
+  "descriptor_source_findings": [
+    "Four per-peak numerical descriptors: following and preceding absolute-amplitude ratios, signed opposite-peak offset, and normalized sawtooth mean squared error.",
+    "Opposite-peak offset subtracts nominal small-window radius even when the window is clipped; retain or explicitly review this boundary behavior.",
+    "Sawtooth comparison asserts aligned maximum position; invalid peaks cannot silently continue.",
+    "Source clips descriptor windows to a fixed signal length. Generalized input length requires an explicit independent contract and comparison at source dimensions.",
+    "Measurement processing groups three signals, derives fundamental Fourier phase and assigns right-closed phase quadrants; exact zero phase is excluded by the source bin convention."
+  ],
+  "descriptors": {
+    "status": "source_compared",
+    "implementation": "sciona/vsb_descriptors.py",
+    "evidence": "competition_vsb_descriptor_comparison.json",
+    "comparison_cases": 16,
+    "actual_source_length_exercised": true,
+    "independent_choice": "Clip windows to actual input length; preserve nominal radius offset and missing-neighbor NaNs."
+  },
+  "component_test_evidence": "competition_vsb_component_tests.json",
+  "aggregation_source_findings": [
+    "Full source path filters peaks jointly exceeding following-neighbor ratio 0.33333 and amplitude 50.",
+    "Three counts use all retained peaks and alternating phase-quadrant pairs.",
+    "Six additional aggregates use the first alternating quadrant pair: amplitude mean and sample standard deviation, both neighbor ratio means, absolute opposite-extremum offset mean, and sawtooth MSE mean.",
+    "Left-joined absent groups remain NaN rather than zero counts. Sample standard deviation is NaN for singleton groups. NaN neighbor ratios are skipped by group means.",
+    "The source feature called sawtooth RMSE actually contains mean squared error without a square root."
+  ],
+  "measurement": {
+    "status": "source_compared",
+    "implementation": "sciona/vsb_measurement.py",
+    "evidence": "competition_vsb_measurement_comparison.json",
+    "aggregate_width": 9,
+    "independent_choices": [
+      "FFT fundamental summation order with one cycle per supplied signal.",
+      "Input-length generalization; missing quadrant represented internally as minus one."
+    ]
+  },
+  "training_source_findings": [
+    "Repeated class-specific random assignment into five folds using legacy NumPy seeded draws; assignments are not balanced stratified K-fold partitions.",
+    "Each rotation trains on three folds, reserves the current fold for validation and next fold for nominal test; both held-out sets participate in early stopping.",
+    "Source prediction accumulation uses global training objects rather than function arguments; independent implementation must explicitly align populations.",
+    "MCC threshold search evaluates greater-than-or-equal predictions at distinct probabilities before moving their labels; equal best scores choose the later threshold.",
+    "Source held-out threshold evaluation uses strict greater-than, differing at equality from its threshold optimizer. Preserve this distinction explicitly.",
+    "Training function alone does not establish the final inference threshold or final model configuration; inspect invocation and inference cells next."
+  ],
+  "training": {
+    "status": "full_limits_executed",
+    "implementation": "sciona/vsb_training.py",
+    "threshold_implementation": "sciona/vsb_threshold.py",
+    "synthetic_models_executed": 125,
+    "synthetic_round_limit": 3,
+    "recovered_controls": {
+      "repetitions": 25,
+      "folds": 5,
+      "split_seed": 123948,
+      "tree_seed": 23974,
+      "rounds": 10000,
+      "patience": 100,
+      "learning_rate": 0.01,
+      "num_leaves": 80,
+      "feature_fraction": 0.8,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 1
+    },
+    "feature_permutation": [
+      2,
+      7,
+      3,
+      4,
+      8,
+      0,
+      6,
+      5,
+      1
+    ],
+    "label_policy": "Any positive signal makes measurement positive; final threshold fits original per-signal labels against repeated in-training measurement predictions.",
+    "independent_choices": [
+      "One CPU thread, deterministic column-wise LightGBM and current callback API.",
+      "Explicit arguments replace notebook global training references.",
+      "Reject empty random heldouts or single-class training partition before fitting."
+    ],
+    "full_limit_evidence": "competition_vsb_full_training.json",
+    "threshold_comparison_evidence": "competition_vsb_threshold_comparison.json"
+  },
+  "raw_execution": {
+    "status": "passed",
+    "evidence": "competition_vsb_raw_execution.json",
+    "boundary": "sciona/vsb_execution.py",
+    "models": 125
+  },
+  "serialized_graph": {
+    "status": "passed",
+    "evidence": "competition_vsb_graph_execution.json",
+    "models": 125,
+    "provider_atoms": 2
+  },
+  "environment": {
+    "status": "passed",
+    "evidence": "competition_vsb_environment.json",
+    "dependencies": 12,
+    "distinct_notices": 36
+  },
+  "automated_review": {
+    "status": "acceptable_with_limits",
+    "tier": 3,
+    "evidence": "competition_vsb_semantic_review.json",
+    "negative_gate_evidence": "competition_vsb_review_gates.json",
+    "rejected_cases": 10
+  }
+}

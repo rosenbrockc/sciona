@@ -1,0 +1,29 @@
+{
+  "test_results": {
+    "tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "test_ensemble_adapter_inventory.py": "1189e3c0cae8ed111999c5957443890b5cab380d179201971f4c8f4631656f40",
+    "test_ensemble_alignment.py": "fa19458fb75523fdd6142095914bf917898149d0d79faa9f6b6757bbe4b02d7c",
+    "test_ensemble_execution.py": "1226022437137afc5cef345a0102e343e7f2284cbc15dbc2d87dd54a1fa336fb",
+    "test_ensemble_partitions.py": "84c64d7a8b1d0937e1b088feb47c5332821cf3e36f1fe8c8b7ba7c3a51b026cf",
+    "test_ensemble_witnesses.py": "cec2e04eb5d5790bcc3f7187f54088bc25f17e4563f1f0f51c6042caf99aa08e"
+  },
+  "adapter_source_sha256": {
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_alignment.aligned_eleven_model_blend": "8f663dc472385cc51bf0b1ebe0caed4f8e0d7e6bc776c27e98cb92b887696667",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.collect_population_scores": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ensemble_population_indices": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ordered_prediction_ids": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.select_ensemble_population": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.ensemble_family_inputs": "1aeca6cae322229d7ec5f0fa133d2b8fc6ca50db257cb8a72906774e6999f776",
+    "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.pack_eleven_predictions": "1aeca6cae322229d7ec5f0fa133d2b8fc6ca50db257cb8a72906774e6999f776"
+  },
+  "junit_sha256": "c2733cddeecd8ddec271569fd29b4c586772c9ac8ad77e7f2b13bb79effd3c65",
+  "publication_approval": false,
+  "limitations": [
+    "Contract, structure and witness tests only; full raw numerical execution is pending."
+  ]
+}

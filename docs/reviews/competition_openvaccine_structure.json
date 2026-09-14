@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "exhaustive_structures": 9359,
+  "max_length": 11,
+  "observed_labels": [
+    "B",
+    "E",
+    "H",
+    "I",
+    "M",
+    "S"
+  ],
+  "invalid_cases": 8,
+  "scope": "Independent loop labeling matches all balanced dot-parenthesis structures through length11; pseudoknots rejected, no folding engine execution.",
+  "runtime_sha256": "b682a9583cc4eeb3efec8380b9dbd0855c0bdc05f75b6fad30c327364d3018ee",
+  "validator_sha256": "ff2d53268c7c3593ed8c7d8295c713947c449dc45dfaa7df795dacf17ec65818"
+}

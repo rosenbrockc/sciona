@@ -1,0 +1,15 @@
+{
+  "format": "vsb-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "bde427453ac9ecc8d2554a8ab5ffca0b70cc096df4c368fb9e9135c3188e8312",
+  "validator_sha256": "f038a182a9098d80fc3c670aa928b2fd0e85af2d3b7dc26c92a4daca0dc549d3",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

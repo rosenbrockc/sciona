@@ -1,0 +1,14 @@
+{
+  "source_version_id": "65947cba-17e3-5a60-ac2b-7a3545885a39",
+  "source_content_hash": "d07d9ca3d6cf5dc01c2b487384d68cc218797da1504dc97483cbeb69b0f0ee1f",
+  "source_scope": "Generic five-stage agent planning topology; constrained-route search is an explicit permitted realization, not a historical winning solution.",
+  "implementation_origin": "Independent project implementation, no third-party algorithm source copied.",
+  "source_stages": [
+    "state_encoder",
+    "candidate_generator",
+    "search_or_rollout",
+    "constraint_repair",
+    "plan_selection"
+  ],
+  "catalog_mutations": 0
+}

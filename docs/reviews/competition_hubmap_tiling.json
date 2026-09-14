@@ -1,0 +1,128 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "shape": [
+        32,
+        32
+      ],
+      "tile_size": 16,
+      "shift": 0,
+      "tiles": 9,
+      "fully_padded_tiles": 5,
+      "exact": true
+    },
+    {
+      "shape": [
+        32,
+        32
+      ],
+      "tile_size": 16,
+      "shift": 8,
+      "tiles": 4,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        31,
+        33
+      ],
+      "tile_size": 16,
+      "shift": 0,
+      "tiles": 6,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        31,
+        33
+      ],
+      "tile_size": 16,
+      "shift": 8,
+      "tiles": 4,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        9,
+        7
+      ],
+      "tile_size": 16,
+      "shift": 0,
+      "tiles": 1,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        9,
+        7
+      ],
+      "tile_size": 16,
+      "shift": 8,
+      "tiles": 0,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        1024,
+        1024
+      ],
+      "tile_size": 1024,
+      "shift": 0,
+      "tiles": 4,
+      "fully_padded_tiles": 3,
+      "exact": true
+    },
+    {
+      "shape": [
+        1024,
+        1024
+      ],
+      "tile_size": 1024,
+      "shift": 512,
+      "tiles": 1,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        1025,
+        1031
+      ],
+      "tile_size": 1024,
+      "shift": 0,
+      "tiles": 4,
+      "fully_padded_tiles": 0,
+      "exact": true
+    },
+    {
+      "shape": [
+        1025,
+        1031
+      ],
+      "tile_size": 1024,
+      "shift": 512,
+      "tiles": 1,
+      "fully_padded_tiles": 0,
+      "exact": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_tiling.py": "514df1fdf3a50f97ff409bac085241345a9fb738c387d6bc319e4f7c9c540f8d",
+    "scripts/validate_hubmap_tiling.py": "75ffe2746c57ad65628dc51a43d9cc92de5e96c886ecbd3c7a56b13e4dbb1cf4",
+    "scripts/validate_hubmap_loader.py": "ac7b4bbb7bbc6b226c7ccc1f83b286cad2d0a69ff45b150baada776184c64258",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5"
+  },
+  "limitations": [
+    "RGB array-backed raster windows; file/subdataset codec behavior not claimed.",
+    "Raw tile arrays only: JPEG storage roundtrip, statistics/binning and pseudo-label preparation remain.",
+    "Original extra fully padded tiles preserved; no fabricated boundary cleanup or CDG approval."
+  ]
+}

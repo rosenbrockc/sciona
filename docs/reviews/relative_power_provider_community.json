@@ -1,0 +1,78 @@
+{
+  "atoms": [
+    {
+      "artifact_id": "27b4f3b4-a940-50e6-8b8d-7c3c6ab30e5f",
+      "version_id": "e448d3fb-333b-5e60-aef1-c4f8fcf72e05",
+      "fqdn": "sciona.atoms.riemannian_bci.covariance_features.relative_power.relative_log_band_power",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.covariance_features.relative_power.relative_log_band_power",
+      "source_sha256": "031ad42bbf8970bdc4d9094b2522b013e8ef49b7888bfca1a38af73ac61e933c",
+      "intake_evidence_sha256": "ee3820e4191686eff11059382347928eab99a93f6105d8e5223da891021d7c2a",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Finite Welch spectra with periodic Hann taper, constant detrending and explicit mean-per-band normalization; unequal band widths are not integrated. Reject empty bins and undefined logarithms. Independent scalar Welch and pinned source parity passed.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and contemporaneous MNE reference, not a proven original environment.",
+        "Community Tier 3 only; no human certification or usage-threshold claim."
+      ]
+    },
+    {
+      "artifact_id": "905eadc5-6322-5ab7-b96e-227eea4d8776",
+      "version_id": "b05ce571-57a9-5edb-a047-a5e74f8a2eca",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feature_vectorization.vectorize_feature_partitions",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feature_vectorization.vectorize_feature_partitions",
+      "source_sha256": "c8c497332b25fbc625d3ff7dec3b40d8a120d55faa70b6d8280f9046a8875e18",
+      "intake_evidence_sha256": "2f294059bbfa047dfad20a2bf77acc4056c2174bcf87cfa3207ebab1850e96ff",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Matches historical MNE C-order vectorization and fit-shape checks. Equal flattened size does not permit axis mismatch. Noncontiguous inputs are ordered correctly and output copies do not alias inputs.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and contemporaneous MNE reference, not a proven original environment.",
+        "Community Tier 3 only; no human certification or usage-threshold claim."
+      ]
+    },
+    {
+      "artifact_id": "d30a275d-f961-5b5e-a595-542a4fe6dc4d",
+      "version_id": "ed3f10b5-b762-50b7-a6ca-64661d6114ea",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.relative_power_inputs.relative_power_configuration",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.relative_power_inputs.relative_power_configuration",
+      "source_sha256": "440959a451d07e9ba1136acb34ad4b5989c22ccf99ddae4e5c44b319477022fe",
+      "intake_evidence_sha256": "a2d27abac900a71c874b432823fdec6ce490d9d095c9d6258d442e9f1f1cf00e",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Fresh source configuration values reproduce the pinned feature/model YAML: non-overlapping 20-second windows, FFT512, overlap .25, fs400, six bands, ten bags and 500 trees. No runtime inputs.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and contemporaneous MNE reference, not a proven original environment.",
+        "Community Tier 3 only; no human certification or usage-threshold claim."
+      ]
+    }
+  ],
+  "tests_passed": 15,
+  "test_source_hashes": {
+    "test_relative_log_band_power.py": "aaf2b9492aaa903c9a39ddeb5c616f83b8e6f56194fbd03eb48eecb9dd6d6f36",
+    "test_feature_partition_vectorization.py": "d72c4eeb45e82a35961572d9de4040f9e3803d849c2ef2c6832839166a293d65",
+    "test_relative_power_execution.py": "debc6a5e2cb94c10348b193ced1e122962bfb429d14066cde121049ba3ddce52"
+  },
+  "execution_evidence": "relative-power-execution-intake.v1",
+  "scope": "Three exact provider versions supporting the relative-power source branch; full ensemble remains incomplete."
+}

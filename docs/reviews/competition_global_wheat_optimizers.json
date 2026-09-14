@@ -1,0 +1,54 @@
+{
+  "passed": false,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "results": [
+    {
+      "optimizer": "sgd",
+      "dtype": "torch.float32",
+      "updates": 100,
+      "parameters_and_state_exact": true,
+      "maximum_parameter_difference": 0.0,
+      "maximum_state_difference": 0.0
+    },
+    {
+      "optimizer": "sgd",
+      "dtype": "torch.float64",
+      "updates": 100,
+      "parameters_and_state_exact": true,
+      "maximum_parameter_difference": 0.0,
+      "maximum_state_difference": 0.0
+    },
+    {
+      "optimizer": "adam",
+      "dtype": "torch.float32",
+      "updates": 100,
+      "parameters_and_state_exact": false,
+      "maximum_parameter_difference": 5.960464477539063e-08,
+      "maximum_state_difference": 0.0001068115234375
+    },
+    {
+      "optimizer": "adam",
+      "dtype": "torch.float64",
+      "updates": 100,
+      "parameters_and_state_exact": false,
+      "maximum_parameter_difference": 2.220446049250313e-16,
+      "maximum_state_difference": 1.1368683772161603e-13
+    }
+  ],
+  "source_sha256": {
+    "sgd": "4d5aa550b7820259b9cea34b7a517d4739fa26b3b2199146e7b51bfc12ba6650",
+    "adam": "97067d8382378053cbd13084c84f1da6dac7f584b7fbceff5f61b2070e776091"
+  },
+  "installed_torch": "2.11.0",
+  "adam_implementation": "installed",
+  "adam_implementation_sha256": null,
+  "verifier_sha256": "65d32902f35c4e20a9d6d61b5c809e088c4205dd17e3994c35b0367659bddde3",
+  "limits": [
+    "Dense CPU synthetic gradients with source optimizer settings; not detector training.",
+    "Both classes use installed native arithmetic; no historical native-kernel equivalence claim.",
+    "Post-step gradient mutation is excluded: the fit zeros gradients before every backward.",
+    "Apex O1 mixed precision and dynamic loss scaling remain unqualified."
+  ]
+}

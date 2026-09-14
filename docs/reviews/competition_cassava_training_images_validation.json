@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "jpeg_decode_comparisons": 1,
+  "augmentation_comparisons": 20,
+  "normalization_preserves_bfloat16": true,
+  "actual_backbone_normalization_adapted": true,
+  "source_population_adaptation_match": true,
+  "float64_population_mean_max_difference": 0.0005278831231407821,
+  "float64_population_variance_max_difference": 0.00012336448381692483,
+  "numerical_limit": "Source Keras float32 moments retained; not replaced with float64 statistics.",
+  "scope": "Reference training pixel operations and population moments only; fold selection and complete lifecycle remain unverified.",
+  "sha256": {
+    "sciona/cassava_efficientnet_weights.py": "15145907da545ab8501f2c0fef025b7957f12d815260888fa78047fc610b4091",
+    "sciona/cassava_training_images.py": "79bf5b6a09da1cf709c2477f9aa73a7a34f94fa6221b3e6126acb3bffbdf9902",
+    "sciona/cassava_efficientnet_model.py": "56ba01b91cfb069ee7e8165a6a2494eafe1a2e757a22af2eabb3504d2de97ae6",
+    "scripts/validate_cassava_training_images.py": "5f06871b1144cfface3644f173120069e31ee2c7ef10b196e3609f89df662af6",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

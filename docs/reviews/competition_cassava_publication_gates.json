@@ -1,0 +1,15 @@
+{
+  "format": "cassava-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution_validation:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "f4681ff4e71b0e0bded57db3d5b301212e0f8c21fd7d6675bf2c502c5173c831",
+  "validator_sha256": "203818f796c1eea856d88bd1fbfb3f26b71eb78d2f3d6ddb4e1a58de54e76a3f",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

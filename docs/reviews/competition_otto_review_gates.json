@@ -1,0 +1,26 @@
+{
+  "format": "otto-review-negative-gates.v1",
+  "result": "passed",
+  "catalog_mutations": 0,
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_intake_mapping",
+    "missing_boundary_tests",
+    "reduced_neural_bag",
+    "missing_graph_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices",
+    "false_gpu_qualification"
+  ],
+  "sha256": {
+    "scripts/review_otto_execution.py": "84a3059cc6cb185a54f5c9f6095e0678294bd758ee482f2ba5df7aee88a455f5",
+    "scripts/validate_otto_review_gates.py": "2b7485e166eb79024df82024a40dae4f16c622a43687bb8c8d5f1fc97110d1d2"
+  },
+  "limits": "In-memory read-only review injections; no publication approval."
+}

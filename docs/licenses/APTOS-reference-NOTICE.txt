@@ -1,0 +1,17 @@
+APTOS conditional Tier 3 reference reconstruction
+
+The winning author writeup supplies the conceptual method. This reconstruction
+corrects the intake graph and makes unspecified execution choices explicit.
+Generalized mean pooling follows the attributed cnnimageretrieval-pytorch
+source; its MIT notice is retained. Legacy pretrainedmodels code is attributed
+to Remi Cadene under the preserved BSD-3-Clause notice, with publisher-source
+differences documented separately. Dependency notices are preserved alongside
+this file, including supplemental version-pinned LangChain SDK MIT notices.
+
+External model artifacts and dependency wheels are not bundled or published
+by this reconstruction. The smp-hub model cards declare license other and
+identify upstream artifact URLs; neither those declarations nor file hashes
+establish model usage or redistribution rights. Callers must supply artifacts
+they are entitled to use. Any future model/wheel redistribution needs separate
+review. Exact winner artifact/runtime identity and competitive accuracy are
+not claimed. This is automated Community Tier 3 scope, not Tier 1 certification.

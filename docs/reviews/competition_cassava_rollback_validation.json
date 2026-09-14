@@ -1,0 +1,15 @@
+{
+  "approved": false,
+  "rollback_passed": true,
+  "trial_rows_created": 70,
+  "persisted_target_rows": {
+    "artifacts": 0,
+    "atoms": 0,
+    "artifact_versions": 0,
+    "atom_versions": 0,
+    "artifact_audit_evidence": 0,
+    "references_registry": 0
+  },
+  "served_cdgs_after_rollback": 103,
+  "publisher_sha256": "f4681ff4e71b0e0bded57db3d5b301212e0f8c21fd7d6675bf2c502c5173c831"
+}

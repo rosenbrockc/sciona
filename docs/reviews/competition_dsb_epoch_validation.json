@@ -1,0 +1,119 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "cases": [
+    {
+      "epoch": 30,
+      "start_epoch": 30,
+      "variant": 3,
+      "freeze_batchnorm": false,
+      "exact_model_optimizer_and_rng_state": true,
+      "passes": [
+        {
+          "task": "classifier",
+          "learning_rate": 0.0,
+          "batches": 5,
+          "examples": 5,
+          "mean_loss": 1.2337895214557648
+        },
+        {
+          "task": "detector",
+          "learning_rate": 0.01,
+          "batches": 1,
+          "examples": 2,
+          "mean_loss": 1.2466620206832886
+        },
+        {
+          "task": "classifier",
+          "learning_rate": 0.01,
+          "batches": 6,
+          "examples": 6,
+          "mean_loss": 0.06856898466746013
+        }
+      ]
+    },
+    {
+      "epoch": 31,
+      "start_epoch": 30,
+      "variant": 3,
+      "freeze_batchnorm": false,
+      "exact_model_optimizer_and_rng_state": true,
+      "passes": [
+        {
+          "task": "detector",
+          "learning_rate": 0.01,
+          "batches": 1,
+          "examples": 2,
+          "mean_loss": 1.4265369176864624
+        },
+        {
+          "task": "classifier",
+          "learning_rate": 0.01,
+          "batches": 6,
+          "examples": 6,
+          "mean_loss": 0.10120501121287144
+        }
+      ]
+    },
+    {
+      "epoch": 121,
+      "start_epoch": 121,
+      "variant": 4,
+      "freeze_batchnorm": true,
+      "exact_model_optimizer_and_rng_state": true,
+      "passes": [
+        {
+          "task": "classifier",
+          "learning_rate": 0.0,
+          "batches": 5,
+          "examples": 5,
+          "mean_loss": 0.2984718680381775
+        },
+        {
+          "task": "detector",
+          "learning_rate": 0.0001,
+          "batches": 1,
+          "examples": 2,
+          "mean_loss": 0.7660096287727356
+        },
+        {
+          "task": "classifier",
+          "learning_rate": 0.0001,
+          "batches": 6,
+          "examples": 6,
+          "mean_loss": 0.29704085489114124
+        }
+      ]
+    },
+    {
+      "epoch": 160,
+      "start_epoch": 121,
+      "variant": 4,
+      "freeze_batchnorm": true,
+      "exact_model_optimizer_and_rng_state": true,
+      "passes": [
+        {
+          "task": "classifier",
+          "learning_rate": 1e-05,
+          "batches": 6,
+          "examples": 6,
+          "mean_loss": 0.2965482473373413
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Source validation/logging/checkpoint operations excluded; comparison covers training passes.",
+    "CUDA moves replaced by CPU identity and obsolete scalar diagnostics ported.",
+    "Source-era zero_grad semantics retained; optimizer kernels use current PyTorch.",
+    "Synthetic batches and weights; no trained-model accuracy claim."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_training.py": "7ad662bd73073152f8d0e582ee2a86d6c6fc7a75816343f13ba729eadf448524",
+    "sciona/dsb_losses.py": "1dfa838a4bbc0fb7b272b107de269347fc5182113497f419f159fed2918a9d47",
+    "sciona/dsb_schedule.py": "242cffebbd6829eefc3138314cec8806ae7e6d7dfcda350c7b64a277019e9c1a",
+    "sciona/dsb_network.py": "32a897938064b21e0ba0fee037159cb59befa750e21eba1dd721de8388724efc",
+    "scripts/validate_dsb_epoch.py": "8225a79e5da04d8f1b0d312072efdda4d023c46f09f67631cc09000e9696122c"
+  }
+}

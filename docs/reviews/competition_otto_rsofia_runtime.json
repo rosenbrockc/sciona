@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "approved": false,
+  "native_binary_fits": 36,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Both balanced-stochastic and combined-roc logreg-pegasos learners execute",
+    "Nine-class synthetic argmax learning",
+    "Repeated seed yields identical fitted weights",
+    "Single-query prediction matches batched prediction"
+  ],
+  "sha256": {
+    "scripts/validate_otto_rsofia_runtime.R": "46be51386409a9ac72bd66b471f669d070f38c633e87bcd6d4f6e9a4b0a35882",
+    "docs/reviews/otto_rsofia_compatibility.patch": "71dcc2785e2b7205f3de5bd3db4daf54a44235b0dbb9b32214ed9ddaf311c459"
+  },
+  "environment": {
+    "RSofia": {
+      "version": "1.1",
+      "commit": "00ed60b235b34541f8c6280f2f9efeae55298c81",
+      "compatibility_patch": "docs/reviews/otto_rsofia_compatibility.patch"
+    },
+    "Rcpp": "1.1.2",
+    "R": "4.6.1"
+  },
+  "sources": [
+    "https://github.com/cran/RSofia",
+    "https://raw.githubusercontent.com/cran/RSofia/master/DESCRIPTION"
+  ],
+  "limitations": [
+    "Runtime validation only; model-family implementation counts unchanged.",
+    "Compatibility patch replaces obsolete module initialization; native learning sources unchanged.",
+    "Historical regularization, learning controls, feature interactions and embedding scope unresolved.",
+    "Python bridge, fold orchestration, native closure and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

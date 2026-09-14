@@ -1,0 +1,324 @@
+{
+  "source_url": "https://www.kaggle.com/code/shimacos/cmi-1st-place-solution-submit",
+  "retrieval_url": "https://www.kaggle.com/api/v1/kernels/pull/shimacos/cmi-1st-place-solution-submit",
+  "notebook_id": 48079973,
+  "version": 3,
+  "source_sha256": "ef030684abef5f6d5bb804cc5913279c6fffd14c00773d23f4e84f9292ddfea8",
+  "code_cells_sha256": "4a23aa94a4905b6908b48db08741801032be4c03b9237d39bcd8a210057a357d",
+  "cell_count": 59,
+  "code_cell_count": 46,
+  "inventory": [
+    {
+      "cell": 1,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 2,
+      "lines": 38,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 4,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 5,
+      "lines": 1,
+      "definitions": []
+    },
+    {
+      "cell": 6,
+      "lines": 1,
+      "definitions": []
+    },
+    {
+      "cell": 7,
+      "lines": 1,
+      "definitions": []
+    },
+    {
+      "cell": 8,
+      "lines": 1,
+      "definitions": []
+    },
+    {
+      "cell": 10,
+      "lines": 4,
+      "definitions": []
+    },
+    {
+      "cell": 12,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 13,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 14,
+      "lines": 21,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 16,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 17,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 18,
+      "lines": 6,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 19,
+      "lines": 6,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 20,
+      "lines": 7,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 22,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 23,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 24,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 25,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 28,
+      "lines": 5,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 29,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 30,
+      "lines": 13,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 31,
+      "lines": 38,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 32,
+      "lines": 56,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 33,
+      "lines": 24,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 34,
+      "lines": 272,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 35,
+      "lines": 40,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 36,
+      "lines": 59,
+      "definitions": []
+    },
+    {
+      "cell": 38,
+      "lines": 476,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 39,
+      "lines": 154,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 40,
+      "lines": 220,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 42,
+      "lines": 35,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 44,
+      "lines": 138,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 45,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 46,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 47,
+      "lines": 24,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 48,
+      "lines": 31,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 49,
+      "lines": 286,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 51,
+      "lines": 145,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 53,
+      "lines": 20,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 54,
+      "lines": 105,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 55,
+      "lines": 50,
+      "definitions": []
+    },
+    {
+      "cell": 56,
+      "lines": 5,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 57,
+      "lines": 1,
+      "definitions": [
+        "not_plain_python"
+      ]
+    },
+    {
+      "cell": 58,
+      "lines": 0,
+      "definitions": []
+    }
+  ],
+  "license_evidence": {
+    "license": "Apache-2.0",
+    "source": "https://www.kaggle.com/code/shimacos/cmi-1st-place-solution-submit",
+    "observation": "Specific notebook page explicitly displays Apache 2.0; indexed page shows Version 1 of 3. Exact current-version and inherited-code scope still to review."
+  },
+  "retained": "Code cells only; no notebook outputs or input metadata persisted; no data or model inputs fetched."
+}

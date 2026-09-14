@@ -1,0 +1,273 @@
+{
+  "approved": false,
+  "applied": false,
+  "catalog_mutations": 0,
+  "runner_version": "flavours-execution-community.v1",
+  "publication_ready": false,
+  "required_actions": [
+    "Finalize semantic approval with explicit conditions",
+    "Pass negative publication gates,rollback,atomic apply,idempotency and served verification"
+  ],
+  "providers": [
+    {
+      "artifact_id": "80f9cb4d-c3a5-5a74-a2c6-39f16d94e9fe",
+      "version_id": "17257a43-d208-5c98-b4a8-35f7888565f0",
+      "fqdn": "sciona.atoms.ml.flavours_execution.flavours_execute",
+      "content_hash": "100fd1f7bea704a48a246d1ae8ac41b639a6684290cf64e0db088dbff27405e5",
+      "fingerprint": "9f1961a94ba8df94a82ec633dbbf0e866be808937b976c9ac028e3ae9ab8f060",
+      "semver": "0.0.0+local.100fd1f7bea7",
+      "target_trust_tier": 3,
+      "description": "Fit35mass regressors,30classifiers and50neural models; blend and evaluate. Physical populations contain six ordered numerical arrays. Controls hold separate agreement/correlation inputs and evaluation-only metadata. Caller establishes identity, disjointness, units and the source base-column order. All budgets are fixed to the reviewed reference. Private predictions and diagnostics are runtime outputs, not publication evidence. No claim of historical runtime parity or Tier1 human review is made.",
+      "import_module": "sciona.atoms.ml.flavours_execution",
+      "source_symbol": "flavours_execute",
+      "source_sha256": "acede20ada6980627846d1c6128d035d0afc1490d4c76ba7ac82aa3a1cdcded5",
+      "signature": "(training_inputs: list, labels: list, mass: list, query_inputs: list, controls: dict, excluded_column: int) -> dict",
+      "owner_id": "33ed07a2-1bea-5b17-8b71-d6d0e590fdd9",
+      "source_repo_id": "27b787a0-27ed-4760-92b7-ad8e8b4b815c",
+      "io_specs": {
+        "input": [
+          {
+            "name": "training_inputs",
+            "type_desc": "list",
+            "constraints": "Six aligned arrays:46ordered base features,three daughter momenta,three transverse momenta,parent transverse momentum,flight distance,lifetime; finite physical magnitudes",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "labels",
+            "type_desc": "list",
+            "constraints": "Aligned binary labels; every outer training fold must contain at least200rows per class",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "mass",
+            "type_desc": "list",
+            "constraints": "Finite aligned training-only mass regression targets",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "query_inputs",
+            "type_desc": "list",
+            "constraints": "Same physical representation as training; nonempty; caller establishes disjoint identity and identical base-column order",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "controls",
+            "type_desc": "dict",
+            "constraints": "Exact agreement_a,agreement_b,correlation physical populations; aligned weights_a,weights_b,correlation_mass and training quality. Correlation has at least200rows; all evaluation metadata excluded from fitting",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "excluded_column",
+            "type_desc": "int",
+            "constraints": "Source-prescribed restricted-feature position in the caller-ordered46base columns, integer0..45",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ],
+        "output": [
+          {
+            "name": "result",
+            "type_desc": "dict",
+            "constraints": "Private ordered query scores,control metrics,fit histories and exact neural/classifier checkpoint replay evidence",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ]
+      }
+    }
+  ],
+  "execution": {
+    "artifact_id": "555af406-d614-549e-8c8c-8efaf26d8959",
+    "version_id": "238ca008-f9ec-5193-8a8b-74742ce42bc1",
+    "fqdn": "cdg.competition.solution.kaggle.flavours_physics_1st.execution",
+    "content_hash": "ff451daaf8caf75339ec49105469fa7fe2a91ccaedd416a27c8de532657c235b",
+    "target_trust_tier": 3,
+    "nodes": [
+      {
+        "node_id": "execute",
+        "parent_node_id": "",
+        "name": "flavours_execute",
+        "description": "Physical feature construction,35mass-regression fits,30classifier fits,50neural fits,source nonlinear blend and three evaluation diagnostics",
+        "concept_type": "custom",
+        "status": "atomic",
+        "matched_primitive": "sciona.atoms.ml.flavours_execution.flavours_execute",
+        "type_signature": "{\"format\":\"sciona.execution_graph.v1\",\"graph\":{\"edges\":[],\"metadata\":{\"artifact_source\":\"competition_source_corrected_execution\",\"choices\":[\"Notebook direct-mass repeated cross-fitting and full classifier refits override conflicting PDF prose\",\"Modern CPU exact-tree XGBoost,base_score0.5; NumPy float64 neural implementation and modern stratified validation allocation\",\"Fixed111458tree rounds,150000neural epochs; no tuning against control diagnostics\"],\"limitations\":[\"No historical library numerical parity or competition accuracy claim\",\"OOF discrimination is diagnostic: mass features are not nested within downstream classifier folds\",\"Caller establishes source column semantics,physical units and population identity/disjointness\",\"A200row correlation population yields a single whole-population window and a vacuous zero CvM\",\"Automated Tier3 target only; original intake remains draft\"],\"num_edges\":0,\"num_nodes\":1,\"publication_status\":\"draft\",\"scope\":\"Complete independently implemented training and evaluated prediction reference for the winning Flavours method\",\"source_content_hash\":\"1f7003883cd8067a1fcaa170601336d99e2911e2024a0590eb41425757dc0539\",\"source_version_ids\":[\"6256d5b1-d742-53b1-9ff4-c2c7265ce981\"],\"target_tier\":3},\"nodes\":[{\"action_class\":\"replace_stage\",\"boundary_kind\":\"none\",\"boundary_port_name\":\"\",\"children\":[],\"concept_type\":\"custom\",\"conceptual_summary\":\"\",\"critic_notes\":\"\",\"decomposition_rationale\":\"\",\"depth\":0,\"description\":\"Physical feature construction,35mass-regression fits,30classifier fits,50neural fits,source nonlinear blend and three evaluation diagnostics\",\"fixed_point_convergence_field\":\"\",\"fixed_point_max_iterations\":0,\"inputs\":[{\"constraints\":\"Six aligned arrays:46ordered base features,three daughter momenta,three transverse momenta,parent transverse momentum,flight distance,lifetime; finite physical magnitudes\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"training_inputs\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Aligned binary labels; every outer training fold must contain at least200rows per class\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"labels\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Finite aligned training-only mass regression targets\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"mass\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Same physical representation as training; nonempty; caller establishes disjoint identity and identical base-column order\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"query_inputs\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Exact agreement_a,agreement_b,correlation physical populations; aligned weights_a,weights_b,correlation_mass and training quality. Correlation has at least200rows; all evaluation metadata excluded from fitting\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"controls\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Source-prescribed restricted-feature position in the caller-ordered46base columns, integer0..45\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"excluded_column\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"int\"}],\"is_external\":false,\"is_opaque\":false,\"is_optional\":false,\"map_hop_size\":0,\"map_window_size\":0,\"matched_primitive\":\"sciona.atoms.ml.flavours_execution.flavours_execute\",\"name\":\"flavours_execute\",\"node_id\":\"execute\",\"outputs\":[{\"constraints\":\"Private ordered query scores,control metrics,fit histories and exact neural/classifier checkpoint replay evidence\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"result\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"}],\"parallelizable\":false,\"parent_id\":null,\"primitive_binding_confidence\":0.0,\"primitive_binding_source\":\"\",\"resolution_reason\":\"\",\"resolved_by\":\"\",\"status\":\"atomic\",\"type_signature\":\"\"}],\"planning_artifact\":null},\"snapshot_hash\":\"ff451daaf8caf75339ec49105469fa7fe2a91ccaedd416a27c8de532657c235b\"}"
+      }
+    ],
+    "edges": [],
+    "bindings": [
+      {
+        "node_id": "execute",
+        "bound_artifact_fqdn": "sciona.atoms.ml.flavours_execution.flavours_execute",
+        "bound_version_content_hash": "100fd1f7bea704a48a246d1ae8ac41b639a6684290cf64e0db088dbff27405e5",
+        "binding_source": "flavours-execution-community.v1"
+      }
+    ],
+    "metadata": {
+      "artifact_source": "competition_source_corrected_execution",
+      "publication_status": "draft",
+      "target_tier": 3,
+      "source_version_ids": [
+        "6256d5b1-d742-53b1-9ff4-c2c7265ce981"
+      ],
+      "source_content_hash": "1f7003883cd8067a1fcaa170601336d99e2911e2024a0590eb41425757dc0539",
+      "scope": "Complete independently implemented training and evaluated prediction reference for the winning Flavours method",
+      "choices": [
+        "Notebook direct-mass repeated cross-fitting and full classifier refits override conflicting PDF prose",
+        "Modern CPU exact-tree XGBoost,base_score0.5; NumPy float64 neural implementation and modern stratified validation allocation",
+        "Fixed111458tree rounds,150000neural epochs; no tuning against control diagnostics"
+      ],
+      "limitations": [
+        "No historical library numerical parity or competition accuracy claim",
+        "OOF discrimination is diagnostic: mass features are not nested within downstream classifier folds",
+        "Caller establishes source column semantics,physical units and population identity/disjointness",
+        "A200row correlation population yields a single whole-population window and a vacuous zero CvM",
+        "Automated Tier3 target only; original intake remains draft"
+      ],
+      "num_nodes": 1,
+      "num_edges": 0
+    },
+    "io_specs": {
+      "input": [
+        {
+          "name": "training_inputs",
+          "type_desc": "list",
+          "constraints": "Six aligned arrays:46ordered base features,three daughter momenta,three transverse momenta,parent transverse momentum,flight distance,lifetime; finite physical magnitudes",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "labels",
+          "type_desc": "list",
+          "constraints": "Aligned binary labels; every outer training fold must contain at least200rows per class",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "mass",
+          "type_desc": "list",
+          "constraints": "Finite aligned training-only mass regression targets",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "query_inputs",
+          "type_desc": "list",
+          "constraints": "Same physical representation as training; nonempty; caller establishes disjoint identity and identical base-column order",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "controls",
+          "type_desc": "dict",
+          "constraints": "Exact agreement_a,agreement_b,correlation physical populations; aligned weights_a,weights_b,correlation_mass and training quality. Correlation has at least200rows; all evaluation metadata excluded from fitting",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "excluded_column",
+          "type_desc": "int",
+          "constraints": "Source-prescribed restricted-feature position in the caller-ordered46base columns, integer0..45",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        }
+      ],
+      "output": [
+        {
+          "name": "result",
+          "type_desc": "dict",
+          "constraints": "Private ordered query scores,control metrics,fit histories and exact neural/classifier checkpoint replay evidence",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        }
+      ]
+    },
+    "mandatory_source_dependency": {
+      "dependency_artifact_fqdn": "cdg.competition.solution.kaggle.flavours_physics_1st",
+      "dependency_content_hash": "1f7003883cd8067a1fcaa170601336d99e2911e2024a0590eb41425757dc0539",
+      "optional": false,
+      "scope": "Conceptual provenance; original intake is not invoked and remains draft"
+    }
+  },
+  "review_conditions": [
+    "Automated Community Tier3 only; no human-reviewed Tier1 or usage-qualified Tier2 claim.",
+    "Independent mathematical implementation; no winning notebook code or task data bundled.",
+    "Notebook direct-mass repeated cross-fitting and classifier full refits resolve conflicting PDF prose.",
+    "Modern exact-tree CPU XGBoost/base_score0.5 and NumPy float64 neural runtime; historical numerical parity unproven.",
+    "Caller establishes population identity/disjointness,physical units and source base-column ordering/exclusion.",
+    "Mass cross-fitting is not nested within classifier folds; OOF discrimination is diagnostic only.",
+    "Synthetic correlation diagnostic failed and was returned faithfully; no competition accuracy or general constraint-satisfaction claim.",
+    "Qualified runtime requires exact reviewed OpenCV overlay and native OpenMP runtime; shared conflicting cv2 installation alone is unqualified.",
+    "Source weights are not downloaded or redistributed; each call retrains all115models.",
+    "Retain source attribution,dependency notices and external OpenMP notice with the reference.",
+    "Publication covers project implementation and catalog metadata only; no blanket third-party artifact redistribution grant.",
+    "Any future bundling of dependency wheels,native components or model artifacts requires its own terms review.",
+    "Qualified execution requires the reviewed dependency versions and exact OpenCV overlay; caller establishes lawful inputs."
+  ],
+  "sha256": {
+    "scripts/prepare_flavours_publication.py": "81f1a7f45d82ef9c11640724fb5bb892cc00c9fa88243f188744a31766e21ea2",
+    "scripts/build_flavours_execution_graph.py": "6394d55a10745c7247cff4ac7026d02ed3e91804816c360cbeb0fe26b16c9369",
+    "docs/reviews/competition_flavours_source_triage.json": "2a327b95d8430cb59e212d71ea258b26d529964fb25ec0329cd19b325fd36d46"
+  }
+}

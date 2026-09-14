@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "8224574f23ae68f559e7f9a5a33bbb9e207dfd5ed76f6145db16dfb38c02c84c",
+  "exact_cases": 128,
+  "strict_quarter_coverage_boundary_exercised": true,
+  "implementation_sha256": {
+    "sciona/wheat_crop.py": "6291dc130f41cd1173672448255dc03e3c46ff2d98b3ac78716ed0b62a318ab9",
+    "scripts/validate_wheat_crop.py": "3a93b2f27c9677dd4f43c4da1d64c74dd33639f8d876ceaa159753beaef4d283"
+  },
+  "limits": [
+    "Crop geometry only; crop sampling, mosaic assembly and photometric augmentation remain separate."
+  ]
+}

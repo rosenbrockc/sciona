@@ -1,0 +1,34 @@
+{
+  "format": "adversarial-ensemble-gradient-validation.v1",
+  "result": "passed",
+  "checks": {
+    "targeted_small": {
+      "full_models": 2,
+      "finite_nonzero_input_gradient": true,
+      "inferred_or_supplied_labels": true
+    },
+    "targeted_large": {
+      "full_models": 5,
+      "finite_nonzero_input_gradient": true,
+      "inferred_or_supplied_labels": true
+    },
+    "non_targeted": {
+      "full_models": 8,
+      "finite_nonzero_input_gradient": true,
+      "inferred_or_supplied_labels": true
+    }
+  },
+  "simultaneous_full_two_model_graph_comparison": true,
+  "non_targeted_later_labels_frozen": true,
+  "limits": "Full actual randomly initialized source-shaped networks on synthetic single-example CPUfloat32. Sequential VJP versus direct graph checked for two-model branch; no historical TF reduction-order parity, pretrained quality or complete iterative lifecycle claim.",
+  "sha256": {
+    "sciona/adversarial_ensemble.py": "454f159958dfeb3a5ececfffdeb3c176be5348a30e1dc0534519a018566521eb",
+    "scripts/validate_adversarial_ensemble.py": "d1004ee7d29f485e88fda32189e802317f00775f5074bee85b6fbe596a021a8c",
+    "sciona/adversarial_losses.py": "125541dea59d890c0dabb3241536391841567e3c6581af119038c20bd04d355b",
+    "sciona/adversarial_state_mapping.py": "138758b19da6ffed43fb17e0065322e34732a3eb4d1cc16637f6c9f6e6ad8a3e",
+    "docs/reviews/competition_adversarial_inception_v3.json": "349746b52e30dbeec9b938a710c96434a941db4d0ae6c11bda047721cb401238",
+    "docs/reviews/competition_adversarial_inception_v4.json": "df746d86a2e320569ae12b2657c74c0f7463e618311cda45433d9e89792c158d",
+    "docs/reviews/competition_adversarial_inception_resnet.json": "6b7ed5653906b8b5eb72dd6aff45114aa78195d359a8a08d33a3b8032c19f8fa",
+    "docs/reviews/competition_adversarial_resnet.json": "3ed277af97fe969e8aad311d4814cf3a6743a40cb7fb84d0fecc186055e5d21f"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "teacher_version": 3,
+  "teacher_code_sha256": "e8a198ca555ca947a36ee7d74eb37c94512bb41daa1750da98b03ec1dbb91350",
+  "checks": {
+    "attention_head_matches_weighted_hidden_states": true,
+    "padding_has_positive_pooling_weight": true,
+    "finite_head_gradients": true,
+    "two_row_evaluation_passes": true,
+    "singleton_evaluation_typeerror_reproduced": true
+  },
+  "scope": "Original teacher attention head with synthetic hidden states, and evaluator with CPU transfer adaptation and synthetic regressor. No full RoBERTa/teacher training or publication claim.",
+  "validator_sha256": "bbcea94ea01912c16e198557b8030a41d789989a49f42b934fc230f63cdcd9af"
+}

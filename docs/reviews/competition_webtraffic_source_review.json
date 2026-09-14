@@ -1,0 +1,26 @@
+{
+  "approved": false,
+  "source_version_id": "a6298d16-4fa7-5577-b559-7c17c006ccd5",
+  "source_content_hash": "dc85ebd516bf6b3832bcab2bf4262e9603b7c8ef2cf2317215495182aef88b8d",
+  "repository": "Arturus/kaggle-web-traffic",
+  "commit": "a9abb80c800409abf0ece21ea244ef779f758f96",
+  "license": "MIT",
+  "source_files_pinned": 13,
+  "intake_stage_count": 5,
+  "findings": [
+    "Source model uses CudnnGRU; intake LSTM description is incorrect.",
+    "Default s32 training window is 283; intake fixed 60-day encoder claim is incorrect.",
+    "Input pipeline includes lagged series, day-of-week features, window sampling and normalization, beyond intake metadata concatenation.",
+    "NaN and lag masks are used to replace inputs with zero; explicit mask-feature concatenation is not yet established.",
+    "Smoothed SMAPE exponentiates log predictions, uses epsilon 0.1 and denominator floor 0.6, and TensorFlow weighted-loss reduction.",
+    "README training route uses three model seeds and ten checkpoints per model with ASGD; final notebook reconstruction remains required."
+  ],
+  "dependencies": {
+    "requirements_text": "numpy\npandas\ntqdm\nmatplotlib\ntensorflow-gpu>=1.10\n\n",
+    "tensorflow_import_available": false
+  },
+  "limitations": [
+    "Only public source software/license/docs downloaded; no runtime data, checkpoints, images or notebook outputs.",
+    "No implementation parity or promotion yet. Legacy TensorFlow/cuDNN execution and final notebook path need faithful reconstruction."
+  ]
+}

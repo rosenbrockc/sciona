@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "status": "license_unresolved",
+  "original_version_id": "f64bac1a-ca7f-5f29-a645-ec7b2b42ca4b",
+  "original_hash": "8af8fd4a570aac38f64592903046d4b229fe13604410c786a54ddd9fccc9c949",
+  "archive_commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "author_repository": "https://github.com/YeonJun-IN/-kaggle-M5---Accuracy-1st-place-solution",
+  "author_repository_http_status": 404,
+  "archive_license_files": [],
+  "findings": [
+    "Organizers archive A1 and author README establish first-place implementation relationship.",
+    "Six model families: recursive/nonrecursive crossed with three pooling granularities; README reports220models.",
+    "No code adaptation/publication yet; archive reuse terms not established, original author repository link returned404.",
+    "All fetched files are public software/README; no data, weights, logs, forecasts or notebook outputs fetched."
+  ]
+}

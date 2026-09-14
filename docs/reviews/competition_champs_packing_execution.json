@@ -1,0 +1,31 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "checks": {
+    "padding": true,
+    "squared_distances": true,
+    "quad_references": true,
+    "target_mask": true,
+    "unknown_label_rejected": true
+  },
+  "source_defects": [
+    "Packer overwrites triplet column 5 with the second bond index, leaving column 6 zero.",
+    "All 13 graph variants read triplet atom/bond columns one position before the documented seven-column layout."
+  ],
+  "affected_variants": [
+    "model_A",
+    "model_B",
+    "model_C",
+    "model_D",
+    "model_E",
+    "model_F",
+    "model_G",
+    "model_H",
+    "model_I",
+    "model_J",
+    "model_K",
+    "model_L",
+    "model_M"
+  ],
+  "scope": "Synthetic prepared tables through original vocabulary and tensor packing; no raw chemistry-to-model or saved-checkpoint parity claim.",
+  "validator_sha256": "324e5caa0b1ae2f0de09f45be43089008bab39848d35141d83bcc48202598976"
+}

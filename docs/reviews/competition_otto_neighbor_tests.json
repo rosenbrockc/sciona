@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 10,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Independent scalar distance oracle for all three metrics",
+    "Nearest one/two/four distance sums for nine classes",
+    "Query chunk and population independence",
+    "Reference order invariance",
+    "Explicit Bray-Curtis identical-zero convention",
+    "Insufficient references and invalid inputs rejected"
+  ],
+  "sha256": {
+    "sciona/otto_neighbor_features.py": "ff96a5e315cf09e14d7773a59c896406c8d891dcb34aa69cfd18157351976742",
+    "tests/test_otto_neighbor_features.py": "4f021c2370ed1addfa38028e174bc67d88abb67229cd5c8784bd7cccdb4ea2b2"
+  },
+  "limitations": [
+    "Caller must supply excluding-fold fitting references; cross-fit orchestrator pending.",
+    "Metric mapping across raw/TFIDF/t-SNE source variants remains unresolved.",
+    "Bray-Curtis branch explicitly restricts nonnegative features and defines zero/zero distance as zero.",
+    "Component only; upstream full model inventory and publication remain pending."
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,52 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "format": "aptos-mirrored-initialization-pins.v1",
+  "artifacts": {
+    "inception_resnet_v2": {
+      "repository": "smp-hub/inceptionresnetv2.imagenet",
+      "revision": "7814ac78e1c5ba473fed333b9ebd7d6e09cd43de",
+      "url": "https://huggingface.co/smp-hub/inceptionresnetv2.imagenet/resolve/7814ac78e1c5ba473fed333b9ebd7d6e09cd43de/model.safetensors",
+      "sha256": "d71bc3477255a2142f4739ce7b8a1228a38b4ab18fdef8840ccf213b32c18057",
+      "size": 223732852,
+      "card_url": "https://huggingface.co/smp-hub/inceptionresnetv2.imagenet/blob/7814ac78e1c5ba473fed333b9ebd7d6e09cd43de/README.md",
+      "model_card_sha256": "3d80fe69b2559eea636a16fc576159db6482a7982fc2b81fabe8e7f407d6aea1",
+      "declared_license": "other",
+      "original_weights_url": "http://data.lip6.fr/cadene/pretrainedmodels/inceptionresnetv2-520b38e4.pth"
+    },
+    "inception_v4": {
+      "repository": "smp-hub/inceptionv4.imagenet",
+      "revision": "944fb5734bbc332d798be074a50ffb6150cbe750",
+      "url": "https://huggingface.co/smp-hub/inceptionv4.imagenet/resolve/944fb5734bbc332d798be074a50ffb6150cbe750/model.safetensors",
+      "sha256": "2e27a338f22439476f1a48dfadfe58ee227f2d0ae126f7758eff70de245b2373",
+      "size": 171054724,
+      "card_url": "https://huggingface.co/smp-hub/inceptionv4.imagenet/blob/944fb5734bbc332d798be074a50ffb6150cbe750/README.md",
+      "model_card_sha256": "7e36b80949f23ba2495e9dadc2add65949e37c9f48653cb470e79bdab2f93cb6",
+      "declared_license": "other",
+      "original_weights_url": "http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth"
+    },
+    "seresnext50": {
+      "repository": "smp-hub/se_resnext50_32x4d.imagenet",
+      "revision": "0de39b6cfc3bc3f21d05f8eae31f0979842827bf",
+      "url": "https://huggingface.co/smp-hub/se_resnext50_32x4d.imagenet/resolve/0de39b6cfc3bc3f21d05f8eae31f0979842827bf/model.safetensors",
+      "sha256": "a885f0e582680aedaad378471620e0143401e1eee7fd3a240dc3749838d129fa",
+      "size": 110543176,
+      "card_url": "https://huggingface.co/smp-hub/se_resnext50_32x4d.imagenet/blob/0de39b6cfc3bc3f21d05f8eae31f0979842827bf/README.md",
+      "model_card_sha256": "d0983407e87140526c0a9f2e587ab2de67aee975e0878c520cf6e5233760f22c",
+      "declared_license": "other",
+      "original_weights_url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnext50_32x4d-a260b3a4.pth"
+    },
+    "seresnext101": {
+      "repository": "smp-hub/se_resnext101_32x4d.imagenet",
+      "revision": "e0d96d751535968c8772b1a581603eb7ad521b3c",
+      "url": "https://huggingface.co/smp-hub/se_resnext101_32x4d.imagenet/resolve/e0d96d751535968c8772b1a581603eb7ad521b3c/model.safetensors",
+      "sha256": "488eac4a2ec841fcaf518ed13670b07c4dc07c8428df3e5111aa4520659623b8",
+      "size": 196434424,
+      "card_url": "https://huggingface.co/smp-hub/se_resnext101_32x4d.imagenet/blob/e0d96d751535968c8772b1a581603eb7ad521b3c/README.md",
+      "model_card_sha256": "34619edbf47bc80bd54b5c56febe4bdcac0dbe160ff59763a73ab38dab475765",
+      "declared_license": "other",
+      "original_weights_url": "http://data.lip6.fr/cadene/pretrainedmodels/se_resnext101_32x4d-3b2fe3d8.pth"
+    }
+  },
+  "scope": "Pinned maintainer mirrors identify original upstream weights. Complete download, tensor comparison, license review and execution qualification remain separate requirements. No exact winner file identity established. External weights are not bundled or redistribution-approved."
+}

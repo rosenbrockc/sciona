@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "tile_comparisons": 5,
+  "augmented_view_comparisons": 30,
+  "cropnet_view_comparisons": 1,
+  "invalid_contracts_rejected": 12,
+  "input_unchanged": true,
+  "runtime": {
+    "tensorflow": "2.20.0",
+    "tf-keras": "2.20.1",
+    "numpy": "2.2.6"
+  },
+  "opencv_version": "5.0.0",
+  "scope": "Decoded-pixel inference transformations only; no decoder, trained models, original runtime or training augmentation qualification.",
+  "sha256": {
+    "sciona/cassava_image_views.py": "03013bc06c041c76cab4a4b0bd08421dccb59d0e215bb9ad9c59b000b35c8874",
+    "scripts/validate_cassava_image_views.py": "dd1e617709cf3bbed315ca29630c705fbfb4815ed285e63eae7eb2798fa627b9",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

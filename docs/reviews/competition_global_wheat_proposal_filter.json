@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751",
+  "exact_filter_cases": 16,
+  "images_per_case": 2,
+  "anchors_per_image": 5500,
+  "training_and_evaluation_budgets_exercised": true,
+  "raw_logits_preserved": true,
+  "clipping_small_box_removal_saturation_and_ties_included": true,
+  "implementation_sha256": {
+    "sciona/wheat_proposals.py": "0882c44f8d14361f705fd3f05b6eab6b1e780018fd15b0bcf769e8a6cb9752e2",
+    "scripts/validate_wheat_proposal_filter.py": "8c7e905a5f87249361da22f294e21400c5c5b87419d68c75b8fb865761068076"
+  },
+  "limits": [
+    "Filtering only; full RPN forward, target assignment and box coding remain separate.",
+    "Both paths call installed box/NMS operators; historical native-kernel equivalence is not claimed."
+  ]
+}

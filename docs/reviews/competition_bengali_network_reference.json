@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "networks": [
+    {
+      "network": "generator",
+      "parameters": 11378179,
+      "output_shape": [
+        1,
+        3,
+        224,
+        224
+      ],
+      "exact_initialization": true,
+      "exact_forward": true,
+      "exact_input_and_parameter_gradients": true
+    },
+    {
+      "network": "discriminator",
+      "parameters": 2764737,
+      "output_shape": [
+        1,
+        1,
+        26,
+        26
+      ],
+      "exact_initialization": true,
+      "exact_forward": true,
+      "exact_input_and_parameter_gradients": true
+    }
+  ],
+  "source_only_sha256": "600d64d01226bd5ca879a347ca06f148193fd73c88039222cee1832c847bc716",
+  "sha256": {
+    "sciona/bengali_gan_networks.py": "23cb1594e69493edddce30ef960c6eb2caf5a7d298d1ee59ae6a9534a70e4010",
+    "scripts/validate_bengali_network_reference.py": "38dd48743a96f6a794a5318063f34393b7f375c2e5624a7fcccd67681f5c013b"
+  },
+  "limits": [
+    "Full source-sized image architectures only; EfficientNet classifier and complete training remain pending.",
+    "Both sides use the installed PyTorch runtime; this is not historical runtime qualification."
+  ]
+}

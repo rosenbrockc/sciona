@@ -1,0 +1,20 @@
+{
+  "read_only": true,
+  "approved_targets": [
+    {
+      "artifact_kind": "atom",
+      "status": "approved",
+      "is_publishable": true,
+      "trust_tier": 3,
+      "is_latest": true
+    },
+    {
+      "artifact_kind": "cdg",
+      "status": "approved",
+      "is_publishable": true,
+      "trust_tier": 3,
+      "is_latest": true
+    }
+  ],
+  "total_distinct_served_cdgs": 27
+}

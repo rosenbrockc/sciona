@@ -1,0 +1,42 @@
+{
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "source_status": "draft",
+  "source_is_publishable": false,
+  "approved": false,
+  "classification": "material_intake_correction_required",
+  "references": [
+    {
+      "title": "Official competition solution index",
+      "url": "https://www.kaggle.com/competitions/santa-2020/discussion/222028"
+    },
+    {
+      "title": "Winner solution explanation",
+      "url": "https://www.kaggle.com/c/santa-2020/discussion/218453"
+    },
+    {
+      "title": "Winner linked implementation",
+      "url": "https://www.kaggle.com/nagiss/imaginary-rudolph-prize-solution"
+    },
+    {
+      "title": "Official bandit interpreter",
+      "url": "https://github.com/Kaggle/kaggle-environments/blob/master/kaggle_environments/envs/mab/mab.py"
+    }
+  ],
+  "findings": [
+    "Official index identifies the linked write-up as first place.",
+    "Winner uses two LightGBM regressors, not the intake Beta/UCB algorithm.",
+    "Initial threshold has a discrete uniform 0..100 prior; own rewards update a discrete likelihood under shared decay.",
+    "Ten features combine own posterior estimates and opponent action history.",
+    "One RMSE regressor targets the raw initial threshold; the second targets 1.02 raised to that threshold.",
+    "Inference inverses the transformed prediction, blends using a normalized decreasing sigmoid schedule, multiplies by shared selection decay and chooses the maximal score.",
+    "Implementation initializes transformed and raw prior means separately; opponent consecutive-choice feature is global, unlike the per-bandit wording in the prose."
+  ],
+  "pending": [
+    "Independent opponent-feature state and time-schedule parity",
+    "Replay feature/label generation and grouped training/validation lifecycle using synthetic replays",
+    "Two LightGBM models with early stopping and full agent execution",
+    "Dependency/license closure and publication gates; notebook license not established, no source copying or model artifact ingestion"
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "passed": true,
+  "epoch_comparisons": 20,
+  "refit_uses_first_14_values": true,
+  "tensorflow_executed": false,
+  "scope": "Source schedule with explicit NumPy float32 cosine adapter; runtime parity remains to verify.",
+  "maximum_absolute_error": 1.1807875749218766e-11,
+  "sha256": {
+    "sciona/cassava_efficientnet_schedule.py": "716c3fb5912fe8c78fecd861a4eaee3808d05e57237b6d8be407e2bb0872d694",
+    "tests/test_cassava_efficientnet_schedule.py": "d0a99321f2c38aeccb1971660be55e68becee30d1350b5934d1ab6ddb661174b",
+    "scripts/validate_cassava_efficientnet_schedule.py": "dc0c2b1290ae0f9f10cdf93af20491769fba3a0a8f157ad237baf618cb024e0b",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

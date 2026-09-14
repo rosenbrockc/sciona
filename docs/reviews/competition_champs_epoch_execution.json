@@ -1,0 +1,30 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "chunks": 1,
+      "objective": "global_mae",
+      "warmup_cosine_matches": true,
+      "clipped_updates_match": true
+    },
+    {
+      "chunks": 2,
+      "objective": "global_mae",
+      "warmup_cosine_matches": true,
+      "clipped_updates_match": true
+    },
+    {
+      "chunks": 1,
+      "objective": "log_type_mae",
+      "warmup_cosine_matches": true,
+      "clipped_updates_match": true
+    }
+  ],
+  "source_defects": [
+    "Chunked evaluation calls backward inside no_grad and fails."
+  ],
+  "corrected_chunked_evaluation_matches_full_batch": true,
+  "correction_sha256": "f6e8345a02d8a739320f12f11320f0453acb3ab914eda46564044e6f1cd8e483",
+  "scope": "Original epoch with analytic synthetic model and cutout disabled; optimizer, accumulation, clipping and warmup/cosine checks. No full-network training/checkpoint claim.",
+  "validator_sha256": "8dccf39594f483f0a8debfd24b0df6b8ed25ebc98435d5ee8f73d285dcf58a90"
+}

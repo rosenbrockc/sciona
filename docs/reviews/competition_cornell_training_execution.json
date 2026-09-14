@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "phases": [
+    {
+      "phase": "initial",
+      "full_30_second_training": true,
+      "validation_two_clips": true,
+      "optimizer_steps": 2,
+      "selected_epoch": 2,
+      "complete_checkpoint_reload": true
+    },
+    {
+      "phase": "continuation",
+      "full_30_second_training": true,
+      "validation_two_clips": true,
+      "optimizer_steps": 2,
+      "selected_epoch": 2,
+      "complete_checkpoint_reload": true
+    },
+    {
+      "phase": "augmented",
+      "full_30_second_training": true,
+      "validation_two_clips": true,
+      "optimizer_steps": 2,
+      "selected_epoch": 2,
+      "complete_checkpoint_reload": true
+    }
+  ],
+  "runtime_sha256": {
+    "cornell_model.py": "f314808e37c9188e371d022fd72fe613926011e0c04bb8fbd2fcae4c8a207a52",
+    "cornell_training.py": "deda1c6c66d6fb80cdc111befb960a74e7c87dfd61fee41d1d13f5a406e22c5b",
+    "cornell_schedule.py": "b374deb86e605f8c3479e32ccaf614558225bc0382bab935410e1324163e71ea",
+    "cornell_sampling.py": "d15565e956868e62d1e2d49c70a2470a6bec8a3d4f5093347999a2714db20879",
+    "cornell_augmentation.py": "6bbf78731304a7e0ff71acc8d2c8c50f0a6c82433c423939efd455f38e175141",
+    "cornell_validation.py": "5e248a8fe58b3ce0a12e1acc8fde9b856dfbf294ad4083db1624ba9771d34ad8"
+  },
+  "validator_sha256": "e641c33e680e28bb2a3cce652ff464252b6d717fe1ef4b3cabab30737db9bf3a",
+  "scope": "Three full-length synthetic phases, including model-only continuation and augmented loss; one batch per epoch, random offline initial weights. Not thirteen-member population/competition accuracy evidence."
+}

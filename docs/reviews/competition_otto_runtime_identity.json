@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "python_import_versions": {
+    "certifi": "2026.02.25",
+    "charset-normalizer": "3.4.5",
+    "h2o": "3.46.0.8",
+    "idna": "3.11",
+    "joblib": "1.5.3",
+    "numpy": "2.4.2",
+    "requests": "2.32.5",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.17.1",
+    "six": "1.17.0",
+    "tabulate": "0.10.0",
+    "threadpoolctl": "3.6.0",
+    "urllib3": "2.6.3",
+    "xgboost": "3.4.1"
+  },
+  "neural_imports": {
+    "lasagne": "0.2.dev1",
+    "theano": "1.0.5",
+    "device": "cpu"
+  },
+  "r_import_versions": {
+    "randomForest": "4.7-1.2",
+    "RSofia": "1.1",
+    "Rcpp": "1.1.2"
+  },
+  "r_version": "4.6.1",
+  "java_version": "21.0.10",
+  "verified_native_files": 273,
+  "verified_notices": 88,
+  "sha256": {
+    "docs/reviews/competition_otto_environment_inventory.json": "bc495b6e6189560a491c1c4bbd0da55dc905b9de560bcccce0a91d9e2adda51b",
+    "docs/reviews/competition_otto_native_links.json": "06bf433254dd42db3f82d570505bac1b78feddfacf1c6215d6a01009f2f1ae65",
+    "scripts/validate_otto_runtime_identity.py": "fa73e703fbb65fc43ca53ac15850645744c13ff37ce506e698dc649ec85d3d31",
+    "requirements/otto-execution.txt": "cf7ea87dcaf79d14f919ea58e1fdb2d0696d1f0721f577d9dfa87ba2f0ce0c70"
+  },
+  "limits": [
+    "Provisioned CPU runtime identity and Mach-O links only; no clean-install or complete dynamic-loading claim.",
+    "Actual algorithm execution is recorded separately by the graph validator."
+  ]
+}

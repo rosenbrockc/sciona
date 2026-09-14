@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "passed": true,
+  "model_software_only": true,
+  "source_model_sha256": "c7408d12f971edf7bf66d55f1de2161b278be7bc45ad9903c954c85600de5d6e",
+  "upstream_artifact": {
+    "url": "https://github.com/qubvel/efficientnet/releases/download/v0.0.1/efficientnet-b4_noisy-student_notop.h5",
+    "bytes": 71678424,
+    "publisher_md5": "47c10902a4949eec589ab92fe1c35ed8",
+    "sha256": "62297d620d56d0848b3234faa8b4c0f04791e533203447ee23c06d3e6968ed21",
+    "publication_approved": false
+  },
+  "tensor_mapping": "Outer layer name plus terminal variable name; ignore only auto-suffixed inner Keras scope, rejecting collisions.",
+  "upstream_tensors": 608,
+  "source_tensors": 611,
+  "identical_parameter_tensors": 608,
+  "source_only_tensors": "Three normalization adaptation state tensors",
+  "scope": "Exact numerical backbone equivalence to public upstream release. Does not establish weight-specific redistribution terms. Reconstructing normalization and verifying post-adaptation lifecycle remain separate gates.",
+  "sha256": {
+    "scripts/validate_cassava_efficientnet_weight_origin.py": "4a4aed7b6f3214666212f95281b2dbe1de1d088152d2c1ee6d398fde0e8dbf55",
+    "docs/reviews/competition_cassava_efficientnet_pretrained_validation.json": "6323f761314137a046c040876ea0ae3bf96b2e449a133701aee2b235fe187e74"
+  }
+}

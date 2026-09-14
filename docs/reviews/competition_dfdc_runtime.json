@@ -1,0 +1,21 @@
+{
+  "format": "dfdc-runtime-validation.v1",
+  "result": "passed",
+  "checks": {
+    "synthetic_json_decoding": true,
+    "explicit_state_decoding": true,
+    "complete_stage_wiring_intercepted": true,
+    "caller_rng_restored": true,
+    "private_path_excluded_from_results": true,
+    "pre_execution_rejections": 11
+  },
+  "limits": "Runtime schema and stage wiring only; expensive/native stages intercepted. Full actual detector/dlib/B7 runtime and serialized graph evidence remain required.",
+  "sha256": {
+    "sciona/dfdc_runtime.py": "cd142617329b81fe11840df183453f9e385dfe13117933a816d6b3f76517229e",
+    "sciona/dfdc_codec.py": "4256101fe8c78ad8df1eec4ff6db08ae53a7291a4506e73784ffad25ad39b15a",
+    "sciona/dfdc_selection.py": "c7accd53093451760b2371cbbab3d58e204a0ef8d41833e500bf47ddc161501a",
+    "sciona/dfdc_folds.py": "19a906285411ca326ec162fe47c17368d7804d9bcda271be209d594758d551fd",
+    "scripts/validate_dfdc_runtime.py": "248bb9d9fd38e4ceb23607da858c1d5380d1002548fc1fcaa0b220f1eff6fa7d",
+    "scripts/validate_dfdc_training.py": "64314e400a2348d334ae7a2ca9d509827d1f8d0238c6628e15c24387705cfabd"
+  }
+}

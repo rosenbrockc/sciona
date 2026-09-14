@@ -1,0 +1,11 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "tests_passed": 8,
+  "scope": "Synthetic publication-gate record validation with training review and transaction boundary stubbed. Seven invalid records reject before transaction; one exact record reaches only the mock boundary. No real publication proof.",
+  "sha256": {
+    "tests/test_cassava_publication_gate_contract.py": "115c4acf074e5c9d62ef49d8027440494443b53a16fc8276d48945bb75dcee4d",
+    "scripts/promote_cassava_execution.py": "f4681ff4e71b0e0bded57db3d5b301212e0f8c21fd7d6675bf2c502c5173c831"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "nonlin": "9ae9db167ee0608b13f2e2783be822678a88464fd23d549f02dbe2ee8144010a",
+    "nonlinear_energy": "d0e5d04b419371b4404dbf9571fe5cee6e541c8d6a487effe42b7bae1d948ab6",
+    "entropy": "fef28d3b5786869520ae62ccbc6daf373b942c09bcd8bb3d8cd72bc4d7ea17e4",
+    "histogram": "02f039828ef4bcf0ea551e3c657290b19e27d3284833559d1357d7de7d21ba62"
+  },
+  "provider_sha256": "f714c09f46d2b0f81c21b15bae0eb24b4cc18625254bd1eeb73ed113f7743159",
+  "validation_sha256": "3cd5c02f72eda30e644b99af6420c3be145c5d8eb26ce97b4d82abed03ddc561",
+  "test_sha256": "015db47fc47afc8da566c031bd855214ba217135698bc4785bb3f2a21bde09a1",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 4,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "seed": 10211,
+      "samples": 100,
+      "maximum_absolute_error": 2.842170943040401e-14
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 2.3646862246096134e-11
+    },
+    {
+      "seed": 10212,
+      "samples": 4,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "seed": 10212,
+      "samples": 100,
+      "maximum_absolute_error": 4.263256414560601e-14
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 3.8198777474462986e-11
+    },
+    {
+      "seed": 10213,
+      "samples": 4,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "seed": 10213,
+      "samples": 100,
+      "maximum_absolute_error": 1.4210854715202004e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 3.092281986027956e-11
+    }
+  ],
+  "limitations": [
+    "Unmodified numerical source helpers in current Octave; no original MATLAB runtime claim.",
+    "Three helper outputs only; low-range replacement/masking and full model execution remain separate."
+  ]
+}

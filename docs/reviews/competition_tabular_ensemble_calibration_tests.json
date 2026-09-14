@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "9f3c8c4f-ce85-5e9d-b169-8b055562ce65",
+  "source_content_hash": "3cc5a5fdfab302b5c1a37abe86916ac996f577d11b733cba0bbf7b7d4438b2cd",
+  "sha256": {
+    "sciona/tabular_ensemble_calibration.py": "4a04c21466734845754b8f6c86f326b851944a1cc19aeaf02a6c3a1b2e3a7244",
+    "tests/test_tabular_ensemble_calibration.py": "0597e06efd081e61aa89d0c204417f8b2abaf3d06906851be44fcd09ee2d1c99"
+  },
+  "checks": [
+    "Full base/OOF stacker/calibration/query lifecycle",
+    "Byte-identical fitted stack after calibration-label changes",
+    "Explicit refit-forbidden checks on existing models",
+    "Query batch independence",
+    "Training/calibration/query group isolation",
+    "Finite clipped logit endpoints"
+  ],
+  "limits": [
+    "C=1 logistic sigmoid of stack-score logits, independently fitted on calibration population",
+    "No empirical calibration or accuracy guarantee; fixed0.5 classification boundary",
+    "Caller-supplied groups determine isolation; no automatic data identity discovery",
+    "Direct in-memory lifecycle only; serialized boundary/provider review pending"
+  ],
+  "catalog_mutations": 0
+}

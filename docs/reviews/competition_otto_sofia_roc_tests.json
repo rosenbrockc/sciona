@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 4,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entry": 13,
+  "checks": [
+    "Explicit nonnegative-block logarithm agrees with independent feature oracle",
+    "Six excluding-fold/full-training supervised feature selections",
+    "Native combined-roc logreg-pegasos nine-class learning",
+    "54 binary models per full lifecycle",
+    "Heldout-label and query-value isolation given fixed embedding",
+    "All-column log1p rejects out-of-domain signed coordinates"
+  ],
+  "sha256": {
+    "sciona/otto_sofia_roc.py": "fe99bb0ae39f47b40b582e2bfe7c275e380b74de7974e692a8f630f79b2f8ed8",
+    "sciona/otto_sofia_roc.R": "cd1a5f9d2b445291a4fc50b251b651db5dae21e855d0cb3fe7f690d201821d84",
+    "sciona/otto_sofia_roc_crossfit.py": "003bc2de52ad55150b7b2d86abae1da34497850f82b431411834ca38b0879a49",
+    "tests/test_otto_sofia_roc.py": "d8f5b64e396ebc0558359716e4d865b227caf0d5d3da81e33fcb91d82a4f14e3",
+    "sciona/otto_interactions.py": "81f14071381f5e58ad6b318e9ff27ea7b353ab461f7b3a60793b3444726aeb6b",
+    "sciona/otto_interactions.R": "18bc8b375be1ddac8c03ec621be6aab81bb6ac9e306a933c43f26dd02f29ec75",
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0"
+  },
+  "limitations": [
+    "Historical logarithm scope unresolved; tested nonnegative-block interpretation is explicit independent choice.",
+    "Historical interaction subset, importance measure, optimizer controls and embedding scope unresolved.",
+    "Fixed embedding may be transductive.",
+    "Remaining neural branches and source-entry-ten width interpretation, native closure and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,24 @@
+{
+  "format": "dfdc-landmark-removal-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_ast_equalities": 5,
+    "direct_source_geometry_cases": 27,
+    "stochastic_source_output_rng_cases": 48,
+    "independent_tests": 8
+  },
+  "semantics": [
+    "Eyes/nose/mouth removals copy input; no-op random branch returns original input.",
+    "Sequential strict >0.5 draws give probabilities 1/2 eyes,1/4 mouth,1/8 nose,1/8 unchanged.",
+    "Dilation floor-divides landmark separation; zero iterations retains SciPy convergence behavior.",
+    "These are five-point preprocessing landmarks; convex-hull augmentation still requires separate68-point prediction."
+  ],
+  "limits": "Synthetic landmarks and image arrays only. No landmark detector weights, prediction quality, convex-hull branch or full preparation/lifecycle approval claimed.",
+  "sha256": {
+    "sciona/dfdc_landmark_removal.py": "f83fbc5da58c730cf711d0ed533799f15af12513cd02a48b9cd81a9038357ae3",
+    "tests/test_dfdc_landmark_removal.py": "ceaa2de7390d1b6f3b8787bef0faf215f0f5bddc0fd99c35ed97f593ea743161",
+    "scripts/validate_dfdc_landmark_removal.py": "56624ace4c077c2749860358e30c777c2c305fcbc523a1b874e206875dd93493",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

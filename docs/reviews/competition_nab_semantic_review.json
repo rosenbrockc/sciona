@@ -1,0 +1,72 @@
+{
+  "format": "nab-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "e78e1ac4-49ad-5fe2-9a58-c82862d11ec7",
+  "source_hash": "b8925fbe4d0563e5f596c38b2ef39166d47316f3e6cf704267ba4f60f9d49f7b",
+  "source_commits": {
+    "benchmark": "ea702d75cc2258d9d7dd35ca8e5e2539d71f3140"
+  },
+  "serialized_graph_sha256": "05bf24c16fabb12fc00597e7ef84b4cf5061341f73ff953522b05fc99f457269",
+  "provider_sha256": "3b735f47a44fb3689ee435baa5594a2aff09291edd1408605451397cd23871e3",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": [
+    {
+      "intake": "streaming_ingestion",
+      "realization": "Ordered private numeric population processed without lookahead"
+    },
+    {
+      "intake": "representation_generation",
+      "realization": "Isolation forest fitted on prior trailing windows"
+    },
+    {
+      "intake": "predictive_scoring",
+      "realization": "Negative sklearn isolation-forest score_samples"
+    },
+    {
+      "intake": "dynamic_thresholding",
+      "realization": "Prior-score rolling mean plus three standard deviations"
+    },
+    {
+      "intake": "windowed_evaluation",
+      "realization": "Corrected NAB scoring and source null/perfect normalization"
+    }
+  ],
+  "dependencies": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "threadpoolctl": "3.6.0"
+  },
+  "limitations": [
+    "Automated Tier 3 Community generic reconstruction; no Tier 1 human certification or Tier 2 usage qualification. Original generic intake remains draft and is retained as mandatory provenance.",
+    "The intake offers isolation forest OR autoencoder without naming a historical winning implementation. This realizes the isolation-forest branch with explicit new choices. It is not Numenta HTM, an autoencoder, or a historical high-tier/scoreboard-equivalent detector.",
+    "One univariate ordered population is processed causally. Each full forest fits only prior trailing observation windows, then scores the current window by negative sklearn score_samples. No separate learned feature compressor or reconstruction-error model is claimed.",
+    "Window length, bounded fitting history, minimum fit count, tree count, maximum samples, seed, threshold history and variance convention are explicit. Forests use all features, no bootstrap, one job, automatic contamination offset and per-step seed plus index. The offset does not affect score_samples.",
+    "Three-sigma threshold statistics exclude the current anomaly score. Detection uses strict greater-than, even if the threshold exceeds one. Warmup scores/thresholds are null and flags false. Evaluation probation is separately caller-controlled; warmup anomalies can be missed and penalized.",
+    "Fitting and scoring do not consume labels. Caller supplies sorted disjoint inclusive index windows for evaluation only. There is no timestamp parsing, elapsed-time weighting, resampling, missing-value imputation or independent real-world accuracy qualification.",
+    "Independent NAB score reduction matches the pinned source for ordinary windows and preserves per-point confusion counts, best detection reward per window, preceding-window false-positive penalties and source probation cap semantics.",
+    "Two explicit source corrections apply: thresholds below all eligible scores select the final sweep state; singleton windows use one row as the post-window penalty scale instead of dividing by zero. Exact historical parity is not claimed for undefined source behavior.",
+    "Normalization uses all supplied labeled windows for the perfect score and scorable windows for the null baseline, including the source distinction when windows lie inside probation. A zero normalization denominator returns null. Scores are not clipped to zero or one hundred.",
+    "All numerical evidence is generated synthetic input: prefix/future-mutation invariance, exclusion of the current observation from fitting, label-independent detection, 432 scoring comparisons and actual pipeline-runner execution. This is implementation evidence, not generalization performance.",
+    "Qualified on the provisioned Python 3.13 macOS arm64 worker with pinned NumPy, SciPy and sklearn dependencies. Clean installation, other platforms, serialization of trained forests, restart/resume, resource caps and streaming transport are not qualified.",
+    "NAB MIT notice retained. Only selected benchmark software was fetched; no benchmark records, anomaly label inventories, historical result files or private templates are embedded. Runtime values and results require private caller storage."
+  ],
+  "evidence_sha256": {
+    "competition_nab_source_pins.json": "5803833269861e463b3a76c85f5fb37448cfab2e0162ae74e5b44175637aa3ac",
+    "competition_nab_source_triage.json": "73dc57a9717c488ed80c01ec67e2fc2eb06aded547f5f2665c86830a95eac714",
+    "competition_nab_scoring_probe.json": "769b5992e8e17eea76fd896cc202ac7fb5c30643e4ad421652d4281df1548503",
+    "competition_nab_scoring_runtime.json": "323a5f8162083421ab004c9aabafc035755239217d50df2b7c27c553cd4ce3de",
+    "competition_nab_runtime_tests.json": "baf4a595aa3297ddc2bd7f867bf3d31da23ea647fbf3d7bba2610d7e785e19e1",
+    "competition_nab_graph_execution.json": "4b5c01e28a281658d7c8805368fbe7a0dae908480b0db6d700ff81b0feb2d001",
+    "competition_nab_environment.json": "f98b45eeb3b0cb1902bd1508edf9016c56c8446b78e823f199b94edf1d8002b6"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_nab_execution.py": "6fa8efdcaf589dfd58332339c02e63caf3c1751f8e7007d91ef14c6bbdb27987",
+    "requirements/nab-execution.txt": "26b8755d8ce6e2caf9e3fae78ab7652fd50faf14a0d6b4e1b7323bec31ff3678",
+    "docs/licenses/NAB-MIT.txt": "0a0b4d0b10cb1f7ed9ab2993ef93defc03447e6eba9daca1315dd32dae4877e3"
+  },
+  "catalog_mutations": 0
+}

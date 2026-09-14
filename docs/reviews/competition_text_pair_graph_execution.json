@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "4a5e403fcdb5da06bf44812043e3a06bb66de2012a3af7dcf9d6eb091651787c",
+  "provider_sha256": "cfedc44d1f8bfb0d6f50055a2dd69230ed45f9d9948090c74b1b23146323a560",
+  "code_sha256": {
+    "sciona/text_pair_contract.py": "230c4aabea0cc2116dc1265fee93ceebd84edb03be37b16b7f5b6958f23e274d",
+    "sciona/text_pair_features.py": "1113c41b3d8018e603f6afdae71bd4a971fc63c9c95529f56c5c3a8967c890ce",
+    "sciona/text_pair_graph.py": "801fbdb3bc113a072d774145dacd45e24c64bb540dbe84d653fba18c4038da11",
+    "sciona/text_pair_training.py": "d27bc10a06b3ea20626ae202a8a856142fbfd2ccf7abd1ccef2632927833fda4",
+    "scripts/text_pair_synthetic.py": "4ac208b0466ea7431380dc4551b291214216914f63f7d1887a150a9d2a410ffa",
+    "scripts/validate_text_pair_graph_execution.py": "78029df848835b6be42934ae94818fcb9ab84743826ce0db400ce8b95327172c"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 8,
+    "calibration_rows": 4,
+    "query_rows": 2,
+    "models": 2,
+    "forest_trees": 64,
+    "feature_count": 12,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual synthetic six-stage feature/ensemble/threshold/prediction execution; no served publication or historical accuracy claim."
+}

@@ -1,0 +1,8 @@
+{
+  "singleton_event_empty_slice_reproduced": true,
+  "exact_multiple_adds_zero_chunk": true,
+  "empty_detection_result_has_no_columns": true,
+  "notebook_code_sha256": "dcf21b634705e83e3fbfcde448146619688449c53ad5a3e4c8bd4bdce9a34bd9",
+  "validator_sha256": "e99a1b42b71fef8516e189d38b878a7fd47e44a507494b7493cdff35fbc22b8b",
+  "scope": "Synthetic predictions with shortened chunk constants reproduce original event/chunk behavior. No full inference or notebook reuse-license claim."
+}

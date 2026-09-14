@@ -1,0 +1,14 @@
+{
+  "synthetic_only": true,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hash": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2",
+  "cases_passed": 15,
+  "maximum_absolute_error": 0.0,
+  "implementation_hash": "f5c0cf72d3d6a899840c7d570197d4785b891b6ede357571272ce9c88a4e8eef",
+  "validation_script_hash": "36643b71aab13a4d85ede54d29412fbc63968af9e91b7aa8a1beecf38924f9ae",
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1"
+  },
+  "limitations": "Same-library source feature parity only; no full combined-feature branch or historical environment/predictive-performance validation."
+}

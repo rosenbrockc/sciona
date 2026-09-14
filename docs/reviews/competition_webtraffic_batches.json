@@ -1,0 +1,28 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "batch_cases": 6,
+    "source_record_comparisons": 163,
+    "prefix_permutations": 4,
+    "rejections": 3
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_batches.py": "988dc4c26d52201795f72d7ef2901ae3c24ecd3c4b3c5ba1d17e1b7bab46ddf9",
+    "scripts/validate_webtraffic_batches.py": "f247c017f41f8c1af9bebccfa7dcd2c58af91958d461fd9172a459ea9c8c9db7",
+    "sciona/webtraffic_windows.py": "ed1b61b2de15d9aa3916bb11387f20c707868cd9e54f6e2f5704465e194d2db0",
+    "sciona/webtraffic_assembly.py": "28fd1b0b87866e388bb5b3c863919f153b71210813226a0e54a1a81353a3976c",
+    "sciona/webtraffic_features.py": "78695bfc0331cb3e6b3e46fdfed5219a690e347390156dbac06aaaf8a8baf543",
+    "sciona/webtraffic_calendar.py": "e2ccf630fa3225e77373d4d8e40805d24ff152e35d877165e5f5d123c10dd205",
+    "sciona/webtraffic_pages.py": "5b9e00643a86dc38568b7def1b8322051b89036c5d9a342994407ef7a6153442",
+    "scripts/validate_webtraffic_windows.py": "fd4441453d10b674d6b3f53a93ee013d7c81a9e1fd4a4b08b2cd690fb5602bd1",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "limitations": [
+    "Explicit permutations and offsets; no TensorFlow random sequence or tf.data prefetch parity.",
+    "Original numerical methods executed with NumPy tensor-operation adapter.",
+    "FakeSplitter reports full train size even for sampled prefix; preserved and not used to claim sampled-route completion.",
+    "Full population-to-training/checkpoint lifecycle integration remains."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "status": "publication_review_pending",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "5d2f953e-86bb-57f8-9a97-e0b6a303fd94",
+  "source_content_hash": "69deb6e73d3e9e16de3fa53ef108b6a2928c0bed6706bf72ba5c8e558a97d8a5",
+  "primary_source": "https://github.com/Mcompetitions/M5-methods/tree/18e4e776cfa1ded3b387fabe008c6c2c44922007/Code%20of%20Winning%20Methods/U1",
+  "findings": [
+    "Pinned U1 software uses direct LightGBM quantile regression rather than the intake point-forecast/residual/distribution recipe.",
+    "The independent pipeline implements all 14 configured levels and nine quantiles with source default sampling, scale perturbations, search effort, grouped holdouts, forecast repetition and hierarchy restoration.",
+    "The full synthetic pipeline passed with 126 models, 4482 candidate fits and 2730000 forecast queries across 28 horizons.",
+    "Source aggregate outlet normalization is undefined in documented batch configurations. The explicitly reviewed retained-base-reference correction preserves defined source denominators and specifies missing aggregate denominators.",
+    "Canonical private-input validation passes the component suite; provider graph qualification and publication gates are tracked in separate evidence."
+  ],
+  "license_status": "Unresolved archive reuse grant; no original code copied into implementation",
+  "scope": "Corrected independent reconstruction with explicit source discrepancy, deterministic CPU/RNG limitations and no historical score parity claim. Not approved or published."
+}

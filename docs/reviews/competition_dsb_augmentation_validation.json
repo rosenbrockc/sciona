@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "exact_array_and_rng_parity_cases": {
+    "detector": 24,
+    "classifier": 24,
+    "detector_crop": 24
+  },
+  "limitations": [
+    "Source size-coordinate detector flip convention retained.",
+    "Source classifier rotation does not rotate coordinates; disabled in source defaults.",
+    "Same current SciPy/NumPy, not historic library behavior proof.",
+    "Detector crop reference ports ten Python 2 integer quotients.",
+    "Training sampling sequence and optimizer integration remain."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_augmentation.py": "d32ca4ffa76c7e0a4d2068ca736aec741ecb434122cc370ebddbba1556c54f3b",
+    "sciona/dsb_detector_crop.py": "95cf1a3e0d6498276139c78d3f210f524b59fc794c7cac87d8ba5908c72789be",
+    "tests/test_dsb_augmentation.py": "4961dce95db0d921be2f9187bc9eee7eadb9e012c1817ef75d612dd4b9ec6a7c",
+    "scripts/validate_dsb_augmentation.py": "52d42639b65c739e96e1721a83ffe6a0b345ff37d183085f807ade47ebb585ab"
+  }
+}

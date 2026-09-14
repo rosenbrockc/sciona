@@ -1,0 +1,30 @@
+{
+  "format": "dfdc-training-b7-validation.v1",
+  "result": "passed",
+  "checks": {
+    "actual_full_B7_training_updates": 2,
+    "actual_full_B7_validation_clips": 2,
+    "source_resolution": 380,
+    "checkpoint_events": 4,
+    "head_updated": true,
+    "caller_rng_restored": true,
+    "implicit_state_load_forbidden": true
+  },
+  "aggregate_validation_loss": 0.6932608065263264,
+  "limits": "One synthetic epoch, random B7 using installed timm, CPU float32 batch1 workers0. Actual augmentation, validation and checkpoint lifecycle. Hull branch has no-face detector stand-in; native dlib evidence is separate. No 40-epoch/2500-batch quality, historical weights or seven-checkpoint provenance claim.",
+  "sha256": {
+    "sciona/dfdc_training.py": "8112e22c58d88ecc8d0fabf7fa77d1e793974a7a8ed2f7252bf3b54575d6d3ce",
+    "sciona/dfdc_classifier.py": "42ca019c485a64bb652ff19ddda160ff7c342800ad6ede712bd7ebe854d10c56",
+    "sciona/dfdc_stochastic_depth.py": "e6d6426c069d152fff3ee5dfb0f1cd138cf2b10e42729650de8efbf10e7a60bc",
+    "docs/reviews/competition_dfdc_stochastic_depth.json": "85abda6157592b34e47d302a6a24b385e0cc2525481711da50b646d9e3ecd023",
+    "sciona/dfdc_dataset.py": "757b5f8442b1681551d3b711a256b864dc3712a92d5ee212a4f4ccbc8d8691a6",
+    "sciona/dfdc_preparation.py": "34e4c21448c215ccd4adbcad8c4b7476aa555be302e957d3cb1936f147466a41",
+    "sciona/dfdc_transforms.py": "5b1cee757b9ceac53c18e61c5aba489fad629f81dbd78f298945ebb452889f6f",
+    "sciona/dfdc_epoch.py": "460a8625582029fa6296124a491baf3cbd90c599426fbf537ba6d358067bb6e5",
+    "sciona/dfdc_loss.py": "f7a09a92025bd40dc053f108d137750521433c3912c80ae16de3fc0a2b8f57a9",
+    "sciona/dfdc_scheduler.py": "a7e2cc97acb8e6e2c3ba7d0e464e12c99d80a4da8ce570c5e85724f8921a5a54",
+    "sciona/dfdc_evaluation.py": "c958b081fedfe55f857126a54cc4309f07d06350898b8cc05cee89cfb836fe94",
+    "sciona/dfdc_checkpoints.py": "9ca3767560f98ae256e3288e496d48e3fabf45b00e250565c915d57e8e7bc154",
+    "scripts/validate_dfdc_training_b7.py": "a687638b4abe7ba60e21f2288a138016896800fdc451b2c03c60f7eec0d54130"
+  }
+}

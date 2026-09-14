@@ -1,0 +1,21 @@
+{
+  "repository": "Arturus/kaggle-web-traffic",
+  "commit": "a9abb80c800409abf0ece21ea244ef779f758f96",
+  "files": {
+    "Changelog.md": "8e56b75203ef31fa37bd72829a88c8ec3e83818c51b8d54a1c95b27f9d551b18",
+    "LICENSE": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33",
+    "Readme.md": "2376dad11aae5d5c60090ba85e9dbce111ecb182a746fd30f79c46d798e36e38",
+    "cocob.py": "6ce4d06c55492fa811c2103b474cb39df1c1dd9ae399e58c0c5412b9fb5fc091",
+    "extractor.py": "997d1f87b3a0349bcc81b7a7af05f8564b33728eabe13473bf51e90872f0b956",
+    "feeder.py": "23ae551ce1eebddfc88f63d35682d25048f9af310c894f6a4cf2262a0a0eeddd",
+    "how_it_works.md": "d8bd8c40bbc3495c5b4dfc891800cfbc2db41a188a00fd49ced922e62f4a228a",
+    "hparams.py": "a62d03e86435e129e59a3afc8f7b4e18220d75c1f5b0cc5839e52ab97391bf95",
+    "input_pipe.py": "8c2b6534fb252a24c3dbe20d6cb560a66b6482f6012309575feccdcab0fea357",
+    "make_features.py": "4ecb5bd33d87c82e75f0eccf62fee3e8e536f76f3fe9cf34d97b93fb25c98bfa",
+    "model.py": "30c06505e3fd4cef4a98a8b8fb707b66103ac19c355e53c6197ff31b8812e7c4",
+    "requirements.txt": "627d7fa6f70797450e5d70ea74791e8a5c6613b5b27bc1c51b5fd21ee29ba131",
+    "trainer.py": "f180138143cae3023bf5b35feb33f4ace4ccbaa7791ac625c8559463b2b0216b"
+  },
+  "git_blob_identity_verified": true,
+  "download_scope": "Root-level public software and license/documentation only; no data, checkpoints, images or notebook outputs."
+}

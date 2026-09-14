@@ -1,0 +1,54 @@
+{
+  "graph_digest": "9d5ff3e24a795a261fb683c82208b116af79536f8c2194b662edd18fa086b6a9",
+  "nodes": 4,
+  "edges": 12,
+  "full_runner_cases": 1,
+  "synthetic_only": true,
+  "training_clips_per_population": 28,
+  "prediction_clips_per_population": 2,
+  "populations": 3,
+  "output_shapes": {
+    "andriy_xgb_scores": [
+      6
+    ],
+    "andriy_xgb_segment_model_probabilities": [
+      6,
+      5
+    ],
+    "andriy_svm_scores": [
+      6
+    ],
+    "andriy_svm_unmasked_window_probabilities": [
+      114
+    ],
+    "andriy_glm_scores": [
+      6
+    ],
+    "andriy_glm_segment_model_probabilities": [
+      6,
+      3
+    ]
+  },
+  "score_spreads": {
+    "xgb": 0.7,
+    "svm": 0.00024385928494841114,
+    "glm": 0.7777777777777778
+  },
+  "duration_seconds": 1241.0937680000206,
+  "provider_sha256": {
+    "sciona.atoms.riemannian_bci.signal_processing.andriy_populations.andriy_documented_populations": "78cf80aebfaa401e48b6758f7d26dc7ccd52ab90dd684b48201cfdc3561199a8",
+    "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities": "5a885ca4a1164ce99bd833f608755d784a5e776a66429a8a9f73802999810e92",
+    "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities": "bea11ef914d07371501e24123fc0c291cebc17b9d90c148e2da3456165ad951f",
+    "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities": "7c3f6c431723e66b4b370a3183cf0ee13f22393771a130856a312626b5e2137d"
+  },
+  "reference_report_sha256": {
+    "andriy_population_parity.json": "d465f1f1bf8f1338ded363e5d3aa24bcca16e2ac3d5808f63196dadec8d4e857",
+    "andriy_execution_parity.json": "047d5a36e28b0277a26282f216afeebc061bb3ad5761864eaa18beb477d2c473"
+  },
+  "validator_sha256": "0a88366e75b041b20013598da55ef439d23c0627c5f5568c34641a17f675b6c4",
+  "limitations": [
+    "Full graph execution smoke check; independent numerical reference evidence is separate.",
+    "Synthetic random class assignment; nonconstant predictions are not predictive quality evidence.",
+    "Documented current-runtime adaptations remain; no historical MATLAB or R equivalence claim."
+  ]
+}

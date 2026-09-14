@@ -1,0 +1,9 @@
+{
+  "approved": false,
+  "candidate": "icecube_neutrinos_1st",
+  "source_version_id": "1b6b32b9-f353-5586-be9d-4ec9cbfe5137",
+  "source_hash": "9b125c6fe5d6bb714d37f842ed1e097a511f518185575d6c31ca4ebc6c762ab3",
+  "evidence_url": "https://link.springer.com/article/10.1140/epjc/s10052-024-12977-2",
+  "finding": "Authors state first-place software is not public and can be provided on reasonable request. Public second- and third-place repositories are different solutions; no substitution made.",
+  "next_action": "Source access or independently justified full implementation needed before promotion. No contact sent."
+}

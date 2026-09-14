@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "tests_passed": 16,
+  "test_sha256": {
+    "tests/test_connectomics_runtime.py": "786ac8b689f88f37333e7e59e2e9dc773a7bc97660fe83bded0d6e63d5e857ca"
+  },
+  "direct_runtime_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3"
+  }
+}

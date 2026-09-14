@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_software_sha256": "cc56e0f2816a87ac7cde60f04e07c5de8bc4d18c183dfa79454f2a255d771f96",
+  "checks": {
+    "network_cases": 4,
+    "both_variants": true,
+    "source_input_dimensions": true,
+    "last_valid_timestep_pooling": true,
+    "input_gradients": true
+  },
+  "sha256": {
+    "sciona/amex_network.py": "1c81c86f5cdaaa4630fd576f2935c6fb29ed4d2d418e184f89a3802fa4f43e3a",
+    "tests/test_amex_network.py": "8f67b7969c789d12a0ff7f47b7563f2e1d39e777e7e4f22fa48aa770b5a2b407",
+    "scripts/validate_amex_network_comparison.py": "f7c735366304abf2bbe783f7e223c95bf4a101d0520dfea40a3498db1ca4696a"
+  },
+  "limits": [
+    "Identical synthetic weights and eval-mode comparison on current CPU PyTorch; historical GPU training and learned-weight parity unqualified.",
+    "Generalized input dimensions supported explicitly; full optimizer, checkpoint and epoch lifecycle pending."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 4,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Independent per-fold IDF and nearest-class distance oracle",
+    "Five excluding-fold IDF fits then full-training query fit",
+    "Query population does not affect OOF representation",
+    "Heldout label isolation",
+    "Overlap fails before weighting"
+  ],
+  "sha256": {
+    "sciona/otto_tfidf_crossfit.py": "07ed2a7369cfae2fc26e3201bc98b9d05d6d1576515190232a1d9617da01296c",
+    "sciona/otto_tfidf.py": "422c3dc036adc68fe89903e428372b0161321855d8afebdce8facfc8e90bb160",
+    "sciona/otto_neighbor_features.py": "ff96a5e315cf09e14d7773a59c896406c8d891dcb34aa69cfd18157351976742",
+    "tests/test_otto_tfidf_crossfit.py": "a988cf8247f82940498e242fbff27f08d4fdb7388c1fbe25f000170d3c635e83"
+  },
+  "scope": "Explicit fold-local TF-IDF class-distance realization; historical preprocessing scope and exact settings unresolved.",
+  "catalog_mutations": 0
+}

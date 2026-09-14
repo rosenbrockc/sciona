@@ -1,0 +1,36 @@
+{
+  "approved": false,
+  "repository": "https://github.com/huggingface/pytorch-image-models",
+  "commit": "2db2d87ff7e78f8326d37cace94315167d409c29",
+  "selection": "Latest repository commit before 2021-02-25; contextual reference, not proven notebook version",
+  "files": {
+    "timm/models/resnet.py": "e527af3ee37fe518fdfc0adc010e193186f09c3f6d4202e85ab828c64f2b5be3",
+    "timm/models/vision_transformer.py": "d3a2a830774fb3fc74ebff1cb5cbb208fda87d7283163d52d67cfd86db3a4448",
+    "LICENSE": "71b111620fa32c17a80ccd6db2da759d31a591e497d8b5f382174f59d1b59d49"
+  },
+  "historical_defaults": {
+    "resnext50_32x4d": {
+      "url": "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/resnext50_32x4d_ra-d733960d.pth",
+      "interpolation": "bicubic"
+    },
+    "vit_base_patch16_384": {
+      "url": "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_384-83fb41ba.pth",
+      "input_size": [
+        3,
+        384,
+        384
+      ],
+      "mean": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "std": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "crop_pct": 1.0
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "read_only": true,
+  "synthetic_only": true,
+  "trust_tier": 3,
+  "provider_versions_verified": 2,
+  "served_cdg_count": 101,
+  "catalog_graph_runtime_execution": "passed",
+  "serialized_graph_cases": 1,
+  "models": 25,
+  "raw_preprocessing": true,
+  "full_training_limits": true,
+  "synthetic_query_rows": 8,
+  "graph_sha256": "361ec002f383b0e770936e525461a15623a8cc559a1d601218590fbc97e27259",
+  "version_id": "78a1dc98-78a0-5b0d-a7af-3f292a5ac78f",
+  "original_intake_status": "draft",
+  "verifier_sha256": "ae218bdc783d72280be1f841d9d05537458c3081fa6ac2af2e95ef08d44bd082"
+}

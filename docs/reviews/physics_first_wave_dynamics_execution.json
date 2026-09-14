@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "status": "passed",
+  "checks": {
+    "pytest_cases": 36,
+    "analytic_trajectory_mass_combinations": 24,
+    "formal_derivative_case": 1,
+    "invalid_input_cases": 11
+  },
+  "hashes": {
+    "sciona/physics_ingest/first_wave_dynamics_execution.py": "8a94ce4a47de4550f9718b87dbfce329157cdb87bb0b44417ca7b41b1dfba3ef",
+    "sciona/physics_ingest/first_wave_dynamics_proof.py": "fd8838b6be62291e1f8ad80a6874787bd691cb7c480ab9a4c7a86e3f89fef6dd",
+    "tests/physics_ingest/test_first_wave_dynamics.py": "68698fc6d47fb65de1185dd0ebaeda7784b79c74fb58f0f5924b89ae1ba1b64f",
+    "docs/reviews/physics_first_wave_dynamics_review.json": "8dcf00518e6be2061d439b1eed7b5226858aaad0bdce174230ab36271b331c1f"
+  },
+  "scope": "Constant positive mass, one inertial Cartesian component, symbolic differentiation and optional exact-expression sampling",
+  "limitations": [
+    "Caller asserts twice differentiability on domain and consistent SI coefficients",
+    "Formal unspecified position cannot be numerically sampled",
+    "No time integration or global smoothness certification",
+    "Provider graph and catalog publication remain outstanding"
+  ]
+}

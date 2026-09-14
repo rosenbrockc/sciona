@@ -1,0 +1,20 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_sampling_order_and_rng_cases": 144,
+  "observed_unequal_class_count_cases": 69,
+  "exact_scheduler_transitions": 480,
+  "implementation_sha256": {
+    "sciona/hubmap_sampling.py": "857661887790f1b7539cb99040bb1e593cbbd763797cb874301a8a74064bb961",
+    "sciona/hubmap_schedule.py": "4d9290aec4c8cf34308cee346eaed06b94e7ae904d01a19c816cb10ddc4231d6",
+    "scripts/validate_hubmap_sampling_schedule.py": "bcd8bff38c9a8b18a412621f1467793840186c874555a70a2268de1e1618b61e",
+    "tests/test_hubmap_sampling.py": "6f87c6867b2ea28af26821b1648a7549aa1bb4687069448f40dd2a28b49c0a5e",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Explicit integer bins and both populations required; degenerate populations reject before RNG changes.",
+    "Sampling precedes separate Torch DataLoader shuffling and drop_last; neither is claimed by this comparison.",
+    "Current PyTorch scheduler lifecycle, including constructor initial step; no historical environment claim.",
+    "No whole training or CDG publication approval."
+  ]
+}

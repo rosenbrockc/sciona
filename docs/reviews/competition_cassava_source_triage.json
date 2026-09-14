@@ -1,0 +1,38 @@
+{
+  "intake_version_id": "735c71d1-6f8a-565b-a5c3-f1bcf3a89285",
+  "intake_content_hash": "c74ce39f2cea94fe168690a36ac59be792dad72a02f705424dea7a8f24cc2218",
+  "status": "deferred_notebook_urls_and_license_unresolved",
+  "target_tier": 3,
+  "intake_reference": "https://www.kaggle.com/c/cassava-leaf-disease-classification/discussion/218741",
+  "intake_reference_result": "No readable body in current browser fetch.",
+  "primary_winner_writeup": "https://www.kaggle.com/competitions/cassava-leaf-disease-classification/writeups/golddiggaz-1st-place-solution",
+  "primary_winner_discussion": "https://www.kaggle.com/competitions/cassava-leaf-disease-classification/discussion/221957",
+  "findings": [
+    "Winner describes four-model final ensemble: ViT, ResNeXt, EfficientNetB4 and CropNet.",
+    "Final blend first averages ViT and ResNeXt probabilities, then sums with EfficientNetB4 and CropNet probabilities.",
+    "CropNet was used without further fine tuning; center cropping precedes its resizing.",
+    "Intake omits two ensemble members and the actual two-stage combination.",
+    "Bi-tempered loss, pseudo-labeling and five-fold TTA claims need verification in primary software; not established by the recovered writeup."
+  ],
+  "next_steps": [
+    "Locate authors published notebooks, pin code-only cells and establish licenses.",
+    "Verify training, augmentation, class alignment and final inference across all four models."
+  ],
+  "catalog_mutations": 0,
+  "followup": {
+    "model_specific_findings": [
+      "ResNeXt uses ordinary cross entropy, while ViT uses bi-tempered loss and EfficientNetB4 uses sigmoid focal loss.",
+      "ResNeXt and ViT use distinct preprocessing; EfficientNetB4 has its own patch/TTA averaging.",
+      "Writeup lists three training notebooks and one inference notebook, but available extraction did not expose their link destinations."
+    ],
+    "access_findings": [
+      "Public writeup HTML returned an application shell without notebook links.",
+      "Unauthenticated notebook listing returned HTTP401 for all three author handles; stopped that route.",
+      "Same-handle GitHub candidates did not establish a winning-source repository or author identity."
+    ],
+    "remaining": [
+      "Exact original notebook references and versions.",
+      "Notebook-specific reuse licenses and full executable code."
+    ]
+  }
+}

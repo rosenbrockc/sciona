@@ -1,0 +1,21 @@
+{
+  "format": "adversarial-resnet-validation.v1",
+  "result": "passed",
+  "checks": {
+    "source_bottleneck_value_and_input_gradient_cases": 3,
+    "independent_pool_cases": 2,
+    "source101_unit_topology": true,
+    "actual299_full101_input_gradient": true,
+    "classes": 1001,
+    "frozen_buffers_unchanged": true,
+    "initialization_rng_preserved": true
+  },
+  "limits": "Source bottleneck AST with explicit layout/component adapters; full CPUfloat32 random ResNet101 input differentiation. No whole-network TensorFlow binary numerical comparison or pretrained checkpoint mapping; other Inception families and ensemble iteration remain required.",
+  "sha256": {
+    "sciona/adversarial_resnet.py": "5a60047ce948db4e88f75784da8d767afbc14ef7031a7b2c4fde6358110a092b",
+    "sciona/adversarial_resnet_spatial.py": "023d6fe17962eea7025a8472ea028f9ee7fac8e3836f74d6d0e64ca66a3bfb39",
+    "sciona/adversarial_normalization.py": "3af9580ea7f45eb3e56b71c8a7bfb308819363f9f9a08a933ca6ec67186aad92",
+    "scripts/validate_adversarial_resnet.py": "7966801fe539479c5013eb0a43705fb45e3fa434561745127675d618a5975a29",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  }
+}

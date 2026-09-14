@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "f64bac1a-ca7f-5f29-a645-ec7b2b42ca4b",
+  "source_content_hash": "8af8fd4a570aac38f64592903046d4b229fe13604410c786a54ddd9fccc9c949",
+  "serialized_graph_sha256": "8bd369e42be8b641f9c43031c767daaca61e31e799122e4f78cc36d8500a508b",
+  "provider_sha256": "23611247ddb2822ca1f611f5fc5662813cf7221d8d042b525b61b511d0586972",
+  "code_sha256": {
+    "sciona/m5_calendar.py": "32f729ea52f80f109ff3ec8f46d595051a14e97f3b13a640f238e23e1ce4470d",
+    "sciona/m5_encoding.py": "83cdef7393eb4d87f1df0ca2717462aa8c94196d0cc644bbe493bbee62eac18a",
+    "sciona/m5_execution.py": "af183997bcbf809b444d4c96342eb6f681fab31e6b686fead191a920c4bc25b8",
+    "sciona/m5_family.py": "51283e76eb1b00eff625ea570e2a194c9774997925f4829e27acb6277f1ffe05",
+    "sciona/m5_forecast.py": "ac4d932b358b89ebfb8f9041d0695d561115a5be414aead8fe11a81f16be2d2f",
+    "sciona/m5_graph.py": "226fafcb7f1e1722a1f5cace8dff6c817825af229e006df42581532fc9eb6d9c",
+    "sciona/m5_grid.py": "9f3831c77638395b07be10268c30503adbde39a7345217611ad53c7b89ea0787",
+    "sciona/m5_join.py": "4d574d15807afe29c92da95e17cf9f0dd764cf639935b1603682d8e23e074d49",
+    "sciona/m5_lags.py": "c74e2b42dfdd3dacf09bc3c2e1be6f956b9c8252e2c89562693e40b4b206b7c4",
+    "sciona/m5_pooled_training.py": "9c674a5d7a8c9f6c5083a530aaed3fa13836f01885736949cc41f764c5d75ff7",
+    "sciona/m5_precision.py": "7606b0ce072e14bdca3b711562af56386143ea1652ffa779df9f64a733ff64d4",
+    "sciona/m5_preprocessing.py": "76823cb49cedc165ab4a8201f296cf485c9c119eb221f874c240849c30ad9dcd",
+    "sciona/m5_price_block.py": "f1d2623a4956a3f79c12adcef52a8dc53a702fdae9cacbdc2c979925dc27b016",
+    "sciona/m5_prices.py": "12d228b78d17e357fca0dce1a881cb1a3090204065f1a8a8d7782d20f660c512",
+    "sciona/m5_training.py": "77ce1bfb9da5f31f0b68e6142a24686c241e7a45bb72d370f1f897431951bf83",
+    "scripts/validate_m5_full_inventory.py": "bcbd8db5d2bc0531095bb1979f6205f2e2a7f300570a3bb05bf4e29db8ec9d36",
+    "scripts/validate_m5_graph_execution.py": "af16bcfcbb4e2bb3855f222845051dda6021defaec04c4eca379351c7076f8ef"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "models": 220,
+    "raw_preprocessing": true,
+    "full_training_limits": true,
+    "synthetic_series": 70,
+    "horizon": 28,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true,
+    "code_unchanged_during_execution": true
+  },
+  "scope": "Independent full CPU pipeline on synthetic history with all 220 models and full forecast horizon. Historical sample scale, unbiased validation and competitive accuracy unqualified."
+}

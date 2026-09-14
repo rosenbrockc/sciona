@@ -1,0 +1,131 @@
+{
+  "format": "dfdc-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "source_version_id": "95e3414b-c0ed-5816-b944-4466d697d9fc",
+  "source_hash": "66f965f75d83ba4ec2daf15afcfa7a657589938dc98c00722b9ccea7eec92679",
+  "serialized_graph_sha256": "dc87409857540e3938483d94ab8cabbba0287cc19993394c1878a7cb2d6f8b86",
+  "provider_sha256": "81e261bd0f5f02932c2ddb8833a7df1969b15c1abf916796374b4e0c92ef14a1",
+  "limitations": [
+    "Tier3 automated Community reconstruction only; no Tier1 human certification or Tier2 usage qualification.",
+    "Original intake stays draft. Source correction selects MTCNN and B7, no RetinaFace/Se-ResNeXt or inference landmark alignment.",
+    "Complete decoded arrays replace media codecs; caller supplies positional parts/pairs, explicit states and native68-point predictor. No historical membership lists or weights bundled.",
+    "Source frame duplicate behavior, one-face/error fallback,127-face default cap and per-checkpoint confidence heuristic are preserved.",
+    "Full paired crop/landmark/difference-mask preparation, augmentation, population balancing, smoothed class-balanced BCE, SGD, mutating scheduler and numbered snapshots are included.",
+    "Source submission requests7 states from5 runs, including suffix40; source default40-epoch run produces0\u201339. Default combination is rejected. Caller must explicitly supply an executable plan; no automatic extension/rename or historical checkpoint authentication.",
+    "Graph evidence runs actual MTCNN, native synthetic dlib and5 full B7 models with2epochs/1batch1 update each and7-state prediction. Shortened plan is explicit, not full default-scale training or historical accuracy.",
+    "Historical stochastic-depth function restored with exact synthetic CPU encoder outputs/gradients/RNG; historical Torch/CUDA/Apex/distributed runtime equivalence is not established.",
+    "Current facenet/dlib/albumentations/skimage adaptations remain explicit; numeric conversion fixes current MTCNN object-landmark rounding. No positive pretrained detector-quality claim.",
+    "DFDC execution restores caller RNG after provider discovery. First-time discovery of unrelated packages changes NumPy state; startup isolation is not claimed.",
+    "Dependencies pinned to tested installed versions; clean independent installation not tested. Explicit initialization supplies pretrained states without automatic downloads.",
+    "Runtime input arrays, states and native predictor paths remain private; validation uses synthetic fixtures and publishes aggregate evidence only."
+  ],
+  "intake_stage_mapping": [
+    {
+      "intake": "frame_extraction",
+      "realization": "Decoded RGB boundary and source frame-index/fallback semantics",
+      "evidence": [
+        "frame_prediction_edges",
+        "codec",
+        "runtime_full"
+      ]
+    },
+    {
+      "intake": "face_detection",
+      "realization": "Actual three-network MTCNN with stage-specific thresholds and half-size inference",
+      "evidence": [
+        "detector",
+        "training_crops",
+        "runtime_full"
+      ]
+    },
+    {
+      "intake": "face_alignment_cropping",
+      "realization": "Source margin crop without inference alignment;5point and68point training augmentation",
+      "evidence": [
+        "faces",
+        "landmark_removal",
+        "hull_backend",
+        "crop_annotations"
+      ]
+    },
+    {
+      "intake": "deep_fake_classification",
+      "realization": "Full B7 paired-record training,5run orchestration and explicit7state selection",
+      "evidence": [
+        "records",
+        "training",
+        "ensemble_b7",
+        "stochastic_depth",
+        "graph"
+      ]
+    },
+    {
+      "intake": "temporal_aggregation",
+      "realization": "Per-checkpoint confidence heuristic then checkpoint mean",
+      "evidence": [
+        "inference_primitives",
+        "prediction",
+        "ensemble_prediction",
+        "runtime_full"
+      ]
+    }
+  ],
+  "finding": "Complete corrected computation and actual serialized graph evidence support automated Tier3 selection with explicit initialization and executable checkpoint plan. This supersedes the initial implementation-in-progress source review, without changing its historical record. Catalog mutation and served retrieval gates remain separate.",
+  "evidence_sha256": {
+    "competition_dfdc_checkpoint_selection_review.json": "837167bc4b67850803e538a60b48c8b44ee0897ad6d53631dc4cbc790f8d8a10",
+    "competition_dfdc_checkpoints.json": "134015a159ea72a813f5b4f429e0078ccd8129097beca5526c24d2441c43a9cc",
+    "competition_dfdc_classifier.json": "6aedbdeb6d64356977f28f9b08afdf299b4e6f755e240bcaf474fa76cc159b50",
+    "competition_dfdc_codec.json": "0a616f71dab74569280d652b5785ec387781a326dc09c9db58533d5b8c814d93",
+    "competition_dfdc_codec_b7.json": "8527270d03289a8e0bc1bff499166023adbe98f6e0ca381447e83e7cccb3dd0f",
+    "competition_dfdc_convex_hull.json": "33bc7daabdfb1c439771150d4dff201863c47e7c1bbb3c64268437a14e814099",
+    "competition_dfdc_crop_annotations.json": "964ce28210120ba2b84fd0f228903281e5897755386164a7ba96b233e9843a04",
+    "competition_dfdc_dataset.json": "9189ba19a7ea168bfd04285f45e0963c5ab5cff9f94a97d18fe5a8cc588ebbd6",
+    "competition_dfdc_detector.json": "92542dabd7c9959e1c3a4800d56afab558584bbe5004a2f6056afe700ca937c5",
+    "competition_dfdc_dlib_dependency_pin.json": "84fb94c0ccb2966f661edb15c2ae6011ad8a6367a9929fbdfd6e071798b282b6",
+    "competition_dfdc_encoder_compatibility.json": "b679f9cc2ba1c27b3ec032e1e32e9a4475b4f416cfdebb508aead905dff81a3a",
+    "competition_dfdc_ensemble_b7.json": "815adea975b6751dc0de980928ce2bb2702d99d15d840a9d6b6f9f0c93e39d1d",
+    "competition_dfdc_ensemble_prediction.json": "b9b653edffedd2b8daa09416670b3c91eb347e4b8842617fedecb989d2e93ef8",
+    "competition_dfdc_ensemble_training.json": "0a1993aae24d689de4c6f2899ae92aa36d591f43cdca95b6cfd9c6579a886d3b",
+    "competition_dfdc_epoch.json": "41200205d5725448d216931f554ffca43ce28aab23e4f031fd7a7d6229ed5229",
+    "competition_dfdc_evaluation.json": "c03f9fd452aae863ceca07b5ddb02782e72ad2b124f8a3d0e08e6f3c9bda1f53",
+    "competition_dfdc_facenet_dependency_review.json": "4f808f92543e6dddc0d5fe5ae5f4ca77e6b9d6dc50031b243593f8d6b6666809",
+    "competition_dfdc_facenet_source_pins.json": "64c37605ad55ebdecf58bac2fd6d1df18a7a87b6e6c046c43c66961a91e1e2d8",
+    "competition_dfdc_faces.json": "099eab5a38685f6c995f0aa4df1f6b127e8eebf547173f2abafcecd3538f7f3e",
+    "competition_dfdc_folds.json": "352899ff2bfba0e5543735c7a95e0ca514b50f36e48aeb56f0bef2094b815ccf",
+    "competition_dfdc_frame_prediction_edges.json": "cc9a7e35256b37e94e4ea7a5b592daa7427fa61cb139aed51d3ec735d0150e71",
+    "competition_dfdc_graph.json": "ae6b2d2b07f65a00492b5d3aceb70253f200d9c9d1c42aca8e627c451ba5e35e",
+    "competition_dfdc_hull_backend.json": "b7082db52da053e89882aad78bc7af4e4df1bbea459c85e5327fd596b28725b1",
+    "competition_dfdc_inference_primitives.json": "b3764de7cd987aeca086f3d491268e2be652c71b059d051f8409bb8005f4fff6",
+    "competition_dfdc_landmark_removal.json": "cd0edd14e48a8bc350127218a9bacf7edf85026ed8fec67923e504254d225638",
+    "competition_dfdc_population.json": "5578567ea64b12d12ebff275fbed25836ed2dbf82a91290a943fc2220cbad717",
+    "competition_dfdc_prediction.json": "b4c76c90053ad7433f56bb678ba06167160408e118b02cb8ac4aa53ce218db77",
+    "competition_dfdc_preparation.json": "357e0c29bd58e67d083548ec0a659f7d5f8f7d46663af5dfeb13eb468d7cb453",
+    "competition_dfdc_records.json": "335b9e032f85ca83692d73082e7b5c0e31e426293b5c8be138180c9741338377",
+    "competition_dfdc_runtime.json": "bed24a44cb90713d4e93369211b448fdfa4cac47c3cc40888d3dd271966d58c1",
+    "competition_dfdc_runtime_full.json": "6a31828ddaf921b400a0352f4fc5f439d1b0929fad8eaca8fb4a538401935cdd",
+    "competition_dfdc_selection.json": "3c0d48e330337477645625c93671f17a45dde87e16f766929353c925977fe259",
+    "competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871",
+    "competition_dfdc_source_review.json": "7f1fa92974874ed69efcf76668541ca915853eb6544953d425576b9864674983",
+    "competition_dfdc_stochastic_depth.json": "85abda6157592b34e47d302a6a24b385e0cc2525481711da50b646d9e3ecd023",
+    "competition_dfdc_timm_dependency_pin.json": "befcef39282ed8a6e6bb711324501586faf986604e6dd1c5ab47b2b9388527af",
+    "competition_dfdc_training.json": "379b1fddb629c052e7745d91516d835f033aa1f4d10d9af83cf662df11942021",
+    "competition_dfdc_training_b7.json": "ed01256d4ed8eaae7767cc8e40f1fac0f316ffe58dc441700ac13ad2b6ed3970",
+    "competition_dfdc_training_crops.json": "1a8f419cd56b4304e239c72f15c705b16addf7cde9fab1b3871dd1b9ef144045",
+    "competition_dfdc_training_masks.json": "22ffe8c0bd156739e610503f7382d6bc154e0fd61e4155c22016db25d108dfc1",
+    "competition_dfdc_training_math.json": "b56848fd5f94c221c2069b2adb2e69f3227581d2c7e50b8661a9292ce11cabb7",
+    "competition_dfdc_transforms.json": "d76db8275fc271987863ffbc165c892ca283db15a67713a253ac1812a1768d5c",
+    "competition_dfdc_execution_dependencies.json": "623a3885efd013c4e62785308b47227da16617e141b1ed7a3455185ca3eee57d"
+  },
+  "auxiliary_sha256": {
+    "requirements/dfdc-execution.txt": "6305ece45fef00fb07344a9e0e253fb05eaf144720ef924810e596fe19b5408a",
+    "scripts/review_dfdc_execution.py": "5d40dc871dd3b57cfc1deba0d14e3f4435b232373a0d4bbaa929d2276148cc91",
+    "docs/licenses/DFDC-MIT.txt": "0671780885c3623f2f1320c9668eea54252deea384a86acb8013abc3d3adf64c",
+    "docs/licenses/FacenetPytorch-MIT.txt": "9fac5781e1529f4dd1a045716e1859436038d2def9e108d101b6df20c5a11318",
+    "docs/licenses/Dlib-Boost.txt": "8d8291caf1cee26d23acf3eb67c9f9a2d58f1c681b16a4fbe8cbfb9e3c0b5a9b",
+    "docs/licenses/Timm-Apache-2.0.txt": "71b111620fa32c17a80ccd6db2da759d31a591e497d8b5f382174f59d1b59d49"
+  },
+  "catalog_mutations": 0
+}

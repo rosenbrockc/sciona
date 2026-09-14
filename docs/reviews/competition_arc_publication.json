@@ -1,0 +1,37 @@
+{
+  "format": "arc-publication.v1",
+  "rollback": {
+    "applied": false,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "05688172c80ce497d1a1869779f4675479a60cc3720fffa679aef02b229c9f60",
+    "version_id": "fc3fa1b4-a5ec-582b-855d-702f88e6bb67"
+  },
+  "applied": {
+    "applied": true,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "05688172c80ce497d1a1869779f4675479a60cc3720fffa679aef02b229c9f60",
+    "version_id": "fc3fa1b4-a5ec-582b-855d-702f88e6bb67"
+  },
+  "idempotent_reapply": {
+    "applied": true,
+    "rows_created": 0,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "05688172c80ce497d1a1869779f4675479a60cc3720fffa679aef02b229c9f60",
+    "version_id": "fc3fa1b4-a5ec-582b-855d-702f88e6bb67"
+  },
+  "limits": "Transactional serving and identity checked; fresh served graph execution verification remains separate."
+}

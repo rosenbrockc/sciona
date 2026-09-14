@@ -1,0 +1,17 @@
+{
+  "source_commit": "cd7809db4d7eb92860b178d8f5a53ab16f03ad91",
+  "source_sha256": "80c5fcabbcea4671fb328e4414780545f127b786bcac3b57afc60ba7c093442a",
+  "git_blob": "6943646973339f00ebdea28455ec81417f892ae6",
+  "numerical_defaults": {
+    "augment_retries": 10,
+    "num_folds": 5,
+    "fold_random_state": 1,
+    "redshift_weighting_group_key": "ddf",
+    "redshift_weighting_min_redshift": 0.1,
+    "redshift_weighting_max_redshift": 3.0,
+    "redshift_weighting_num_bins": 10,
+    "redshift_weighting_min_bin_count": 100,
+    "redshift_weighting_redshift_key": "host_specz"
+  },
+  "scope": "Public software numeric defaults only; filesystem settings excluded"
+}

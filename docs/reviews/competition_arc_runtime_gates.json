@@ -1,0 +1,15 @@
+{
+  "format": "arc-runtime-gates.v1",
+  "status": "passed",
+  "checks": [
+    "binary_rejected_before_schedule",
+    "manifest_rejected_before_schedule",
+    "license_rejected_before_schedule",
+    "missing_binary_rejected_before_schedule"
+  ],
+  "code_sha256": {
+    "sciona/arc_runtime.py": "716811f34f4c629d990eaad25061532fc11846fc9179c360aad09afc360c7e37",
+    "sciona/arc_build_identity.json": "5f011c13990165f5ae8e0a7028dd4e28b20a55f0faec837b18957bea1e014b66",
+    "scripts/validate_arc_runtime_gates.py": "0b38bfaaf934637884c2f996e435c216601040ca6056eccfac40e712ded0dc89"
+  }
+}

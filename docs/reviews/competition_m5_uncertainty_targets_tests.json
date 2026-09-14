@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "tests_passed": 58,
+    "synthetic_only": true,
+    "sampled_target_join": true,
+    "duplicate_rows_preserved": true,
+    "categorical_dtypes_preserved": true,
+    "group_filter": true,
+    "out_of_sample_missing_target": true
+  },
+  "sha256": {
+    "sciona/m5u_calendar.py": "3ee1863b3b9c17cef229135287a71cfa3dc9524ecc67f4bc118410939d407b5f",
+    "sciona/m5u_cleaning.py": "bbeac0608e2f326b59c026673f99a60cbfb88c577a1ca2ddab3d2f9677f171ff",
+    "sciona/m5u_exponential.py": "8742f3a02a084a96dd6bf6a1d702a2b723fb0522259f63f8c74908304135428d",
+    "sciona/m5u_hierarchy.py": "e748f65d33ed75c877a5e4fc9db73c1eb889045ffbf56e19b72a181952dad4d6",
+    "sciona/m5u_loss.py": "838923d8f2bda7f7e0b7856412199afbf51d6e4e36232c60c8ffab0e20d2115f",
+    "sciona/m5u_population.py": "d6ac47e2286961642208e0fd74d32a053342bffc5b2c56f22ed5d8f188ae3f41",
+    "sciona/m5u_rolling.py": "b876de2e229f310e4cda03c846ce99fb7a0b2ba04e924def12742361ca3b3e82",
+    "sciona/m5u_sampling.py": "e908ff4711669c5e418318066ff4a5ba0692b1edc23706a1e0f6eadbaf545ff3",
+    "sciona/m5u_scaling.py": "68bae53e9c23c50ffc68fa2b8ae7f47b157ab81d121376da8692599a9c76635c",
+    "sciona/m5u_targets.py": "447ed712e8ddb7c0e10cb1d9574afb0182941474566e5ef27adcd4f145820be5",
+    "sciona/m5u_weights.py": "472ca6f95290e040c0edeb5404970a00ab26b7995e4926b237660583dfdab5ef",
+    "tests/test_m5u_calendar.py": "dd3c7315ddad9fb7eb3ba92988f73fefbafb974ad733044b6aca25c1b8f8bab9",
+    "tests/test_m5u_cleaning.py": "21dc5f34e7475d1fc1be9c2abf2a451baee0646aa407566df48ca8506db8a73f",
+    "tests/test_m5u_exponential.py": "59bb4b44ac476aae6e86f76f730ac25f82f9631f1c28d1314571be4daaa21e79",
+    "tests/test_m5u_hierarchy.py": "28698042335253e027084a76d4728f9b763f2a44bb6ba74ab3b4b0d618db6a56",
+    "tests/test_m5u_loss.py": "a82b4974aa5fddd09cc40f752d8027762a2020bb1b69e9f8b13f1eb2afd8e97e",
+    "tests/test_m5u_population.py": "f77b1f5b35e024a0ec301213d75767ab8018ae13407d108cc6ca164915ad0ea4",
+    "tests/test_m5u_rolling.py": "74bd241abd14f0bb35222339e908abbeaa8f29f81e1fe7be613a310ef91b48b0",
+    "tests/test_m5u_sampling.py": "6a1d5568274a5ece7cec228bba662114b7c89d4cdfc6c7ee679b36453add35b1",
+    "tests/test_m5u_scaling.py": "bc34b1605256c67d80cf3366cc07164165cda9794f1fa3744d91f254ecab6e37",
+    "tests/test_m5u_targets.py": "530ab3e3a77d410fa4ce733eb942ab046f17e4c84e936c2005167699dcc6ba1b",
+    "tests/test_m5u_weights.py": "74633965fb4ac9bdc3ebdec599c5eee4d3a8154464a0892de344f3078c2cde73"
+  },
+  "limitations": [
+    "Calendar noise and volume noise use explicit independent streams; historical global RNG parity unqualified.",
+    "Prepared population boundary only; full hierarchy-specific configuration, grouped model tuning, bagging and forecast assembly remain incomplete."
+  ]
+}

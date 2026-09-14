@@ -1,0 +1,11 @@
+{
+  "applied": true,
+  "rows_created": 46,
+  "trust_tier": 3,
+  "served_provider_versions": 2,
+  "served_execution_cdgs": 1,
+  "input_arity": 1,
+  "output_arity": 1,
+  "graph_sha256": "6e821a2dc2ca4abdd54bdb29046e2a0953cac7ebbfab837f284e90f81be19619",
+  "version_id": "7ed0edcf-3ce4-5f07-9a9a-4e0af736e61c"
+}

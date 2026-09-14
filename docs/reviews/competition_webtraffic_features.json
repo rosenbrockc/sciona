@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "boundaries": 16,
+    "preparation": 64,
+    "autocorrelation": 96
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_features.py": "78695bfc0331cb3e6b3e46fdfed5219a690e347390156dbac06aaaf8a8baf543",
+    "scripts/validate_webtraffic_features.py": "e325a5bccd1ab77481c3977948dac165a7574d9634e94ee70f5acdac98fb76d2",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "limitations": [
+    "Original function bodies without numba decorators; no compiled-numba parity claim.",
+    "Source inclusive end index is used as exclusive correlation slice and validity length excludes one endpoint; preserved.",
+    "Constant float32 series may yield source correlation 1 from rounded means; independent correlation check excludes constants.",
+    "Feature subset only; calendar/page features, neural training and final ensemble remain."
+  ]
+}

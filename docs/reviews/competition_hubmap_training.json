@@ -1,0 +1,32 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "step": 1,
+      "all_empty_masks": false,
+      "exact_loss_model_buffers_optimizer_rng": true
+    },
+    {
+      "step": 2,
+      "all_empty_masks": true,
+      "exact_loss_model_buffers_optimizer_rng": true
+    }
+  ],
+  "parameters": 134133707,
+  "implementation_sha256": {
+    "sciona/hubmap_training.py": "8bf03836ca9e1246ee03a9b4288504c619ad4a9ee1ead50446d480b4360a6e04",
+    "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "scripts/validate_hubmap_training.py": "bb241a37b285cf7250dae09b1d1edd97459fd12e65fde7ed909f8adcecd46435",
+    "scripts/validate_hubmap_losses.py": "0fba8d784ca0659ca4d7d6ad4ef372f89694dbb76e1e5b43d632f837b8c8774b",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Current CPU float32 network/loss/Adam parity; CUDA autocast and GradScaler are excluded.",
+    "Preprocessed synthetic minibatches only; epoch sampling/augmentation/validation/checkpoint selection and complete graph remain.",
+    "Two consecutive optimizer updates; no trained predictive-quality or convergence claim."
+  ]
+}

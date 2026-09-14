@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 10,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Full family bag counts enforced",
+    "Per-family averaging before documented final formula",
+    "Raw scores retained and normalized only after final mixture",
+    "Exact zero and disjoint-support behavior",
+    "Row independence and input immutability",
+    "Invalid bag shapes/probabilities rejected"
+  ],
+  "sha256": {
+    "sciona/otto_final_blend.py": "280e637eda6e36b8c649c6f8262817a5a90416b1120c7aade69f1f3c90960907",
+    "tests/test_otto_final_blend.py": "a7601fe262adf4da860ff2cc5aefe727ac6711535bd491858653f8aaf5939ba4"
+  },
+  "scope": "Synthetic final numerical stage only. No upstream training, exact winner parity or publication claim.",
+  "catalog_mutations": 0
+}

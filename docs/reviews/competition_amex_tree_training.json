@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "models": 10,
+  "variants": 2,
+  "configured_rounds": 4500,
+  "evaluated_rounds": [
+    4500,
+    4500,
+    4500,
+    4500,
+    4500,
+    4500,
+    4500,
+    4500,
+    4500,
+    4500
+  ],
+  "native_iterations": {
+    "manual": [
+      4500,
+      4500,
+      4500,
+      4500,
+      4500
+    ],
+    "manual_with_slots": [
+      4500,
+      4500,
+      4500,
+      4500,
+      4500
+    ]
+  },
+  "sha256": {
+    "sciona/amex_tree.py": "343d7d8b6d43f34c8b19fccae8da56ef1b89f83471b5fe24cced2c7cf9f19b08",
+    "sciona/amex_numeric.py": "aeefcd3e3aa1ccd52e904c79b99b52f348a4727fce78e73ecd03acb9cb0afa73",
+    "tests/test_amex_tree.py": "7c43698fae2f2d8bc66bcc5a98f96ccf3c35adc274e3c24d007d7e4123b54009",
+    "scripts/validate_amex_tree_training.py": "7f0177a4236e6378658d8796190e9e4834f1f2add9a4aeae1a9443eb54944451"
+  },
+  "limits": [
+    "Synthetic manual features and probability slots; upstream whole-pipeline integration remains pending.",
+    "Independent current CPU runtime, forty manual features and synthetic population; no historical volume or competitive accuracy qualification."
+  ]
+}

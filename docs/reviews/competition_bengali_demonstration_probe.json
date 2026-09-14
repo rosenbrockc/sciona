@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "approved": false,
+  "completed_epochs": 1,
+  "completed_updates": 2,
+  "batch_size": 8,
+  "all_four_trainable_networks_updated": true,
+  "frozen_classifier_unchanged": true,
+  "fresh_checkpoint_output_exact": true,
+  "epoch_metrics": {
+    "generator/gan_a": 5.1220210790634155,
+    "generator/gan_b": 1.3626810014247894,
+    "generator/cycle_a": 5.627920866012573,
+    "generator/cycle_b": 5.333163261413574,
+    "generator/font": 9.602526187896729,
+    "generator/total": 27.048312187194824,
+    "discriminator/real_a": 5.045705676078796,
+    "discriminator/fake_a": 2.333177328109741,
+    "discriminator/real_b": 3.5855141282081604,
+    "discriminator/fake_b": 1.389906883239746,
+    "discriminator/domain_a": 3.6894415616989136,
+    "discriminator/domain_b": 2.487710475921631,
+    "discriminator/total": 6.177151918411255
+  },
+  "sha256": {
+    "sciona/bengali_fit.py": "3b760dbdca7c0332199f2e2ddb8a5afae523d3bdd871a4886911ab56dbeb64b8",
+    "sciona/bengali_font_augmentation.py": "d5ee9776578f3c092c5b69adc85d878e84925125cc6ddf4357ebba1529d27c59",
+    "sciona/bengali_font_classifier.py": "3ffb988219fba2ae6c38b44030c9fbe93b2a161dab7369439d63db4a880330d9",
+    "sciona/bengali_font_guidance.py": "58472d168b81c40b8e8d4ffc4a36aa5d04ad8b60601dfa06cbc3645dc8b720a2",
+    "sciona/bengali_font_sampling.py": "72c76335386936f5ec99b3ddd18c385b2d3566cff49a9b787d4cae5bc81b3ad8",
+    "sciona/bengali_gan_losses.py": "d77c9aff148cd8fc250d19dade50c4a380ddb04539b672e8a08d4d7bdc2cc4d5",
+    "sciona/bengali_gan_networks.py": "23cb1594e69493edddce30ef960c6eb2caf5a7d298d1ee59ae6a9534a70e4010",
+    "sciona/bengali_gan_training.py": "0c963b499915f651986d9ca8b11033e678897ea21999fba0ef994efd3ebbb441",
+    "sciona/bengali_image_pool.py": "9547a419e2e6c2c299a3e397e016059092f95e7c191f2ea96097928103cdf56d",
+    "sciona/bengali_joint_labels.py": "b9c1a52d6458f23217d2e84aabc1ba50302eb8edc9a8c81e3a43ec9f2ed1cb1d",
+    "sciona/bengali_label_corrections.py": "f34b64f59c1a78807e57dac5e9b3163bafb2016fc3da6048f6e82fe4d8623501",
+    "sciona/bengali_population.py": "d72ac2ba1dac1f2ff3b0289779f4497f84931808ca5602e562630fb336b62889",
+    "sciona/bengali_preprocessing.py": "1a2cdb8f791a1a78d055ddca1f99b0a66b20e0f5d9c1e44dd556c92d9033e5b8",
+    "sciona/bengali_sampling.py": "fe6e3b33a43a734217f6179f17d0f880701c5b12f7b38b5a917e957b0124469f",
+    "sciona/bengali_shear_sampling.py": "20884fb2d223fa6094f612e827d0351557c0d15b7a49ca8d52c3ba645d4bd3a1"
+  },
+  "limits": [
+    "Notebook demonstration epoch/batch settings only; paper winning training budget is40epochs batch32.",
+    "Synthetic images and random untrained B0 classifier; no font-recognition or winning accuracy claim.",
+    "Explicit reconstruction seeds and SFC64 backend; notebook worker seeding and historical environment remain unqualified.",
+    "Complete seen/OOD/font-pretraining/inference pipeline and promotion gates remain pending."
+  ]
+}

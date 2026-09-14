@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 17,
+  "source_version_id": "13b48adf-8fb5-5ea2-a26c-44344bb8907e",
+  "source_content_hash": "30d0444ec640598942c6221136e608d7b15449732ceb848939e1424321c496ad",
+  "scope": "Complete generic precomputed-feature video multilabel topology remains the intended scope.",
+  "implemented": [
+    "Variable-length frame padding and masked learned attention",
+    "Context gate and multilabel logit head",
+    "Per-label held-out F1 thresholds with highest-threshold tie rule"
+  ],
+  "checks": [
+    "Hand uniform attention and context gate formula",
+    "Independent scalar nonuniform attention calculation",
+    "Padding and batch isolation, explicit frame-order invariance",
+    "Finite gradients with zero padded-frame gradient",
+    "Independent sklearn F1 threshold enumeration",
+    "Label-separable calibration"
+  ],
+  "pending": [
+    "Batch-aware feature populations and disjoint groups",
+    "Neural training and sparse linear baseline fusion",
+    "Calibration/query lifecycle and full serialized graph",
+    "Dependency notices, semantic review and publication gates"
+  ],
+  "sha256": {
+    "sciona/video_multilabel_network.py": "2787419d79ad600dd53be0cdbaf8c7b3ccf73b5cda73a8ee76884f984e1eb451",
+    "sciona/video_multilabel_thresholds.py": "78b071bdef9faa2949fe0b61ceabe4286ba6eb88d7c1f58f771f916e40dcbf1e",
+    "tests/test_video_multilabel_network.py": "c43ecb7392b1e1596994ce1a3a7b62f4fafb732bdcd79d2490abd4d79b8b8df9",
+    "tests/test_video_multilabel_thresholds.py": "378c348d93eabcdf8ebd176219267049dfd030b1339d367fa1edd7456bddf05c"
+  },
+  "limitations": [
+    "Precomputed frame features only; no raw-video feature extractor",
+    "Attention pooling has no temporal position encoding and is permutation invariant",
+    "No empirical accuracy or rare-label improvement claim"
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,84 @@
+{
+  "format": "arc-schedule-execution.v1",
+  "status": "passed",
+  "binary_sha256": "7ec9ff2a36efa96ac10b382cf786b52572557f0f577af979d010870f70fbd92c",
+  "source_schedule_sha256": "6efbe43874e8f18eceadcc9a9bad84959e76a9d341b7d3f8d0b883f8140e2a3d",
+  "code_sha256": {
+    "sciona/arc_contract.py": "e9a8aed638f6be671ce76126017390d805992adc0159e99685ac7c8e681566f6",
+    "sciona/arc_process.py": "49fbc91bd70b8a6ae29a71e3fb5251c92b97fa11e97e5ced414890d7b311606f",
+    "sciona/arc_schedule.py": "60acb4670481e4fa98235e5fb236665e7d7508074a565292a0f8ddab62af4356",
+    "scripts/validate_arc_schedule.py": "4b41d15b4c972d216da567fd0ae6f61413d82aba9a1adc8a78159b0722c27646",
+    "tests/test_arc_schedule.py": "9169cac587d72941e16b4d6bd0f5a15b2cd831edad7d9c2225edf5429990cca2"
+  },
+  "source_command_policy_differential_phases": 4,
+  "successful_full_source_runs": 8,
+  "both_synthetic_expected_predictions_retained": true,
+  "global_deadline_missing_predictions_explicit": true,
+  "global_memory_missing_predictions_explicit": true,
+  "all_started_children_reaped": true,
+  "started_process_count": 16,
+  "attempts": [
+    {
+      "synthetic_test_index": 1,
+      "argument": 3,
+      "status": "success",
+      "seconds": 0.12148095900192857,
+      "peak_rss_mib": 18.71875
+    },
+    {
+      "synthetic_test_index": 0,
+      "argument": 3,
+      "status": "success",
+      "seconds": 0.21053237502928823,
+      "peak_rss_mib": 18.71875
+    },
+    {
+      "synthetic_test_index": 0,
+      "argument": 23,
+      "status": "success",
+      "seconds": 0.1210635420284234,
+      "peak_rss_mib": 27.234375
+    },
+    {
+      "synthetic_test_index": 1,
+      "argument": 23,
+      "status": "success",
+      "seconds": 0.20635724999010563,
+      "peak_rss_mib": 27.21875
+    },
+    {
+      "synthetic_test_index": 0,
+      "argument": 33,
+      "status": "success",
+      "seconds": 0.12063849996775389,
+      "peak_rss_mib": 37.21875
+    },
+    {
+      "synthetic_test_index": 1,
+      "argument": 33,
+      "status": "success",
+      "seconds": 0.21155620797071606,
+      "peak_rss_mib": 27.21875
+    },
+    {
+      "synthetic_test_index": 1,
+      "argument": 4,
+      "status": "success",
+      "seconds": 0.11747979198116809,
+      "peak_rss_mib": 18.828125
+    },
+    {
+      "synthetic_test_index": 0,
+      "argument": 4,
+      "status": "success",
+      "seconds": 0.20754645898705348,
+      "peak_rss_mib": 18.9375
+    }
+  ],
+  "limits": [
+    "Thirty-second configured synthetic budget; no nine-hour competition benchmark.",
+    "Source-equivalent command estimates and phases, not identical wall-clock resource decisions.",
+    "Ten-millisecond RSS sampling; transient peaks and parent overhead are not an OS-enforced cap.",
+    "Build reproducibility, sanitizer review, provider/CDG and publication gates remain."
+  ]
+}

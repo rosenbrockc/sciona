@@ -1,0 +1,83 @@
+{
+  "read_only": true,
+  "source_code_only": true,
+  "variants": {
+    "targeted": {
+      "commit": "7da707fe568053a9e2735fcc692c8f0ad7e122a1",
+      "source_files": {
+        "target_attack.py": "06150755ab75473774ec22a4037fc83ef73ff2f89771b969e692fae45a4136fd",
+        "nets/inception_resnet_v2.py": "1cfb29b02053c4b21a5dc716861039473c482ccd88f1df6c73e04d3cd4d8db05",
+        "nets/inception_v3.py": "3dab90bb283318f869314413a29aaacffe3ff20039daa89bfaaf8d5584171174",
+        "nets/inception_utils.py": "c79e3ecc2333bb72fed342bf0f74a3ab707fb6e1ebf75d60298d85cdcc84df49",
+        "nets/__init__.py": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "LICENSE": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+      },
+      "checkpoint_checks": [
+        {
+          "url": "https://ml.cs.tsinghua.edu.cn/~yinpeng/nips17/targeted/models.zip",
+          "error": "HTTPError",
+          "status": 404,
+          "get_status": null,
+          "get_error": "URLError"
+        },
+        {
+          "url": "http://ml.cs.tsinghua.edu.cn/~yinpeng/nips17/targeted/models.zip",
+          "error": "HTTPError",
+          "status": 404,
+          "get_status": null,
+          "get_error": "URLError"
+        }
+      ]
+    },
+    "untargeted": {
+      "commit": "5c68162e05de7afed2e3d33115df43e2a7a1c3da",
+      "source_files": {
+        "attack_iter.py": "be5f6903bb0675f480d10e0551e37f9cbb1dc883fa1dcc63ad05e9fb6fb82d12",
+        "nets/resnet_v2.py": "6b7e1eaa950be4ea9c390b707a4e598c81b11ebb3b5a30b1cf66101f9a8a8f74",
+        "nets/resnet_utils.py": "a56e6b1d4159bc10badb1ed266a4b53fa40fd8fc2ccb83cd635f97896b275df9",
+        "nets/inception_resnet_v2.py": "1cfb29b02053c4b21a5dc716861039473c482ccd88f1df6c73e04d3cd4d8db05",
+        "nets/inception_v4.py": "f4d2172791b6033670de5db5c65a4950f248131fe7bca6233edeb0188ccd8c40",
+        "nets/inception_utils.py": "c79e3ecc2333bb72fed342bf0f74a3ab707fb6e1ebf75d60298d85cdcc84df49",
+        "nets/inception_v3.py": "3dab90bb283318f869314413a29aaacffe3ff20039daa89bfaaf8d5584171174",
+        "nets/__init__.py": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "LICENSE": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+      },
+      "checkpoint_checks": [
+        {
+          "url": "https://ml.cs.tsinghua.edu.cn/~yinpeng/nips17/nontargeted/models.zip",
+          "error": "HTTPError",
+          "status": 404,
+          "get_status": null,
+          "get_error": "URLError"
+        },
+        {
+          "url": "http://ml.cs.tsinghua.edu.cn/~yinpeng/nips17/nontargeted/models.zip",
+          "error": "HTTPError",
+          "status": 404,
+          "get_status": null,
+          "get_error": "URLError"
+        }
+      ]
+    }
+  },
+  "checkpoint_downloaded": false,
+  "runtime_requirements": [
+    "TensorFlow 1 tf.contrib.slim",
+    "Legacy SciPy image IO if using original file entrypoint",
+    "Original model checkpoints with matching variable scopes"
+  ],
+  "scope": "Pinned source import closure and checkpoint endpoint availability; no model execution or approval.",
+  "runtime_image": "tensorflow/tensorflow@sha256:181ff142e73ed8efe350f49288c7b0f5681fde66534a76d8de4fc75d4e30d571",
+  "runtime_platform": "linux/amd64",
+  "runtime_downloaded": true,
+  "checkpoint_followup": {
+    "source_author_issue": "https://github.com/dongyp13/Non-Targeted-Adversarial-Attacks/issues/10",
+    "finding": "Source author points to the same archive endpoint now returning 404; no verified replacement obtained."
+  },
+  "source_refetch_verified": true,
+  "host_architecture": "aarch64",
+  "runtime_probe_status": "timed_out_and_stopped",
+  "runtime_probe_limit_seconds": 300,
+  "runtime_probe_exit_code": 137,
+  "runtime_probe_note": "No output after more than five minutes; explicitly stopped the probe container. This does not establish that TensorFlow cannot run on other hosts."
+}

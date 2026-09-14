@@ -1,0 +1,14 @@
+{
+  "training_fit_calls": 0,
+  "make_preds_missing_output_selector_reproduced": true,
+  "status": "passed",
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "distance_features_exact": true,
+  "distance_semantics": "Capped Manhattan propagation from diagonal-zero and pair-one seeds; not general graph shortest paths.",
+  "double_reversal_exact": true,
+  "first_ensemble_member_unclipped": true,
+  "ensemble_order_dependence_reproduced": true,
+  "reducer_mutates_input_frames": true,
+  "validator_sha256": "a32f45806ef282f27f391097700ebb86e5146d3f4ccf48ceb7bc5e3a819c4cd6",
+  "scope": "Synthetic feature and reducer primitives only; no full Keras model, folding, pretraining or supervised/pseudo-label lifecycle claim."
+}

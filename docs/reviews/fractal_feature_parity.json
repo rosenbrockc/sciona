@@ -1,0 +1,18 @@
+{
+  "synthetic_only": true,
+  "cases_passed": 15,
+  "maximum_absolute_error": 0.0,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "preproc.py": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2",
+    "transformer.py": "701697177ebae94aece0018130241b50a4f75f7212a258e31c09bd8b3bc230f5"
+  },
+  "implementation_hash": "d681c5b2222758b2c8930049a94e4eedd48f3d5aa002a8508d240fc5423a99c1",
+  "validation_script_hash": "56626537aeefbd9dec05beb23e5e49302c8cec3d91931fae1adc10d62f7f592f",
+  "library_versions": {
+    "numpy": "2.4.2",
+    "pandas": "2.3.3"
+  },
+  "reference_adaptation": "Python 2 integer i_end division and xrange restored; removed pandas expanding_std maps to expanding sample standard deviation on ndarray. Current NumPy least-squares defaults retained. Original classes and VariousFeatures ordering otherwise unchanged.",
+  "limitations": "Source-specific feature formulas, not interchangeable standard fractal estimators. Source Hurst mutation intentionally removed while preserving outputs. No full branch, historical-library or physiological-validity claim."
+}

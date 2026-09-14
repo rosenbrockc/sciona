@@ -21,6 +21,12 @@ class PlanningConstraintCategory(str, Enum):
     STAGE = "stage"
     ADMISSIBILITY = "admissibility"
     TELEMETRY = "telemetry"
+    # Competition solution assets use these distinct constraint categories.
+    # Preserve them during publication instead of dropping or relabeling them.
+    DATA = "data"
+    VALIDATION = "validation"
+    RESOURCE = "resource"
+    METRIC = "metric"
 
 
 class PlanningConstraint(BaseModel):

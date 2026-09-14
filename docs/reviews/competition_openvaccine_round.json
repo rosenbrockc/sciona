@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "trained_teacher_members": 20,
+  "refined_student_members": 40,
+  "refinement_rounds": 2,
+  "autoencoder_steps": 1,
+  "initial_supervised_steps": 20,
+  "refinement_supervised_steps": 40,
+  "pseudo_label_steps_attempted": 40,
+  "actual_validation_rollbacks": [
+    17,
+    11
+  ],
+  "parent_manifests_unchanged": true,
+  "refined_checkpoint_ensemble_prediction": "passed",
+  "scope": "Two consecutive full reconstructed teacher/student rounds on synthetic supplied populations and explicit recipe; historical folds, folding engine and complete graph remain unverified.",
+  "runtime_sha256": "8f2155e5065f2f5d68088f2c3a1e6f38cd4d7008db215248ad8104ee10b140e0",
+  "contract_sha256": "d5d919ebf77736d2d4d9d4e6cc0b3bb990818c9585d674dec075f19df17fb99f",
+  "validator_sha256": "56bbec611e06e7c2edddffd31318fa657171ab51ac2ef2168fd3f193d84bb858"
+}

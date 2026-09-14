@@ -1,0 +1,32 @@
+{
+  "approved": false,
+  "source_commit": "a9abb80c800409abf0ece21ea244ef779f758f96",
+  "final_prediction": {
+    "models": 3,
+    "target_models": [
+      0,
+      1,
+      2
+    ],
+    "predict_window": 63,
+    "asgd": true,
+    "seed": 2,
+    "batch_size": 2048,
+    "hparams": "params_s32",
+    "checkpoint_selection": "all paths returned by checkpoint state",
+    "checkpoint_mean": "arithmetic mean after expm1",
+    "model_mean": "arithmetic mean across three model predictions",
+    "missing_pages": "zero fill",
+    "threshold": "values below 0.5 become zero",
+    "rounding": "NumPy nearest integer, ties to even",
+    "output_dtype": "int64"
+  },
+  "remaining": [
+    "Actual legacy TensorFlow/cuDNN GRU execution and state conversion",
+    "Adam optimizer, gradient clipping and training schedule",
+    "ASGD moving-average checkpoint restoration",
+    "Runtime input scheduling and end-to-end lifecycle validation"
+  ],
+  "scope": "Public source code inspection and synthetic numerical evidence only; no model weights or dataset records used",
+  "training_review": "competition_webtraffic_training_review.json"
+}

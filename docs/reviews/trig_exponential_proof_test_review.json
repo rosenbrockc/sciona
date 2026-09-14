@@ -1,0 +1,11 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "passed": 17,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_trig_exponential_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_trig_exponential_proof.py": "ef88632334bfe7ebeb36efff872b7c4269adad17328e849eebcb1961290577b9",
+    "sciona/physics_ingest/trig_exponential_proof.py": "f8da191cb058e8f71916bffa1a8597ca56511a70fcf17185bef17c20c1cdb0df",
+    "sciona/physics_ingest/euler_formula_proof.py": "319547df92a46b9d272d4e6aceafc5387324aeb064f741c23455b05ba68fa509"
+  }
+}

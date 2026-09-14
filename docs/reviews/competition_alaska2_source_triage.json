@@ -1,0 +1,22 @@
+{
+  "format": "alaska2-source-triage.v1",
+  "approved": false,
+  "catalog_mutations": 0,
+  "intake_version_id": "e718080e-26cb-5e48-8488-f36c6f4b075e",
+  "intake_content_hash": "de1812241a30edd4af7bb2bea966347573c18d2ae87d5b161f3327cb220f6eed",
+  "status": "source_contract_correction_required",
+  "primary_reference": "https://www.kaggle.com/competitions/alaska2-image-steganalysis/writeups/guanshuo-xu-1st-place-solution",
+  "findings": [
+    "The winning author describes separate spatial and DCT networks with learned second-level fusion of bottleneck features.",
+    "The spatial branch is modified SE-ResNet18; the DCT branch encodes frequency components as channels and uses one-hot inputs.",
+    "The writeup reports four splits and final probability averaging, conflicting with the intake five-fold six-channel EfficientNet/MixNet recipe."
+  ],
+  "source_closure": "Author public repository listing did not identify attributable complete ALASKA2 software. This search does not prove unavailability.",
+  "excluded_substitutions": [
+    "ABBA McCandless writeup explicitly describes second place",
+    "pfnet-research repository explicitly describes third place",
+    "Generic DCT or backbone components do not establish the winning pipeline"
+  ],
+  "next": "Recover complete attributable training/fusion/inference specifications and license; construct a corrected graph with exact original provenance before promotion.",
+  "acquisition_scope": "Public writeups and software repository metadata only; no images, models, data or outputs downloaded."
+}

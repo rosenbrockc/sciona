@@ -1,0 +1,15 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "exact_annotation_cases": 36,
+  "limitations": [
+    "Source array loading omitted; runtime arrays supplied explicitly.",
+    "Validation crop assembly has unit tests but is not covered by this comparison."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_intake.py": "24f91f470c7f642ca03433fec6df8de0dff13fd2c187b1b07fc93a10a0b3e3b4",
+    "tests/test_dsb_intake.py": "90835693115cbd80cc768442e4b40fc444bc59db2b988ce9e31726b313557ac0",
+    "scripts/validate_dsb_intake.py": "2de405b84b9475f75d8d5862e6633b8894f6a81135c5aa2effd9d9e14a864041"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_circular_orbit_speed_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_circular_orbit_speed_proof.py": "1885d89f64826965a37c01396c65f75414e4498f716d7c23b75f00543c8d2de6",
+    "sciona/physics_ingest/circular_orbit_speed_proof.py": "0184aaab86b7e269c81da2522e943509cb4543ae77ceeea5594bb78e851a48a8"
+  },
+  "passed": 12
+}

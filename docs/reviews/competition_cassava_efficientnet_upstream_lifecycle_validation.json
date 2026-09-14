@@ -1,0 +1,40 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "upstream_pretrained_sha256": "62297d620d56d0848b3234faa8b4c0f04791e533203447ee23c06d3e6968ed21",
+  "diagnostic_batch_size": 1,
+  "results": {
+    "fold": {
+      "epochs_executed": 8,
+      "maximum_epochs": 20,
+      "best_epoch": 3,
+      "checkpoint_optimizer_step_verified": true,
+      "early_stopped": true,
+      "restored_weights_verified": true,
+      "learning_rate_history_verified": true
+    },
+    "refit": {
+      "epochs_executed": 14,
+      "optimizer_steps": 28,
+      "learning_rate_history_verified": true,
+      "all_checkpoint_weights_identical": true,
+      "ten_view_prediction_roundtrip_exact": true
+    }
+  },
+  "temporary_checkpoints_removed": true,
+  "scope": "Actual upstream pretrained CPU fold and final refit with source epoch/callback mechanics. Complete fivefold CV, original population/budget and full ensemble remain unqualified.",
+  "sha256": {
+    "sciona/cassava_efficientnet_initialization.py": "f84f617b4ab2be7ddcdb89d457ce367c07a7c4845356f0e8074bab8c3c05abbb",
+    "sciona/cassava_efficientnet_upstream.py": "0417ac3859c47303e5c289dcef1ac7a9ad1c1b51744a9ec65da5db5467f71fef",
+    "sciona/cassava_efficientnet_weights.py": "15145907da545ab8501f2c0fef025b7957f12d815260888fa78047fc610b4091",
+    "sciona/cassava_efficientnet_model.py": "56ba01b91cfb069ee7e8165a6a2494eafe1a2e757a22af2eabb3504d2de97ae6",
+    "sciona/cassava_efficientnet_training.py": "297bb4d488d9223a322f217a865e4a29f5a492865872c7e1eb57b92c21838e3c",
+    "sciona/cassava_efficientnet_refit.py": "7091219028d44202472373ebae8ccdcba0fbd50c4b6ba73c09fc0e4db89e6857",
+    "sciona/cassava_efficientnet_schedule.py": "716c3fb5912fe8c78fecd861a4eaee3808d05e57237b6d8be407e2bb0872d694",
+    "sciona/cassava_training_images.py": "79bf5b6a09da1cf709c2477f9aa73a7a34f94fa6221b3e6126acb3bffbdf9902",
+    "sciona/cassava_training_stream.py": "d887b1f57d6d50e5bec4b0258c562531a15f1afb40f9d9019cb1181fec4d7535",
+    "sciona/cassava_image_views.py": "03013bc06c041c76cab4a4b0bd08421dccb59d0e215bb9ad9c59b000b35c8874",
+    "scripts/validate_cassava_efficientnet_upstream_lifecycle.py": "d82e5079c2964282f420abcf7c273f42618e5a17a41debd3f3a18c347b040c77"
+  }
+}

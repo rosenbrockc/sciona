@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "source_software_sha256": "35df618fa1b549e124eb93040241f71320f7d58663114a82841a395105289ea5",
+  "checks": {
+    "source_function_comparisons": 54,
+    "synthetic_only": true,
+    "interleaved_groups": true,
+    "missing_values": true,
+    "stored_float16": true,
+    "recursive_full_precision": true
+  },
+  "sha256": {
+    "sciona/m5_lags.py": "c74e2b42dfdd3dacf09bc3c2e1be6f956b9c8252e2c89562693e40b4b206b7c4",
+    "tests/test_m5_lags.py": "72f9c455daf3003fa4c0c77e865021e061963198036fa99928bcc1c134caec56",
+    "scripts/validate_m5_lag_comparison.py": "9a0126d64c08fc7d04d0ed17f2e676bcab7705e15892c340c5f32be89832ad24",
+    "docs/reviews/competition_m5_source_pins.json": "a93a67eae696d54dfaf735e598935cab9ba0f44e185cc4d5c700f55f086c171d"
+  },
+  "scope": "Independent lag and temporary rolling mean components only. Fixed-window sample deviation has a separate pandas oracle. Full M5 preprocessing, models and recursive forecasting remain unqualified."
+}

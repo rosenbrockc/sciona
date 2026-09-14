@@ -1,0 +1,25 @@
+{
+  "format": "resource_route-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_exhaustive_comparison",
+    "missing_stage",
+    "missing_limit_case",
+    "missing_infeasible_case",
+    "missing_stage_execution",
+    "wrong_provider",
+    "wrong_dependency",
+    "wrong_environment"
+  ],
+  "sha256": {
+    "scripts/review_resource_route_execution.py": "595632c80141b0a7ab50d9ed47a357a724e67fc1e26f2edae57e7ced69c332ba",
+    "scripts/validate_resource_route_review_gates.py": "264e50b4f9a65282739f66d82cdaf022a211fe135e328715c086a63245b71b43"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

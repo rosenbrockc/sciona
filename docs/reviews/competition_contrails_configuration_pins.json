@@ -1,0 +1,45 @@
+{
+  "commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "files": [
+    {
+      "path": "src/unet1024/devel.yml",
+      "sha256": "8512187e198ee0f189c0074017d6115cb4a29e149be61d93ab3e083957c9f349",
+      "git_blob": "db18f99d147ee7ab276d9103cbd3e81d9968875c"
+    },
+    {
+      "path": "src/unet1024/unet1024.yml",
+      "sha256": "ba80a2afba2b3d4b650f28f4dc40a9a7262ef261580e2d103dda5fe7cc47b508",
+      "git_blob": "9dbf7d2eb4f18f48fae5861abd201385966a0deb"
+    },
+    {
+      "path": "src/unet1024/unet1024_025.yml",
+      "sha256": "1f76f8600c3853e2bbf8231a62c4809c6df0fcb58325ca036de892a852e7be71",
+      "git_blob": "141e38fccc554815a8bbbb2231a764367c191884"
+    },
+    {
+      "path": "src/unet5/maxvit_tiny.yml",
+      "sha256": "b7fe8c59e8df866d061945b3f8bfc535b5f58ecee284db9e3547fba0e8e7bb82",
+      "git_blob": "a439a7c27faea104926e04a8f7326af3d41d0ca9"
+    },
+    {
+      "path": "src/unet5/resnest26.yml",
+      "sha256": "4367aeee84498b9b9c88361943d25ef71ca19102fa15d39f1c5022dbfdb4cb77",
+      "git_blob": "7dafed72efefbcc5386c8f947dad133fddeffcfb"
+    },
+    {
+      "path": "src/vit4/devel.yml",
+      "sha256": "ad6af9aceff9fd25d5a68809307c45a8015309f52d07386c8f04aa348a76ee8d",
+      "git_blob": "89215007c2a185ad6ecba931cbddbf7f9cd3a305"
+    },
+    {
+      "path": "src/vit4/vit4_1024.yml",
+      "sha256": "d11bed77814a13c0f0f599e228b1a3c1b216f10f912c333d5fd33e01a78f5c05",
+      "git_blob": "190b4090950e535e753be59f2d55c8a3c6f7f4ca"
+    }
+  ],
+  "notebook_software_candidates": [
+    "notebook/contrails-submit-v43.ipynb",
+    "notebook/contrails-submit-v47.ipynb"
+  ],
+  "approved": false
+}

@@ -1,0 +1,59 @@
+{
+  "synthetic_only": true,
+  "full_runner_cases": 3,
+  "cases": [
+    {
+      "seed": 9321,
+      "prediction_spread": 0.9041183157290462
+    },
+    {
+      "seed": 9322,
+      "prediction_spread": 0.9036816912923834
+    },
+    {
+      "seed": 9323,
+      "prediction_spread": 0.9028354347507697
+    }
+  ],
+  "maximum_absolute_error": 0.0,
+  "branch_comparisons_passed": 6,
+  "minimum_reference_prediction_spread": 0.9028354347507697,
+  "graph_digest": "544856191ba0bc7d5fb625a037d9c91bdfa596a34aae5334137b94f60a4a5c53",
+  "nodes": 4,
+  "edges": 6,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Feng_preprocessors_filtering.py": "c9981942933fed2afaee9d9e3be90ea24d7167a3d08eeaf7e668e245bc822167",
+    "Feng_preprocessors_fft.py": "41e9a15823c6ee386b2c35e9676a8d9daeb57701637a8319a7825430aa82273a",
+    "Feng_models_KNNmorefeature.py": "68bb01686d6bcd10e876517623da1aed9cc9a8b49ac440748561ab8d3930e090",
+    "Feng_models_GLM.py": "66ae627eb632b4d734ba846dfa167db0e01e354d0cbf96e1d576e632a0077d85"
+  },
+  "provider_hashes": {
+    "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_filter_partitions": "87aa4c9c5814111666ff855e1d1bb3dbb56732ff8647c7af94f5f6e11d74faa8",
+    "sciona.atoms.riemannian_bci.signal_processing.feng_expanded_partitions.feng_expanded_partitions": "38b32f7ebc6e46e331a7895a765870ca9464aac65a3f24844dded820d0d62991",
+    "sciona.atoms.ml.sklearn.neighbors.feng_expanded_knn.feng_expanded_knn_segment_probabilities": "dce93a2400951bae2b2ca0a3cfce01289d9124ce4056c53a2c0f5e14a5e32f38",
+    "sciona.atoms.ml.sklearn.linear_model.feng_glm.feng_glm_segment_probabilities": "1492f00125d6a8d903986b8e9f898030f536a310afe9d9dbc4834125b95a2009"
+  },
+  "execution_module_hashes": {
+    "sciona.feng_expanded_execution": "8b40345fac3a1e34ae7e13a5eba182e94b8ce8cfd2198b058b5a080f765c27fc",
+    "sciona.visualizer.runner": "ff289eda92093a164f1691e2453622579cd6357e6292267833f5873a97ad6aa3",
+    "sciona.services.execution_graph_codec": "1ad42332f8e28adf4ee3f8d53184a4af8351f66304efa1703c63ed32989082a6",
+    "sciona.services.catalog_artifact_retrieval": "f6b6357b8dfc42d1ad253d0be277a440c1284124c6c525d7421b242885dc34e4",
+    "sciona.atoms.riemannian_bci.signal_processing.feng_filter": "3a581686d8e7ef87bb649f545cff292498ab9dff4e1145ba93ba5d3e4e8c9590",
+    "sciona.atoms.riemannian_bci.signal_processing.feng_expanded_features": "46226bec7e284a10b6e320b1039f37f721c839cc1b3512335709528ffc70965e"
+  },
+  "validation_script_hashes": {
+    "validate_feng_expanded_execution.py": "57635be10f35fc7752e09b67078b3360110a4b9e5d5055468a8e53d325d0de7a",
+    "validate_feng_filter.py": "e7cd1d7d9961fad3a9959c3f8e697e70bf9ee772ad8322b4f8f87920a9814d62",
+    "validate_feng_expanded_features.py": "db4a71760dca2a59edd45ec6173859675a750b9a61a849b05d59eb9ffbfb8da0",
+    "validate_feng_expanded_knn.py": "41b17183bae5cf1e3428241f6005d2156d8b83c6f7a2319045237112169ebecf",
+    "validate_feng_glm.py": "d316432e11a3aa1fa3e589cfaed98a627e1de634ff8f039b3fe39d641c6f6ecd"
+  },
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.8.0"
+  },
+  "limitations": "Two source expanded-feature models for one caller-selected population. Source float32 loading, KNN prediction-batch scaling and GLM training-scaler reuse preserved. Current GLM LBFGS defaults; historical solver not reproduced. Python 2 FFT shape division adapted. Current numerical libraries, synthetic signals only; no historical-engine, clinical or competition-performance claim. Full ensemble remains incomplete."
+}

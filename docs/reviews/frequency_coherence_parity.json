@@ -1,0 +1,17 @@
+{
+  "synthetic_only": true,
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hash": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2",
+  "implementation_hash": "db7f311992fe17c964f945b1871cf5038f10e9d6cb1dcf5c7cf16fb315552130",
+  "validation_script_hash": "7936ee69c3f5963918c98963529eaa6defc78e38c9a6959aa966ab50bb9da28a",
+  "numpy_version": "2.4.2",
+  "cases_passed": 15,
+  "maximum_absolute_error": 0.0,
+  "reference_port": "Python 2 window/2 slices -> integer division; xrange -> range; np.complex_ -> complex128; symmetric hanning -> np.hanning",
+  "limitations": [
+    "Same-library synthetic numerical parity, not historical environment reproduction or predictive performance validation.",
+    "Reference comparison uses its hardcoded 16 channels; generalized channel counts have independent scalar DFT tests.",
+    "Only transpose=True, aggregate=False, normalize=True behavior covered.",
+    "Positive semidefinite output is not guaranteed strictly positive definite."
+  ]
+}

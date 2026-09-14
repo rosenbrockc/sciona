@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 10,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Hand smoothed and unsmoothed IDF",
+    "Sublinear TF and explicit L1/L2/no normalization",
+    "Reference-only immutable copied IDF",
+    "Query-row independence",
+    "Zero rows and large finite norm stability",
+    "Absent unsmoothed features and invalid counts rejected"
+  ],
+  "sha256": {
+    "sciona/otto_tfidf.py": "422c3dc036adc68fe89903e428372b0161321855d8afebdce8facfc8e90bb160",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "tests/test_otto_tfidf.py": "ce67ea212b0fc926523a5f1bfe676d020812ce04af3023bdeb6cf1613c53859f"
+  },
+  "limitations": [
+    "Historical TF-IDF weighting settings and reference scope unresolved; callers must select explicitly.",
+    "Sublinear branch requires nonzero counts at least one.",
+    "Component only; learned-distance cross-fit integration and remaining full model stack pending."
+  ],
+  "catalog_mutations": 0
+}

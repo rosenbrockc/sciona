@@ -1,0 +1,58 @@
+{
+  "synthetic_only": true,
+  "full_runner_cases": 3,
+  "cases": [
+    {
+      "seed": 9321,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9322,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9323,
+      "exact": true,
+      "prediction_spread": 1.0
+    }
+  ],
+  "maximum_absolute_error": 0.0,
+  "minimum_reference_prediction_spread": 1.0,
+  "graph_digest": "b2d6d14b1dd70ed1fdcb1d60cd964834fdb15e99699412a257e7c41ce060f8f6",
+  "nodes": 3,
+  "edges": 4,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Feng_preprocessors_filtering.py": "c9981942933fed2afaee9d9e3be90ea24d7167a3d08eeaf7e668e245bc822167",
+    "Feng_preprocessors_fft.py": "41e9a15823c6ee386b2c35e9676a8d9daeb57701637a8319a7825430aa82273a",
+    "Feng_models_KNN.py": "7bf4e248bb05f91e53b9c0dfc468a399c45e79aeb0cfa471db8a08c14a749c48"
+  },
+  "provider_hashes": {
+    "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_filter_partitions": "87aa4c9c5814111666ff855e1d1bb3dbb56732ff8647c7af94f5f6e11d74faa8",
+    "sciona.atoms.riemannian_bci.signal_processing.feng_partitions.feng_feature_partitions": "87aa4c9c5814111666ff855e1d1bb3dbb56732ff8647c7af94f5f6e11d74faa8",
+    "sciona.atoms.ml.sklearn.neighbors.feng_knn.feng_knn_segment_probabilities": "3751d91bef60a80d6ee0a6d057d23603e0ee8a3ec56d5e1cc4a70205093d428d"
+  },
+  "execution_module_hashes": {
+    "sciona.feng_knn_execution": "e3157e95b4c64a4b90634b988dfc1ac444599667813b58fa791329c3cc065fec",
+    "sciona.visualizer.runner": "ff289eda92093a164f1691e2453622579cd6357e6292267833f5873a97ad6aa3",
+    "sciona.services.execution_graph_codec": "1ad42332f8e28adf4ee3f8d53184a4af8351f66304efa1703c63ed32989082a6",
+    "sciona.services.catalog_artifact_retrieval": "f6b6357b8dfc42d1ad253d0be277a440c1284124c6c525d7421b242885dc34e4",
+    "sciona.atoms.riemannian_bci.signal_processing.feng_filter": "3a581686d8e7ef87bb649f545cff292498ab9dff4e1145ba93ba5d3e4e8c9590",
+    "sciona.atoms.riemannian_bci.signal_processing.feng_fft": "e5593bd48d977ec52de539fb4f1f3a2a0304cc64737df910d7fc492cf0df5740"
+  },
+  "validation_script_hashes": {
+    "validate_feng_knn_execution.py": "4f823aff1666967caa9b989e9a8e0c39e2c8a5ac7b6688f868e3b7a27576f9dc",
+    "validate_feng_filter.py": "e7cd1d7d9961fad3a9959c3f8e697e70bf9ee772ad8322b4f8f87920a9814d62",
+    "validate_feng_fft.py": "9c071e1727ae8bc962a346e5f527b09a711e7c26affe445952028c37cad4e980",
+    "validate_feng_knn.py": "8c06ae942079fb6a124c173c409df0313913f5c3242c2b875d91bd5ab4fa88f8"
+  },
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.8.0"
+  },
+  "limitations": "One source model for one caller-selected population. Source float32 loading and prediction-batch scaling preserved. Python 2 FFT shape division adapted. Current numerical libraries, synthetic signals only; no historical-engine, clinical or competition-performance claim. Full ensemble remains incomplete."
+}

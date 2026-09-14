@@ -1,0 +1,26 @@
+{
+  "format": "porto-review-negative-gates.v1",
+  "result": "passed",
+  "catalog_mutations": 0,
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_blend",
+    "missing_boundaries",
+    "missing_tests",
+    "reduced_recovered_epochs",
+    "missing_models",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_porto_execution.py": "6a19b47cc10758130e2c025d103b66c386b1963af209382849bfe270e0da5d44",
+    "scripts/validate_porto_review_gates.py": "3c60ef62abdd73d4bcd5d8824ad98373d447a0c01d299dc94ab3dacebb8cb167"
+  },
+  "limits": "In-memory read-only review injections; no publication approval."
+}

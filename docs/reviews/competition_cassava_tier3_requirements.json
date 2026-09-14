@@ -1,0 +1,31 @@
+{
+  "approved": false,
+  "target_tier": 3,
+  "source": "/Users/conrad/personal/sciona/association.pdf",
+  "source_sha256": "2eed0ef61e0dd60e972d7d5d89e1ee87fa63a471710679ee80e007d6a0bb5dc4",
+  "required_gates": {
+    "semantics": "Names, documentation, IO and actual behavior agree; label corrected CPU reconstruction accurately.",
+    "review": "Structural, semantic, runtime and developer-semantics statuses pass, or receive explicitly documented conditional passes.",
+    "metadata": "Valid IO/parameter specs, low-jargon descriptions and file-backed metadata that backfills cleanly.",
+    "provenance": "Valid registry references and correct applicable code anchors.",
+    "behavior": "Representative execution, edge cases and material limitations supported by tests/evidence.",
+    "duplication": "Check proposed atoms against existing catalog atoms before publication."
+  },
+  "tier_one_only": "Human expert certification, insured guarantees and recursive Tier 1 dependency certification.",
+  "conditional_scope_candidates": [
+    "Explicit CPU and diagnostic batch/worker settings; no original TPU or leaderboard equivalence claim.",
+    "Caller-supplied prepared records with validated identity alignment; historical record generation not reconstructed.",
+    "Official CropNet reference with cached-copy identity unverified."
+  ],
+  "remaining_concrete_work": [
+    "Finish actual combined execution and inspect its evidence.",
+    "Create provider atoms and CDG metadata/contracts, perform duplication and semantic review.",
+    "Complete required attribution and model-reference terms review; use documented limits rather than unsupported claims.",
+    "Run transactional publication gates, approve Tier 3 rows and verify served graph execution."
+  ],
+  "not_automatic_tier_three_blockers": [
+    "Lack of human certification.",
+    "Lack of original hardware or leaderboard-score reproduction when not claimed.",
+    "Lack of a fresh environment installation, if the actual reviewed runtime and its limitations are sufficiently evidenced."
+  ]
+}

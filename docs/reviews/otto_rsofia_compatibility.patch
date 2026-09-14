@@ -1,0 +1,12 @@
+diff --git a/R/zzz.R b/R/zzz.R
+index 504a05b..d27a8d3 100644
+--- a/R/zzz.R
++++ b/R/zzz.R
+@@ -1,6 +1 @@
+-
+-.onLoad <- function(pkgname, libname){
+-    require("methods", character=TRUE, quietly=TRUE)
+-    loadRcppModules()
+-}
+-
++Rcpp::loadModule("sofia", TRUE)

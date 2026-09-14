@@ -1,0 +1,41 @@
+{
+  "approved": false,
+  "read_only": true,
+  "source_version": "6625a41e-b5a7-5ee2-86e5-1d2c60d6d185",
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "source_files_verified": 10,
+  "synthetic_only": true,
+  "oversampling": {
+    "source_counts": [
+      0,
+      0,
+      1,
+      1,
+      3,
+      3,
+      7
+    ],
+    "current_counts": [
+      1,
+      1,
+      2,
+      2,
+      4,
+      4,
+      8
+    ],
+    "equivalent": false,
+    "source_loop_executed": true
+  },
+  "sampling": {
+    "source_probability_floor_preserved": true,
+    "current_error": "Fewer non-zero entries in p than size",
+    "equivalent": false
+  },
+  "provider_sha256": {
+    "sciona-atoms-dl/src/sciona/atoms/dl/detection/atoms.py": "753112cf4ae2ca281c4df21249347ccc0ab565193bc4ffafeaad76e84ab3209c",
+    "sciona-atoms-dl/src/sciona/atoms/dl/training/atoms.py": "31eb66b18681b909e95b33a181618ac0f5c28b5df0749c3d213953dd5bac1387",
+    "sciona-atoms-dl/src/sciona/atoms/dl/loss/atoms.py": "671c29a7e6ea53c9284b2508e547e2781469a836e3c883189e300bf64a53f17b"
+  },
+  "script_sha256": "d171547e61c34ac317648d4654f6c6491369f489c33e7f1000f6dbe9a52abf61"
+}

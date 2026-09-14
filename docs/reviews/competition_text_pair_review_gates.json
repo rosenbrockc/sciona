@@ -1,0 +1,25 @@
+{
+  "format": "text_pair-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "calibration_leakage",
+    "missing_threshold_validation",
+    "query_population_leakage",
+    "missing_forest",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_text_pair_execution.py": "9019c0f94518a1654a0df0bc8ccff2a5b8b9ded71604fda4a381e4f5100b1b77",
+    "scripts/validate_text_pair_review_gates.py": "1ff36d31a613f37ba172aa0fee871819b7ad0487104b68757eb105333bdaa327"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

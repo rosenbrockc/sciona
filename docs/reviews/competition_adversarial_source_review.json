@@ -1,0 +1,87 @@
+{
+  "format": "adversarial-source-review.v1",
+  "status": "implementation_required_not_approved",
+  "intake_version": "cebbfc7d-e32e-5f52-9ec2-e1de0d955501",
+  "intake_content_hash": "d6b977ae079c82dec43ffdf88f64fb9089c17e587c3ee4c36f5411aa0b28828b",
+  "provenance": "Author repositories identify their winning NIPS2017 branches and the momentum paper cited in the version-bound intake. The restored intake has no explicit repository reference field; correspondence is supported by named paper and detailed algorithm/entrypoint matches, not an invented catalog URL.",
+  "sources": [
+    {
+      "repository": "https://github.com/dongyp13/Non-Targeted-Adversarial-Attacks",
+      "commit": "5c68162e05de7afed2e3d33115df43e2a7a1c3da",
+      "branch": "non_targeted"
+    },
+    {
+      "repository": "https://github.com/dongyp13/Targeted-Adversarial-Attack",
+      "commit": "7da707fe568053a9e2735fcc692c8f0ad7e122a1",
+      "branch": "targeted"
+    }
+  ],
+  "branches": {
+    "non_targeted": {
+      "models": 8,
+      "iterations": 10,
+      "main_weights": [
+        1,
+        0.25,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "main_denominator": 7.25,
+      "auxiliary_weights": [
+        1,
+        0.25,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "auxiliary_denominator": 6.25,
+      "auxiliary_loss_weight": 0.4,
+      "labels": "First-iteration argmax of unweighted summed probability predictions, then frozen; not majority vote or weighted-logit argmax.",
+      "update": "Mean-absolute gradient normalization; momentum accumulation; add alpha*sign; project into fixed original epsilon box and[-1,1]. Alpha=(2*epsilon/255)/iterations."
+    },
+    "targeted_large": {
+      "epsilon_boundary": "epsilon>=8 in pixel units",
+      "models": 5,
+      "iterations": 20,
+      "weights": [
+        4,
+        1,
+        1,
+        1,
+        4
+      ],
+      "denominator": 11,
+      "alpha": "(2*epsilon/255)/12"
+    },
+    "targeted_small": {
+      "epsilon_boundary": "epsilon<8 in pixel units",
+      "models": 2,
+      "iterations": 40,
+      "weights": [
+        1,
+        2
+      ],
+      "denominator": 3,
+      "alpha": "(2*epsilon/255)/28"
+    }
+  },
+  "targeted_shared": "Caller target labels; main+0.4aux cross-entropy. Divide raw gradients by per-example population standard deviation, accumulate momentum, divide accumulated value by its standard deviation, subtract alpha*clip(round(noise),-2,2), then project. No epsilon denominator stabilizer in the source.",
+  "closure_requirements": [
+    "Preserve both targeted regimes and the separate non-targeted branch; adaptive epsilon strategy is not universal.",
+    "Pin/reproduce TensorFlow Slim InceptionV3/V4/InceptionResNetV2/ResNetV2-101 main and auxiliary endpoints with explicit state policy; no external pretrained downloads.",
+    "Source tensors use299x299 RGB scaled[-1,1],1001 classes, fixed batch10 with zero-padded tail. Preserve or explicitly adapt file/PNG quantization and tail semantics.",
+    "Characterize zero-gradient/zero-variance division, rounding ties, clipping, frozen labels and loss reduction with source comparisons and independent synthetic oracles.",
+    "Validate iterative updates, full model execution, serialized graph, automated Tier3 semantic review and served publication before marking covered."
+  ],
+  "limits": "Source/software/license review only; no numerical implementation, TensorFlow compatibility or promotion claim. No images, class-label files or weights fetched.",
+  "sha256": {
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  },
+  "catalog_mutations": 0
+}

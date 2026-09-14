@@ -1,0 +1,18 @@
+{
+  "format": "adversarial-runtime-boundary-validation.v1",
+  "result": "passed",
+  "checks": {
+    "JSON_RGB_targets_roundtrip": true,
+    "owned_decoded_arrays": true,
+    "explicit_state_fragment_transport": true,
+    "invalid_cases_rejected": 10
+  },
+  "limits": "Transport-only synthetic checks; incomplete state fragment deliberately used only for decoding. Exact full-model state validation happens at execution. Full JSON neural runtime/provider graph not yet validated.",
+  "sha256": {
+    "sciona/adversarial_runtime.py": "b843a45806c923971374547701142a0868732a35849a1d2fa9459290269adbea",
+    "scripts/validate_adversarial_runtime_boundary.py": "e234d05901f53411bf8b825a27eac7fe1fee58e8329e6ce4feb42b7a94453043",
+    "sciona/dfdc_codec.py": "4256101fe8c78ad8df1eec4ff6db08ae53a7291a4506e73784ffad25ad39b15a",
+    "sciona/adversarial_rgb_attack.py": "36e6cfd383b530a2bf239476d47dbf86ac446994ffd669d4153e431a5718b689",
+    "sciona/adversarial_updates.py": "7fb8d70efd285d9f43edceacaa9e348aace10e0eddcf97b410c28012931c45aa"
+  }
+}

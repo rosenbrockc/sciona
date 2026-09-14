@@ -1,0 +1,46 @@
+Cassava corrected CPU reconstruction: reference and dependency attribution
+
+Winning notebook authors, pinned versions and reconstruction changes are listed
+in Cassava-winner-notebooks-NOTICE.txt. The public publisher declaration and
+notebook source pins are recorded in the corresponding review evidence.
+
+The bi-tempered loss reference is Google Research's bi-tempered-loss project;
+its license is retained in Cassava-bi-tempered-Apache-2.0.txt. The local loss
+implementations retain the documented restricted temperatures, fixed iteration
+count and source-specific floating-point operation order. Higher derivatives
+and target gradients are not claimed.
+
+EfficientNet reference: qubvel/efficientnet, commit
+f7f3e736c113b872caf53dae9fbbda996a8eb87d.
+Copyright 2019 The TensorFlow Authors, Pavel Yakubovskiy. All rights reserved.
+The pinned software license is retained in
+Cassava-qubvel-efficientnet-Apache-2.0.txt. Local code reconstructs tensor
+mapping and training-population normalization using the reviewed TensorFlow
+runtime. The repository describes its model parameters as converted from
+author-provided checkpoints. This software attribution is not an independent
+grant covering arbitrary third-party model artifacts.
+
+Reference model artifacts are caller-supplied local runtime dependencies:
+- timm ResNeXt50 ra_in1k and ViT orig_in21k_ft_in1k references have pinned
+  publisher model-card declarations recorded in the timm license review.
+- Official Google CropNet has a pinned publisher Apache 2.0 declaration.
+  Identity with the winning team's cached copy remains unproven.
+- The reviewed upstream EfficientNet B4 Noisy Student reference is numerically
+  compared with the winner input. The converted winner input's publisher
+  license is Unknown and redistribution has not been approved.
+
+The provider code does not contain or download those model files. A file hash
+check establishes byte identity; it does not establish ownership or usage
+rights. Users supply model artifacts they are entitled to use. Distribution of
+model files requires a separate review of the applicable artifact terms.
+
+Runtime dependencies remain separate packages. The exact reviewed versions,
+bundled notices and publisher payload checks are recorded in the Cassava
+environment and dependency-notice reports. Supplemental license texts for
+flatbuffers, tf-keras and tensorboard-data-server are retained alongside this
+notice. The dependency inventory is scoped to the reviewed runtime; it does
+not claim that a fresh installation or all lazy imports were validated.
+
+Tier 3 Community review provides no Tier 1 human certification. Source
+corrections, caller preparation-provenance obligations, CPU configuration and
+synthetic-only accuracy limitations remain in the graph and review metadata.

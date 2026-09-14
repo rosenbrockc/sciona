@@ -1,0 +1,66 @@
+{
+  "repository": "asutera/kaggle-connectomics",
+  "commit": "b3abb178b9a9d558fdd5a7de49ae50425576a011",
+  "pins": [
+    {
+      "software_path": "README.md",
+      "sha256": "431c72ad4bfbc5b312bfee4f1805d32b499fc3cb45b17060da584510f9b50bd5",
+      "git_blob_sha1": "dbafa4d4cd8308306a7a03ebdb925d2014917fa6"
+    },
+    {
+      "software_path": "SOLUTION.md",
+      "sha256": "092a614a023dbf6e594a5d2bd8387f41b618de7c0133fb0a2d885c0b45404eda",
+      "git_blob_sha1": "2b255c1b14344777054dbb0f949495133c83a8d1"
+    },
+    {
+      "software_path": "code/PCA.py",
+      "sha256": "dbada7f01988a7d8764b484ffceabe75fd53cb44ad6a71ed6628a83e974a6c49",
+      "git_blob_sha1": "5f5db1e684a538fd5daa6c9709517957d7c93977"
+    },
+    {
+      "software_path": "code/directivity.py",
+      "sha256": "93f4961c66dc4f184c288f4b85dc79a755619afd745bf43cb2f447235b8f1d54",
+      "git_blob_sha1": "60f41cd1ddbdcb61afd38d9c94327dff15cd48d9"
+    },
+    {
+      "software_path": "code/main.py",
+      "sha256": "4fc2e4a601553380b74c013f34e3420f29e5bc6f28b7bd1a719ce692bcacccca",
+      "git_blob_sha1": "6efb1e151409dc5545c73fd0ce5c17864456e96c"
+    },
+    {
+      "software_path": "code/ranks.py",
+      "sha256": "ab6ac9ecbaf5663059502d7f6a65270a039ad14a60f16ad399c35cd8b2768eee",
+      "git_blob_sha1": "463baa3b2c7a6e6a2b864894d38072eec5d88f84"
+    },
+    {
+      "software_path": "code/utils.py",
+      "sha256": "7e16f84ac6d82f9b58774b030f6c0c556e73740e44e5e543d5502db663f796d0",
+      "git_blob_sha1": "eaa0ebe53b1fe77033c4f81506f71a507f07078c"
+    }
+  ],
+  "github_license": null,
+  "execution_license": {
+    "declared": "BSD 3 clause",
+    "files": [
+      "code/PCA.py",
+      "code/directivity.py",
+      "code/main.py",
+      "code/utils.py"
+    ],
+    "note": "Explicit per-file notices establish execution-source license despite null GitHub repository license detection. Unlicensed rank-analysis helper is not an execution dependency."
+  },
+  "legacy_pca": {
+    "repository": "scikit-learn/scikit-learn",
+    "commit": "8d04380d474723467b5a717328efd0c9fc5bd898",
+    "pins": [
+      {
+        "software_path": "sklearn/decomposition/pca.py",
+        "sha256": "86c3a8714dbb077743c2275bfb0400116966c1443b988d92dcd03b3ee17d435f"
+      },
+      {
+        "software_path": "COPYING",
+        "sha256": "711b82c84f81ee6ce8b7a2a4a98ed14e7eb93a4b533cde7d210ccf398a6a74c9"
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_constant_acceleration_proof.py",
+  "test_results": {
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_constant_acceleration_proof.py": "dff217c9897fa3653120a3136fe26687a1f7eef3a5e5e384e8bb07f5637534a5"
+  }
+}

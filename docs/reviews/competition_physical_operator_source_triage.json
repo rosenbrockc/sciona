@@ -1,0 +1,8 @@
+{
+  "source_version_id": "49c645b7-3659-5cfa-a386-78f7a51f7358",
+  "source_content_hash": "185e7d6e033ad27cfcf8c655d4da84ae680d6c9ec33795095b816e28e052055b",
+  "source_scope": "Generic five-stage physics-informed operator topology; independent periodic scalar diffusion realization.",
+  "implementation_origin": "Independent project code; no external code, observed data or weights copied.",
+  "reference": "https://arxiv.org/abs/2010.08895",
+  "catalog_mutations": 0
+}

@@ -1,0 +1,32 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "scope": "Structural registration, code anchors, explicit IO contracts and symbolic composition only",
+  "serialized_graph_sha256": "30fe0b129a99f14429acc3c583411ace824f6439db06b4c24aa2cc9feedb49fd",
+  "registrations": {
+    "fold_plan": {
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_fold_plan",
+      "symbol": "cassava_fold_plan",
+      "relative_file": "src/sciona/atoms/ml/cassava_execution.py",
+      "first_line": 13,
+      "last_line": 21,
+      "signature": "(sample_keys: list, labels: list, assignments: list) -> object",
+      "version_id": "b9cb738b-797c-5b4b-8c1e-5eeab81b6ba9"
+    },
+    "train_ensemble": {
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_train_ensemble",
+      "symbol": "cassava_train_ensemble",
+      "relative_file": "src/sciona/atoms/ml/cassava_execution.py",
+      "first_line": 33,
+      "last_line": 58,
+      "signature": "(plan: object, source_rows: list, efficientnet_rows: list, query_rows: list, references: dict, torch_batch_size: int, torch_workers: int, efficientnet_batch_size: int, output_directory: str) -> dict",
+      "version_id": "118b7c98-609d-5e8a-bfd8-72203378a721"
+    }
+  },
+  "provider_sha256": "bf744f33fee70d6514edd40f3883a2cfacc5d2b94de7929329bd4c029ef24453",
+  "sha256": {
+    "scripts/build_cassava_execution_graph.py": "86f3a15f955cd6cc340070065bc951e17b55337b1456727c76d0f478baa60356",
+    "scripts/audit_cassava_provider_contract.py": "1c34cfee2a903409d6dcde33d1250772c7fe3d46dcb0584c8dadff5d9d205e57"
+  }
+}

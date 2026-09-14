@@ -1,0 +1,87 @@
+{
+  "status": "partial_source_reconstruction",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "ad3239bf-5a38-565a-81da-3d3cba9a02b0",
+  "source_content_hash": "8b42f3175fa6408c91c325e24784554cc480637a33673bd7a2128e2e657b8dd8",
+  "primary_writeup": "https://www.kaggle.com/competitions/porto-seguro-safe-driver-prediction/writeups/michael-jahrer-1st-place-with-representation-learn",
+  "configuration_attachment": "https://storage.googleapis.com/kaggle-forum-message-attachments/250927/8325/nn.cfg.log",
+  "model_table_access": "Image host returned HTTP 429; no full six-model table recovered this turn.",
+  "recovered_single_configuration": {
+    "dae_hidden": [
+      1500,
+      1500,
+      1500
+    ],
+    "dae_output": "linear",
+    "dae_epochs": 1000,
+    "dae_learning_rate": 0.003,
+    "dae_decay": 0.995,
+    "dae_batch_size": 128,
+    "dae_swap_probability": 0.07,
+    "supervised_hidden": [
+      1000,
+      1000
+    ],
+    "supervised_output": "sigmoid",
+    "supervised_epochs": 200,
+    "supervised_learning_rate": 0.0001,
+    "supervised_decay": 0.995,
+    "supervised_l2": 0.05,
+    "supervised_dropout": 0.5,
+    "supervised_input_dropout": 0.1,
+    "supervised_batch_size": 128
+  },
+  "unresolved": [
+    "Remaining four neural configurations and exact LightGBM configuration",
+    "Optimizer/update semantics and full fold/seed schedule",
+    "Historical RankGauss tie and finite endpoint handling",
+    "Which hidden activations correspond to each neural model"
+  ],
+  "component_evidence": "competition_porto_transform_tests.json",
+  "limits": [
+    "Configuration attachment retained only in private temporary storage; no training-log contents copied into repository.",
+    "One configuration does not establish the full six-model recipe.",
+    "No Porto publication approval."
+  ],
+  "autoencoder_component": {
+    "status": "tested",
+    "implementation": "sciona/porto_autoencoder.py",
+    "preparation": "sciona/porto_preparation.py",
+    "evidence": "competition_porto_autoencoder_tests.json"
+  },
+  "recovered_dae_execution": {
+    "status": "passed",
+    "evidence": "competition_porto_recovered_dae_execution.json",
+    "historical_optimizer_parity": false
+  },
+  "supervised_component": {
+    "status": "tested",
+    "implementation": "sciona/porto_neural.py",
+    "evidence": "competition_porto_neural_tests.json"
+  },
+  "recovered_branch_execution": {
+    "status": "passed",
+    "evidence": "competition_porto_recovered_branch_execution.json",
+    "classifier_initial_loss": 0.7004801630973816,
+    "classifier_final_loss": 0.6959924101829529
+  },
+  "tree_and_blend": {
+    "status": "component_tested",
+    "implementation": "sciona/porto_tree_blend.py",
+    "evidence": "competition_porto_branch_tests.json"
+  },
+  "complete_independent_ensemble": {
+    "status": "tested",
+    "implementation": "sciona/porto_ensemble.py",
+    "evidence": "competition_porto_ensemble_tests.json",
+    "historical_configurations_resolved": false
+  },
+  "serialized_execution": {
+    "status": "passed",
+    "evidence": "competition_porto_graph_execution.json",
+    "models": 6,
+    "dae_models": 5,
+    "historical_replay": false
+  }
+}

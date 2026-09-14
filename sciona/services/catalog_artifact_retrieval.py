@@ -79,7 +79,25 @@ def _goal_matches_artifact_row(goal: str, row: dict[str, Any]) -> bool:
     return bool(goal_tokens & {token for token in haystack.split() if token})
 
 
-def _artifact_document_to_cdg(document: dict[str, Any]) -> CDGExport:
+def _artifact_document_to_cdg(document: dict[str, Any], *, version_id: str = "", content_hash: str = "", require_execution_envelope: bool = False) -> CDGExport:
+    from sciona.services.execution_graph_codec import decode_execution_graph
+    document = dict(document)
+    versioned_document = any(row.get("version_id") for key in ("cdg_nodes", "cdg_edges", "cdg_bindings") for row in (document.get(key) or []))
+    for key in ("cdg_nodes", "cdg_edges", "cdg_bindings"):
+        rows = list(document.get(key) or [])
+        tagged = [bool(row.get("version_id")) for row in rows]
+        if versioned_document and rows:
+            if not all(tagged) or not version_id:
+                raise ValueError("version-tagged catalog graphs require an explicit selected version")
+            rows = [row for row in rows if str(row["version_id"]) == str(version_id)]
+        document[key] = rows
+    if not document["cdg_nodes"]:
+        raise ValueError("selected catalog version has no graph nodes")
+    restored = decode_execution_graph(document["cdg_nodes"], document["cdg_edges"], content_hash)
+    if restored is not None:
+        return restored
+    if require_execution_envelope:
+        raise ValueError("execution version has no valid execution envelope")
     artifact = dict(document.get("artifact") or {})
     nodes = [
         AlgorithmicNode.model_validate(
@@ -170,16 +188,20 @@ class CatalogMacroArtifactRetriever:
             raw = await (
                 self._supabase.table("artifacts")
                 .select(
-                    "artifact_id, artifact_kind, fqdn, description, namespace_root, namespace_path, source_symbol, verified_leaf_coverage, visibility_tier, is_publishable"
+                    "artifact_id, artifact_kind, fqdn, description, namespace_root, namespace_path, source_symbol, verified_leaf_coverage, visibility_tier, status, is_publishable"
                 )
                 .eq("artifact_kind", "cdg")
+                .eq("status", "approved")
+                .eq("is_publishable", True)
                 .limit(max(self._result_limit, 50))
                 .execute()
             )
             raw_rows = [
                 row
                 for row in list(raw.data or [])
-                if _goal_matches_artifact_row(goal, row)
+                if row.get("status") == "approved"
+                and row.get("is_publishable") is True
+                and _goal_matches_artifact_row(goal, row)
             ]
             if raw_rows:
                 return raw_rows[: self._result_limit]
@@ -201,7 +223,7 @@ class CatalogMacroArtifactRetriever:
         try:
             result = await (
                 self._supabase.table("artifact_versions")
-                .select("version_id, semver, content_hash")
+                .select("version_id, semver, content_hash, trust_tier")
                 .eq("artifact_id", artifact_id)
                 .eq("is_latest", True)
                 .maybe_single()
@@ -278,8 +300,9 @@ class CatalogMacroArtifactRetriever:
                 artifact.get("visibility_tier", row.get("visibility_tier", "general"))
                 or "general"
             ),
-            cdg=_artifact_document_to_cdg(document),
+            cdg=_artifact_document_to_cdg(document, version_id=str(version.get("version_id") or ""), content_hash=str(version.get("content_hash") or ""), require_execution_envelope=str(version.get("semver") or "").startswith("0.0.0+execution.")),
             terminal_on_match=False,
+            trust_tier=int(version.get("trust_tier", 3)),
         )
 
     async def _catalog_candidates(self, goal: str) -> list[MacroArtifactCandidate]:

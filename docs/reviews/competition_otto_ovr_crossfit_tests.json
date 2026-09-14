@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Exactly five excluding-fold fits and full-training query refit",
+    "All 54 binary model runs represented",
+    "Complete OOF and query class-score shapes",
+    "Heldout-label and query isolation",
+    "Invalid split rejected before fitting"
+  ],
+  "sha256": {
+    "sciona/otto_ovr_crossfit.py": "6b0ca608740c664e2feed78ed5de0c4ac4dda6f3301de1200e0493e1214eb31d",
+    "sciona/otto_ovr_boosting.py": "28cfb7c28aab6b08e5fb0d798cd7c245e433ce31682edebf84eeb68a14ab34b7",
+    "tests/test_otto_ovr_crossfit.py": "e9c42c1a540e35cfb521cde9ccf1522e61c80624d6ef654fbe789ba3731e2e6a"
+  },
+  "scope": "Independent model-14 cross-fitting component; historical settings and full stack qualification pending.",
+  "catalog_mutations": 0
+}

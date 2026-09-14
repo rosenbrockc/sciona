@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "raw_sequence_folding": true,
+  "distinct_population_lengths": true,
+  "masked_validation": true,
+  "explicit_member_splits": 20,
+  "members": 20,
+  "rounds": [
+    {
+      "members": 20,
+      "supervised_steps": 20,
+      "pseudo_label_steps": 20,
+      "rollbacks": 15
+    }
+  ],
+  "scope": "Integrated raw synthetic populations through actual folding, features, pretraining, supervised/PL round and checkpoint ensemble; not serialized graph, historical recipe or independent CV accuracy.",
+  "runtime_sha256": "a95c1a0296de2dd921743947eb78f81beb826a53191050aa324e0899d0f6a004",
+  "contract_sha256": "fd3cf44f9cc868c148274c154e42cf134535a523f540d34c86cbc5218648711d",
+  "validator_sha256": "4435d9c5b79d37fbfbe56b3497432204daf10b451fea835e69ca7c16196d5eb6"
+}

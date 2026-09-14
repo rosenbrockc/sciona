@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "completed_fits": 30,
+  "completed_rounds": 1,
+  "next_action": {
+    "kind": "fit",
+    "key": "keras.r2.p0.f0"
+  },
+  "round_dependencies": [
+    {
+      "stage": 1,
+      "missing_fit_dependencies": 0
+    },
+    {
+      "stage": 2,
+      "missing_fit_dependencies": 25
+    },
+    {
+      "stage": 3,
+      "missing_fit_dependencies": 25
+    }
+  ],
+  "pseudo_rounds": [
+    {
+      "stage": 1,
+      "query_count": 64,
+      "keras_selected": 0,
+      "torch_selected_per_fold": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "auditor_sha256": "524bd38dbfb9291e36f9f4d393f26ca16f99ad02fdaadfc540ee4fee65d1dc40",
+  "limits": [
+    "Persisted dependency and pseudo-selection consistency only; confidence values are not recomputed from model predictions.",
+    "Final mosaic round requires separate output/provenance validation.",
+    "Checkpoint integrity and fit histories are audited separately; full publication remains pending."
+  ]
+}

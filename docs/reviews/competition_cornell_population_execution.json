@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "source_sampler_seeds": 16,
+  "exact_source_indices": true,
+  "train_drop_last": true,
+  "validation_keeps_last": true,
+  "labels_and_secondary_preserved": true,
+  "private_inputs_copied": true,
+  "invalid_cases_rejected": 5,
+  "runtime_sha256": "d3b45637c1a10a635a8cc6a39ce9d700c4f1b29b8813e7d3810c6142f08d0dd6",
+  "validator_sha256": "d7c9b513761264e4213b6bbf7958c3a6ccc056507d50d04a5ea42284d850e522",
+  "scope": "Synthetic populations and exact source weighted sampling; caller supplied fold membership and already-resampled audio. Full ensemble orchestration remains separate."
+}

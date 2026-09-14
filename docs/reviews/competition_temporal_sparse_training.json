@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+  "source_content_hash": "5ee3659042611115b7a83dbf165f7b44355a0f09ff346514ce4dd2a15e66340b",
+  "checks": {
+    "one_pass_sparse_partial_fit": true,
+    "two_model_log_target_blend": true,
+    "validation_labels_never_update_model_or_history": true,
+    "fitted_state_unchanged_after_evaluation": true,
+    "independent_rmsle": true,
+    "inverse_transform_clipping": true,
+    "prediction_chunk_invariance": true,
+    "deterministic_repeat": true,
+    "dense_conversion_forbidden": true,
+    "future_gap_enforced": true
+  },
+  "sha256": {
+    "sciona/temporal_sparse_training.py": "f6261de8467916fc4835fda2be98671e30370120752c6e53ac665562f3637625",
+    "sciona/temporal_sparse_features.py": "4dc40b7909d9fb8b4516a7256da1ad4c15022c0e7a939286c4cfd4d224f5b450",
+    "tests/test_temporal_sparse_training.py": "954c33fe23a881e43a501ba4aa2712394f232afb0c016a2060e165ec9bd9699b"
+  },
+  "scope": "Synthetic one-pass SGD squared-error/Huber ensemble and future-stream evaluation; full source boundary and serialized Tier3 review pending.",
+  "limitations": [
+    "Both regressors fit log1p targets with fixed clipping and explicit learning controls",
+    "Training optimizer updates depend on chunk configuration; prediction chunk invariance only is tested",
+    "No early stopping, rolling refit or throughput/accuracy qualification"
+  ],
+  "catalog_mutations": 0
+}

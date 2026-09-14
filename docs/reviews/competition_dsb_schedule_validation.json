@@ -1,0 +1,19 @@
+{
+  "approved": false,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "exact_learning_rate_cases": 1500,
+  "classifier_variant_constants_verified": [
+    3,
+    4
+  ],
+  "limitations": [
+    "Main-loop orchestration and complete training sequence require further execution validation.",
+    "Variant 4 enables source rotation without rotating classifier coordinates.",
+    "This does not certify a trained checkpoint or catalog artifact."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_schedule.py": "242cffebbd6829eefc3138314cec8806ae7e6d7dfcda350c7b64a277019e9c1a",
+    "tests/test_dsb_schedule.py": "fb28ed4e9323bbd4a756637e1be3bb1e5a7e0ba2fbd62b4307cf8aecccf602ba",
+    "scripts/validate_dsb_schedule.py": "4085a12c70efc1a5340e3005bdc7246e62d03752f9080780971267c564298303"
+  }
+}

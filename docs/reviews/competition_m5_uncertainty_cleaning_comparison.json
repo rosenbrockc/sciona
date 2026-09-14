@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "source_comparisons": 200,
+    "synthetic_only": true,
+    "tests_passed": 36
+  },
+  "source_software_sha256": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22",
+  "sha256": {
+    "sciona/m5u_cleaning.py": "bbeac0608e2f326b59c026673f99a60cbfb88c577a1ca2ddab3d2f9677f171ff",
+    "tests/test_m5u_cleaning.py": "21dc5f34e7475d1fc1be9c2abf2a451baee0646aa407566df48ca8506db8a73f"
+  },
+  "scope": "Source cleaning population semantics only; full feature and model lifecycle incomplete."
+}

@@ -1,0 +1,22 @@
+{
+  "synthetic_only": true,
+  "feature_cases_passed": 15,
+  "full_classifier_cases_passed": 3,
+  "maximum_feature_absolute_error": 0.0,
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "preproc.py": "1cfbc71faa230e1e4ffb72f27604be557ea08cb31186457363d37eee71d44bb2",
+    "Alex_Gilberto_models_relative_log_power_XGB.yml": "74b55594ae46d9d756ecaedf8a9e7524be70a37e21a3bddf968e02673d0014ce",
+    "mne_transformer_013.py": "469718ad7f8e26c0bb31ec20ab71d8d223a4a84f091bfdde01b4f0acee54604a"
+  },
+  "implementation_hash": "031ad42bbf8970bdc4d9094b2522b013e8ef49b7888bfca1a38af73ac61e933c",
+  "vectorizer_implementation_hash": "c8c497332b25fbc625d3ff7dec3b40d8a120d55faa70b6d8280f9046a8875e18",
+  "validation_script_hash": "a77f376da01aebc93737aebba5f78a3033094dced5246cab3991f056786d0b74",
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1"
+  },
+  "limitations": "Same-library source numerical parity and modern model configuration only; no historical-library or predictive-performance claim. Vectorizer reference is contemporaneous MNE v0.13, not a proven original environment lock. No full CDG or final eleven-model ensemble executed."
+}

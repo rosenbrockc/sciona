@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "3e58a2bc4bb221449f18b0db7e965513a107d13485e2b78839003bb5c6199cfd",
+  "exact_batch_and_rng_cases": 256,
+  "all_source_batch_sizes_exercised": true,
+  "installed_default_difference_observed": true,
+  "implementation_sha256": {
+    "sciona/wheat_sampler.py": "64caa9df71921a3848c0ce052ec9a865582562808fc7a66256e253d08e4c3b40",
+    "scripts/validate_wheat_sampler.py": "bc26c331c02f5e9790be2bc5f296d329837e2bb625d150fc240c6f523d0290a6"
+  },
+  "limits": [
+    "Sampler and dropped-tail batching only; loader iterator seeding, worker random states and full fits remain separate.",
+    "Historical Python algorithm uses installed Torch randperm; old native RNG algorithm parity is not claimed."
+  ]
+}

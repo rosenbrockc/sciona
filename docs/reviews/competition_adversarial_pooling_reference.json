@@ -1,0 +1,21 @@
+{
+  "format": "adversarial-pooling-reference.v1",
+  "repository": "https://github.com/tensorflow/tensorflow",
+  "commit": "d752244fbaad5e4268243355046d30990f59418f",
+  "files": [
+    {
+      "path": "tensorflow/core/kernels/avgpooling_op.h",
+      "sha256": "6835fe338a3c56fb46c02a31fe33887b1c84e269476b3ccca8d5c8ef43389a2e"
+    },
+    {
+      "path": "tensorflow/python/ops/nn_ops.py",
+      "sha256": "43eb02b0add69e0bedbcd66d0dafd6541e65393e6c2ea6a7e8a85484d439521e"
+    },
+    {
+      "path": "tensorflow/core/kernels/eigen_pooling.h",
+      "sha256": "c271c66d91fbdbc21eb45e3f012b6b12f8537d1a78a92ccd4405d1b4f81e71ff"
+    }
+  ],
+  "license": "docs/licenses/Adversarial-TensorFlow-reference-Apache-2.0.txt",
+  "limits": "Explicit TF1.4 reference; original competition binary unspecified."
+}

@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "workers": 16,
+  "epochs": 2,
+  "batches": 64,
+  "samples": 256,
+  "full_augmented_tensors_targets_and_four_rng_streams_exact": true,
+  "main_sampler_rng_exact": true,
+  "implementation_sha256": {
+    "sciona/wheat_workers.py": "b91173e82f41d973c1ef66fb3128a37c9d843762abcb2eeb9526dde931e44047",
+    "sciona/wheat_dataset.py": "f9bb2e9461dfb9325b472528e1f9814b2db59c1e6b72db50829da717834473e3",
+    "sciona/wheat_sampler.py": "64caa9df71921a3848c0ce052ec9a865582562808fc7a66256e253d08e4c3b40",
+    "sciona/wheat_augmentation.py": "04e9176c3a4b921242e1ca297ff704ab80735e3294d51d39d11ff88e8d827edc",
+    "sciona/wheat_augmentation_compat.py": "c94c2d2e7d6972c8aeba94d3d059a1b826546a9e01e3adcefe370008f1a66a9b",
+    "sciona/wheat_crop.py": "6291dc130f41cd1173672448255dc03e3c46ff2d98b3ac78716ed0b62a318ab9",
+    "sciona/wheat_mosaic.py": "90308d23d8a4438a9130329cfea4f99caaa677749c0650637c66585c9548774d",
+    "scripts/validate_wheat_workers.py": "397e736de1c9266f36e95144f2269b6314a1a2724b78d8540f98113379dab6a2"
+  },
+  "limits": [
+    "Spawned workers compared with isolated historical-seed replay using the separately qualified dataset implementation.",
+    "Two loader epochs with parent RNG advancement; full source fits remain pending.",
+    "Installed native libraries; historical operating-system process behavior is not claimed."
+  ]
+}

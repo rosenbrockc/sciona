@@ -1,0 +1,38 @@
+{
+  "status": "published_corrected_execution_tier_3",
+  "intake_version_id": "e9f83a4e-4cb1-5297-8c04-8fd65c6e7d33",
+  "intake_content_hash": "c37cf5cd41c4c7f7f19af3f2f48ab3a69d94bd451822a830088abe2c632774ed",
+  "repository": "asutera/kaggle-connectomics",
+  "source_commit": "b3abb178b9a9d558fdd5a7de49ae50425576a011",
+  "source_license": {
+    "declared": "BSD 3 clause",
+    "files": [
+      "code/PCA.py",
+      "code/directivity.py",
+      "code/main.py",
+      "code/utils.py"
+    ],
+    "note": "Explicit per-file notices establish execution-source license despite null GitHub repository license detection. Unlicensed rank-analysis helper is not an execution dependency."
+  },
+  "legacy_sklearn_commit": "8d04380d474723467b5a717328efd0c9fc5bd898",
+  "source_pins": "docs/reviews/competition_connectomics_source_pins.json",
+  "source_execution": "docs/reviews/competition_connectomics_source_execution.json",
+  "findings": [
+    "Author repository identifies winning team; publication describes both simplified and tuned inference, with optional directivity. No supervised training model is required.",
+    "Original main defaults to simple inference without directivity. Intake mixes tuned four-filter recipe with optional directivity; these must be explicit execution modes.",
+    "Both filter functions ignore threshold argument and call h(X) at default0.11. Sweep call sites pass whole threshold list instead of loop scalar. Full720PCAfits produce only2simple/4tuned distinct matrices; synthetic reproduction recorded.",
+    "Tuned preprocessing adds power0.9 and combines global activity with a lagged half-weight sum. w_star receives no filter name, so source always chooses defaultf1 branch even forf3/f4.",
+    "PCA aggregation normalizes once after weighted precision summation; intake suggests per-score normalization. Dense threshold averaging is not established as Bayesian model averaging.",
+    "Historical PCA whitened basis storage and variance normalization differ from modern sklearn. Pinned historical class executes and precision matches covariance inverse; modern implementation gives materially different precision on same synthetic inputs.",
+    "Directivity preprocessing has its own boundary behavior and0.9power transform; precedence inequalities are strict. Final optional directional blend is0.997/0.003.",
+    "Source grid contains120entries and110unique thresholds, retaining duplicate values and a gap; do not replace with linspace silently."
+  ],
+  "next_steps": [
+    "Keep publication-bound runtime, provider, requirements and evidence immutable; corrections require a new reviewed execution version.",
+    "Continue reviewing uncovered competition intakes; original Connectomics intake remains draft."
+  ],
+  "catalog_mutations": 40,
+  "execution_version_id": "e347858c-302c-54df-b845-18fa2d44745d",
+  "execution_graph_sha256": "53dc75dcdd21723b0dc9da4018177ef8a8da210b900fa5df656d95bbb7ffd925",
+  "publication_verification": "docs/reviews/competition_connectomics_publication_verification.json"
+}

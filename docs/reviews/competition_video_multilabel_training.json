@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "13b48adf-8fb5-5ea2-a26c-44344bb8907e",
+  "source_content_hash": "30d0444ec640598942c6221136e608d7b15449732ceb848939e1424321c496ad",
+  "checks": {
+    "neural_training_loss_below_quarter_initial": true,
+    "equal_neural_sparse_probability_fusion": true,
+    "training_only_sparse_vocabulary": true,
+    "unknown_sparse_features_ignored": true,
+    "query_batch_independence": true,
+    "deterministic_repeat": true,
+    "caller_cpu_rng_preserved": true,
+    "padding_bounded_by_batch_size": true
+  },
+  "controls": {
+    "default_epochs": 80,
+    "default_batch_size": 4,
+    "default_hidden": 8,
+    "learning_rate": 0.02,
+    "seed": 12
+  },
+  "sha256": {
+    "sciona/video_multilabel_training.py": "fa65c6ab869a3e89ed7c2e4dde3838853602574c719c3dde8384b40757f164e7",
+    "sciona/video_multilabel_network.py": "2787419d79ad600dd53be0cdbaf8c7b3ccf73b5cda73a8ee76884f984e1eb451",
+    "sciona/video_multilabel_thresholds.py": "78b071bdef9faa2949fe0b61ceabe4286ba6eb88d7c1f58f771f916e40dcbf1e",
+    "tests/test_video_multilabel_training.py": "cdfdb96de78ae73deea93ce332d2f4ae2ca90d98e5128673c8d717939535b064"
+  },
+  "limitations": [
+    "Entire caller-supplied feature population remains in memory; padding allocated only per batch or per-video validation",
+    "Training loss evidence is synthetic, not held-out accuracy or rare-label coverage",
+    "Strict disjoint population boundary and full calibration/graph integration pending"
+  ],
+  "catalog_mutations": 0
+}

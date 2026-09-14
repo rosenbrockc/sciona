@@ -1,0 +1,26 @@
+{
+  "format": "m5-review-negative-gates.v1",
+  "result": "passed",
+  "catalog_mutations": 0,
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_blend",
+    "missing_lag_comparison",
+    "missing_tests",
+    "reduced_training_limits",
+    "missing_models",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_m5_execution.py": "e1a2cb17fe35171cc8702ce5f98cf5036644fcd32658977c707662643aaa0990",
+    "scripts/validate_m5_review_gates.py": "1fa014d3a73aa6202e25113212302cb8429c9d703cec7c2c0213fae8da8b0c9c"
+  },
+  "limits": "In-memory read-only review injections; no publication approval."
+}

@@ -1,0 +1,46 @@
+{
+  "approved": false,
+  "reference": "https://raw.githubusercontent.com/tensorflow/tensorflow/v2.4.1/tensorflow/python/keras/backend.py",
+  "sha256": "155a26d21f9b43c2c48e806c85ca99e1d1807a43c78fb13b473bf378033dde48",
+  "status": "cached_logits_verified_in_modern_legacy_keras",
+  "finding": "This historical Keras backend uses cached logits when present even with from_logits=False. The pinned winning focal function receives softmax output, so a probability-only BCE port is not yet justified.",
+  "limitations": [
+    "Historical Docker image 30060 software inventory remains unresolved.",
+    "Reference runtime TensorFlow 2.20.0 / legacy Keras 2.20.1 is explicit, not an original environment claim.",
+    "No full backbone, TPU replication, pretrained weights or complete graph qualification."
+  ],
+  "implementation": {
+    "file": "sciona/cassava_focal.py",
+    "bce_branch_required": true,
+    "tests_passed": 11,
+    "objective_comparisons": 16,
+    "gradient_coordinates": 80,
+    "synthetic_only": true,
+    "tensorflow_executed": true,
+    "winner_branch_selected": false,
+    "reference_runtime_branch": "cached_logits"
+  },
+  "runtime_provenance": {
+    "notebook_version": 11,
+    "docker_image_version_id": 30060,
+    "metadata_endpoint": "https://www.kaggle.com/api/i/kernels.LegacyKernelsService/GetKernelViewModel",
+    "tensorflow_version_output_recovered": false
+  },
+  "next": "Use cached_logits for the explicitly versioned reference reconstruction; verify historical image equivalence separately. Continue full EfficientNet preprocessing/backbone/lifecycle validation.",
+  "sha256_implementation": {
+    "sciona/cassava_focal.py": "fc01f093e5f1a8fb243b5365bbc7743c380508a588714fe6b425485c25c33926",
+    "tests/test_cassava_focal.py": "ec8d85efb7eff53fd610bad64a076b7b8a0571bef8df77eed8b34e94d348a873"
+  },
+  "historical_dispatch_references": [
+    {
+      "url": "https://raw.githubusercontent.com/tensorflow/tensorflow/v2.4.1/tensorflow/python/keras/activations.py",
+      "sha256": "c3f0d73547b36ffe4216d744274c3c3c836c69313b2c72c2401b3f258c283f01"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tensorflow/tensorflow/v2.4.1/tensorflow/python/keras/engine/compile_utils.py",
+      "sha256": "a6f645712cd649e6e12ce9cf31f8ae68f33809347a146e3240268fffee04d86e"
+    }
+  ],
+  "historical_dispatch_finding": "Inspected v2.4.1 softmax caches pre-softmax logits and match_dtype_and_rank returns prediction tensor unchanged. This supports but does not establish original-image equivalence.",
+  "reference_runtime_validation": "docs/reviews/competition_cassava_focal_dispatch_validation.json"
+}

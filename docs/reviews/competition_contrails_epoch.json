@@ -1,0 +1,92 @@
+{
+  "approved": false,
+  "cases": [
+    {
+      "batches": 8,
+      "accumulation": 2,
+      "validations": 1,
+      "epoch": 0,
+      "processed": 6,
+      "steps": 3
+    },
+    {
+      "batches": 8,
+      "accumulation": 2,
+      "validations": 1,
+      "epoch": 1,
+      "processed": 6,
+      "steps": 3
+    },
+    {
+      "batches": 9,
+      "accumulation": 2,
+      "validations": 2,
+      "epoch": 0,
+      "processed": 6,
+      "steps": 3
+    },
+    {
+      "batches": 9,
+      "accumulation": 2,
+      "validations": 2,
+      "epoch": 1,
+      "processed": 6,
+      "steps": 3
+    },
+    {
+      "batches": 3,
+      "accumulation": 2,
+      "validations": 2,
+      "epoch": 0,
+      "processed": 3,
+      "steps": 1
+    },
+    {
+      "batches": 3,
+      "accumulation": 2,
+      "validations": 2,
+      "epoch": 1,
+      "processed": 3,
+      "steps": 1
+    },
+    {
+      "batches": 1,
+      "accumulation": 2,
+      "validations": 1,
+      "epoch": 0,
+      "processed": 1,
+      "steps": 0
+    },
+    {
+      "batches": 1,
+      "accumulation": 2,
+      "validations": 1,
+      "epoch": 1,
+      "processed": 1,
+      "steps": 0
+    },
+    {
+      "batches": 4,
+      "accumulation": 1,
+      "validations": 1,
+      "epoch": 0,
+      "processed": 3,
+      "steps": 3
+    },
+    {
+      "batches": 4,
+      "accumulation": 1,
+      "validations": 1,
+      "epoch": 1,
+      "processed": 3,
+      "steps": 3
+    }
+  ],
+  "exact_epoch_comparisons": 10,
+  "hashes": {
+    "sciona/contrails_epoch.py": "79842180df794e59b201c561bc4b63639cbc177a131e0e6e0539df9e652084d8",
+    "sciona/contrails_scheduler.py": "0a3aa74db2e71642254a1c0be893022395e7d408c1367929a130429685d356f2",
+    "scripts/validate_contrails_epoch.py": "f78c03bb294d6335e8bd57429da6efadc5f652ba2bace558240d77a5510327de"
+  },
+  "scope": "Original loop AST versus extracted epoch: parameters, gradients, AdamW moments, validation timing and LR. Synthetic small model; full model training and checkpoint lifecycle pending."
+}

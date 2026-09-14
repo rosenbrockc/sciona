@@ -1,0 +1,26 @@
+{
+  "format": "amex-review-negative-gates.v1",
+  "result": "passed",
+  "catalog_mutations": 0,
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_blend",
+    "missing_metric_comparison",
+    "missing_tests",
+    "reduced_training_limits",
+    "missing_models",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_amex_execution.py": "3da7f942491cf4ccabe922bf441724bacf37123a0531f9d9e463989bcfb9e6d2",
+    "scripts/validate_amex_review_gates.py": "a7da9d427def3fc904276eba3b1a84ba073e81894f70ea242222f181ff79bf10"
+  },
+  "limits": "In-memory read-only review injections; no publication approval."
+}

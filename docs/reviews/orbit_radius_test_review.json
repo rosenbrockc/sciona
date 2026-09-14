@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_orbit_radius.py tests/physics_ingest/test_orbit_radius_proof.py -q",
+  "test_source_sha256": {
+    "tests/physics_ingest/test_orbit_radius.py": "14992d7df7bef2ae91c567e984afd5ac0da0187e22a239da382bf136e7c6d071",
+    "tests/physics_ingest/test_orbit_radius_proof.py": "cc767d174e944024d011532d3c863308c21d03663984ab77233798f5972f52b2"
+  },
+  "provider_sha256": "00fa614347d09991e509338a348312bd0a4328aeb89f16ada3605c2762d85c73"
+}

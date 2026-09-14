@@ -1,0 +1,7 @@
+{
+  "served_cdgs": 86,
+  "competition_intakes": 142,
+  "covered": 19,
+  "uncovered": 123,
+  "coverage_definition": "Mandatory provenance to a served latest derived CDG; not historical accuracy."
+}

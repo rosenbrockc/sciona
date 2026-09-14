@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entries": [
+    16,
+    17,
+    18
+  ],
+  "checks": [
+    "Actual t-SNE embedding plus raw/log1p/scaled-raw cluster boosting variants",
+    "Six cluster fits per variant use exact excluding-fold and full-training populations",
+    "Raw values and signed embedding coordinates reach encoded booster matrices",
+    "Nine-class synthetic query learning and normalized OOF scores",
+    "Heldout-label and query-value isolation conditional on fixed embedding",
+    "Unknown embedding identities rejected"
+  ],
+  "sha256": {
+    "sciona/otto_embedding_boosting.py": "2de36d0de0136a846c93fd1e3f8e7b1d4a802b225649dd76ccdf78e8be4039d6",
+    "sciona/otto_embedding_crossfit.py": "29c7809b35e8f9bc987b7ff89080988ea7ff794d33a80ada9dde57c4f4f42235",
+    "tests/test_otto_embedding_boosting.py": "a1c9195edb6530ed2d275d4ffd115e86a18c3172455845e58f6bdea86ad17efb",
+    "sciona/otto_clustering.py": "227611641be342eb0245a128d4ac4954665d1332bb44af14b286b32d9c265ed7",
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0"
+  },
+  "limitations": [
+    "Uses Python XGBoost instead of historical R binding; historical booster and clustering controls unresolved.",
+    "Numeric cluster assignments and fixed embedding population are explicit independent choices.",
+    "Holding embedding fixed does not prove inductive behavior; transductive scope remains explicit.",
+    "Remaining Sofia/neural branches, full-stack assembly and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

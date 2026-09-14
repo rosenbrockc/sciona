@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 13,
+  "source_version_id": "49c645b7-3659-5cfa-a386-78f7a51f7358",
+  "source_content_hash": "185e7d6e033ad27cfcf8c655d4da84ae680d6c9ec33795095b816e28e052055b",
+  "checks": {
+    "physical_units_and_periodic_grid": true,
+    "nonnegative_mass_conserving_targets": true,
+    "disjoint_groups": true,
+    "validation_labels_do_not_change_training_trajectory": true,
+    "query_independence": true,
+    "deterministic_repeat": true,
+    "caller_cpu_rng_preserved": true,
+    "best_validation_checkpoint_restored": true
+  },
+  "synthetic_training": {
+    "epochs": 60,
+    "best_epoch": 45,
+    "initial_training_mse": 1.0854829036058606,
+    "final_training_mse": 0.001350761091937663,
+    "best_validation_mse": 0.0012749935457824378
+  },
+  "sha256": {
+    "sciona/physical_operator_state.py": "281c5e3358c3357e0c32c1af37678271cb13be326a9a2e6d70f98625bf35160a",
+    "sciona/physical_operator_training.py": "120ef52d9cdc1013f3a15585cd3e8e5759aa451de1d7609f692dcc73246f2842",
+    "sciona/physical_operator_network.py": "1ec25a6498b57a468a377e878c39f5759fa05544a151e18f5b983105fbf8156b",
+    "scripts/physical_operator_synthetic.py": "7ff1c06ea05333a67256db2ce44a9a6be86d26f005fafa73501c6a6fbc2cb45a",
+    "tests/test_physical_operator_training.py": "49129898f2d8f215a6860dbe755a7a5b57bbec76889390f2241604c9f704d553"
+  },
+  "limits": "Single-mode analytic diffusion fixture, full-batch CPU float64 training. No held-out query accuracy or arbitrary PDE qualification. Full serialized pipeline and Tier3 review pending.",
+  "catalog_mutations": 0
+}

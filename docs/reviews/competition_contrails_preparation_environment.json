@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "checks": {
+    "independent_half_pixel_ramp_oracle": true,
+    "source_preparation_cases": 12
+  },
+  "versions": {
+    "torchvision": "0.26.0",
+    "albumentations": "1.3.0",
+    "opencv-python-headless": "5.0.0.93",
+    "qudida": "0.0.4"
+  },
+  "scope": "Same installed dependencies used for source comparisons. Historical OpenCV binary parity not claimed."
+}

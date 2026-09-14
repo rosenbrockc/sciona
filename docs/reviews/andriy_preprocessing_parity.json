@@ -1,0 +1,51 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Andriy_FE_main_F.m": "b53474aefc981102cc39cd550cc7d1d63210825003cd046e396555588bff2515",
+    "Andriy_FE_main_CSP_AR.m": "b280b961868c7f125e0e492f274323356e76205621a15322172f63c1d3fa8eef"
+  },
+  "provider_sha256": {
+    "andriy_preprocessing.py": "39531346d870a61ad8b8341b2e9355d587ba93fd24ff3b7a92f180e498e5078d",
+    "andriy_filter.py": "2a44ae93d51d644e7428ea3f11a6bcb1449aea9470a3dd08025caaced22769e9",
+    "andriy_resampling.py": "bc3fc43d9b59b026a64811d051650aca376a17f72bdec033400d9329dd965993"
+  },
+  "validation_sha256": "6e4dbd378eef4975b0bf82aed4d61cd1ca92e7ac9badb37bb9ff71dfe0ad90fb",
+  "test_sha256": "83c3ff945c20609bb2d66b35ddcb8eab96b54aff7d2a1da65e652d77c45b2b13",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "stage": "preprocessing",
+      "sampling_frequency": 128,
+      "duration_seconds": 600,
+      "maximum_error": 1.1879386363489175e-14
+    },
+    {
+      "stage": "preprocessing",
+      "sampling_frequency": 400,
+      "duration_seconds": 600,
+      "maximum_error": 6.217248937900877e-15
+    },
+    {
+      "stage": "selection",
+      "seed": 693,
+      "exact_class_inputs": true
+    },
+    {
+      "stage": "selection",
+      "seed": 694,
+      "exact_class_inputs": true
+    },
+    {
+      "stage": "selection",
+      "seed": 695,
+      "exact_class_inputs": true
+    }
+  ],
+  "limitations": [
+    "Source filtering and selection blocks; resampling uses explicit documented-design coefficients supplied to both runtimes.",
+    "Historical MATLAB default resampling is unproven; filesystem discovery/order must be supplied by caller.",
+    "Selection inputs are already preprocessed; full training/prediction pipeline integration remains separate."
+  ]
+}

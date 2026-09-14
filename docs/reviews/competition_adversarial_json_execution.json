@@ -1,0 +1,25 @@
+{
+  "format": "adversarial-json-execution-validation.v1",
+  "result": "passed",
+  "checks": {
+    "actual_full_models": 8,
+    "full_iterations": 10,
+    "neural_batch_size": 10,
+    "real_entries": 1,
+    "padded_entries": 9,
+    "JSON_input_output_roundtrip": true,
+    "normalized_projection_bound": true,
+    "source_scaled_PNG": true,
+    "input_rng_unchanged": true
+  },
+  "limits": "Synthetic random model states, complete non-targeted JSON runtime with padded batch. No pretrained attack effectiveness or TF binary parity; five-model padded targeted branch and provider graph remain unvalidated.",
+  "sha256": {
+    "sciona/adversarial_runtime.py": "b843a45806c923971374547701142a0868732a35849a1d2fa9459290269adbea",
+    "scripts/validate_adversarial_json_execution.py": "28382f7e8abe3fb6df32e47288842e2c6b62a45ad8d15581dc39fda1fe4224aa",
+    "sciona/adversarial_rgb_attack.py": "36e6cfd383b530a2bf239476d47dbf86ac446994ffd669d4153e431a5718b689",
+    "sciona/adversarial_lifecycle.py": "19c0bb800a9030b2937cef485d80f5e3ee4e72d8bde124a6a3eebb2517ab3fd5",
+    "sciona/adversarial_ensemble.py": "454f159958dfeb3a5ececfffdeb3c176be5348a30e1dc0534519a018566521eb",
+    "sciona/adversarial_image_boundary.py": "8d7fcbb8d939e81441d98367a0c22dfcbcebce250024b466868a95d7ada90566",
+    "sciona/dfdc_codec.py": "4256101fe8c78ad8df1eec4ff6db08ae53a7291a4506e73784ffad25ad39b15a"
+  }
+}

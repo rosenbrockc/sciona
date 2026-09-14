@@ -1,0 +1,15 @@
+{
+  "format": "openvaccine-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "e078e4434022d49386d0f9bae1d3c5096c85b7058444f203c959e76690fc4dc6",
+  "validator_sha256": "cef72a1c67eac48b6d784a87de2d4b4d2adbc40f0d1768434683139d0ed75da0",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

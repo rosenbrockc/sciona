@@ -1,0 +1,40 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Andriy_data_preprocess.m": "7270d94f782ccb0850a8b1241386e52232c3fb2cfb916d1602610b8afb15cf14",
+    "Andriy_code_mean_nan.m": "f3998cbc9dd08b97e9c827b07712de1fe5e338af8ec46fb6bf1a73b80bfa5adf",
+    "Andriy_code_sumskipnan.m": "ac6cf310c625b7c53f850d9994491735d1fa2967a5289bb942b4435033849b3e"
+  },
+  "provider_sha256": "db83a360acb7ab82a572df0bb3b2f922402deaed714148af1014fd1c6cd619bb",
+  "validation_sha256": "18cc78b0489ed98505d0f5341206c470915d3c36b500742d7cfea6ebc2a363b0",
+  "test_sha256": "f9d8af14ba61f507508c59c578a299cdea68cad63a0d9ca5d2f76c6d858b355f",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 9911,
+      "windows": 3,
+      "wholly_missing_feature": false,
+      "validity_exact": true,
+      "maximum_finite_error": 0.0
+    },
+    {
+      "seed": 9912,
+      "windows": 19,
+      "wholly_missing_feature": false,
+      "validity_exact": true,
+      "maximum_finite_error": 0.0
+    },
+    {
+      "seed": 9913,
+      "windows": 19,
+      "wholly_missing_feature": true,
+      "validity_exact": true,
+      "maximum_finite_error": 0.0
+    }
+  ],
+  "limitations": [
+    "Unchanged per-clip source prediction assembly block and NaN helpers run in current Octave, not original MATLAB.",
+    "Synthetic inputs cover imputation, log transform, column-major assembly and validity; feature extraction/model execution remains outstanding."
+  ]
+}

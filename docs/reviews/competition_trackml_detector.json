@@ -1,0 +1,20 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_detector_cases": 24,
+  "exact_array_checks": 432,
+  "exact_frame_checks": 72,
+  "source_monotonicity_rejection": true,
+  "implementation_sha256": {
+    "sciona/trackml_detector.py": "ec904e021ca03e817f883af672cd86c423ca58ba695b57ee66b264ee70afcf92",
+    "scripts/validate_trackml_detector.py": "1dd8b244f5e93046f63a80680f28dafe598270fd640d35f6fba1bc02d89064a0",
+    "docs/reviews/competition_trackml_source_pins.json": "d61b598dbf97fb73d7b8546d0af99c4657f894e953e79cf82f2242dfcf90219f",
+    "docs/licenses/TrackML-BSD-2-Clause.txt": "00404581925abc4b8435bb7813eee07ac1df8b834326a33ee969d8315e9471fe"
+  },
+  "limitations": [
+    "Analytic synthetic module layouts only; original geometry files not used.",
+    "Current sklearn KMeans/MeanShift and pandas backend; historical dependency binaries excluded.",
+    "Original fixed seven-ring/three-gap assumptions retained; not a generic detector discovery algorithm.",
+    "Detector-discovery component only; intersections, corrections and full tracking lifecycle remain."
+  ]
+}

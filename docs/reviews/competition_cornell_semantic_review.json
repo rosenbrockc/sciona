@@ -1,0 +1,103 @@
+{
+  "format": "cornell-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "5326bafb-d26f-5202-85c9-6f903df0fc77",
+  "source_hash": "0e75554c472b820a39e97f3807ebc13ebd7d915af068b36ca4d364997b9b1690",
+  "source_commits": {
+    "winning_solver": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59"
+  },
+  "serialized_graph_sha256": "cba5624e3f8dbf7f3ebad5eec3b7dc87f5301f232acd49333ff746a70059d849",
+  "provider_sha256": "10dc31f7e4d033d4561615fe01c9e0a4efc04ab1066a07c98bff887361977747",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": [
+    {
+      "intake": "audio_conversion",
+      "realization": "Source waveform STFT/logmel; caller mono32kHz arrays"
+    },
+    {
+      "intake": "background_noise_augmentation",
+      "realization": "Pinned three/eight-transform recipes and private noise banks"
+    },
+    {
+      "intake": "sound_event_detection_sed_model",
+      "realization": "Thirteen full DenseNet121 SED outputs from17trainingphases"
+    },
+    {
+      "intake": "thresholding_optimization",
+      "realization": "Fixed0.3clip/frame threshold and4votes; no learned species thresholds"
+    },
+    {
+      "intake": "inference_chunking",
+      "realization": "Thirty-second chunks, ten eval copies, half-open five-second window voting"
+    }
+  ],
+  "dependencies": {
+    "torch": "2.11.0",
+    "torchvision": "0.26.0",
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "librosa": "0.11.0",
+    "numba": "0.65.1",
+    "llvmlite": "0.47.0",
+    "audioread": "3.1.0",
+    "soundfile": "0.14.0",
+    "soxr": "1.1.0",
+    "lazy_loader": "0.5",
+    "msgpack": "1.1.2",
+    "decorator": "5.3.1",
+    "pooch": "1.9.0",
+    "platformdirs": "4.11.8",
+    "audioop-lts": "0.2.2",
+    "standard-aifc": "3.13.0",
+    "standard-chunk": "3.13.0",
+    "standard-sunau": "3.13.0"
+  },
+  "limitations": [
+    "Automated Tier3 Community corrected reconstruction; no Tier1 human certification or Tier2 community-usage qualification. Original inaccurate intake remains draft.",
+    "Winner uses thirteen full DenseNet121 SED models, not intake ResNeSt50 or learned per-species thresholds. Four model-only continuation phases produce seventeen total training phases.",
+    "Explicit caller fourfold/fivefold populations, epoch count, even batch size and initialization are required. Synthetic evidence uses two epochs per phase and offline random initial weights; no historical training, pretrained checkpoint or competition accuracy parity.",
+    "Provisioned backbone state must match complete DenseNet121; its external training provenance is not certified by shape validation. Synthetic initialization is an explicit selectable mode, never an implicit substitute for pretrained state.",
+    "Inputs are private already-resampled mono32kHz arrays. No audio decoder/resampling or external pretrained/noise download is included. Class indices retain264source output slots; caller supplies valid labels and fold membership.",
+    "Pinned audiomentations0.11.0 recipes and historical Ignite schedule semantics are preserved. Per-instance RNG and explicit epoch seeds replace original worker entropy; no original stochastic-run identity is claimed.",
+    "Source excludes the final possible random crop offset, uses training drop-last and balanced sampling with replacement, and validates first two clips. Augmented loss primary dropout remains active in validation.",
+    "Source two-epoch validation cadence and five ranked checkpoints are retained. Execution selects best score/latest retained tie, replacing hand-picked historical checkpoints. Complete mid-epoch population/worker-state resume is not claimed.",
+    "Independent array voting uses0.3clip/frame thresholds and four votes, with a second whole-record vote over voted windows. Singleton/empty events are supported; half-open chunk and duration boundaries exclude padding/endpoints. These are explicit corrected behavior, not buggy notebook parity.",
+    "Linked notebook reuse license remains unresolved; its code is comparison evidence and is not embedded in runtime. Training repository MIT, bundled PANNs/mixup notices and historical dependency licenses are retained.",
+    "Ten source evaluation copies and NumPy mean are retained despite eval-mode augmentation being disabled. Attention probability guards allow eight float32 ULPs of rounding without changing threshold decisions.",
+    "Noise banks must be nonempty, finite positive float32 RMS and at least0.1seconds; nonfinite runtime results fail. Degenerate or extreme inputs may fail; no resource-cap, GPU/mixed-precision or clean-install qualification.",
+    "Private records, noise arrays, checkpoints and predictions stay runtime values or temporary files. Committed evidence contains only synthetic checks, software identities and aggregate results."
+  ],
+  "evidence_sha256": {
+    "competition_cornell_source_pins.json": "f9b89e14127839dba4be4186a0c3c83ae5e4fa2ac376e3271b1949731e7338e9",
+    "competition_cornell_historical_dependencies.json": "3e87bfc6bec2db33e1b0b01c5c5146f92a4ec2ab7a0e52c60e60b19d5a724617",
+    "competition_cornell_training_inventory.json": "1659594ea11a2631debf3af85cf4eb7e7f938de39640a06d0bd07eed8ed65d2f",
+    "competition_cornell_source_execution.json": "774ed80be6c45dfd29d70863520f08e3108e4cd6e7690649160a2055b73dbc6c",
+    "competition_cornell_loss_execution.json": "67373cbecd7d9ca743a43cddbf958db937595cac811e745bea6a747323e4eeeb",
+    "competition_cornell_sampling_execution.json": "b573f1a049c333ad849d3514be8eea8fd236cffe8ebfbf4722453b0703d51ca4",
+    "competition_cornell_population_execution.json": "5058fc639ab760914876e59a8a159a7a820cddff6139ddb3bda1542189121e32",
+    "competition_cornell_augmentation_execution.json": "1ff0e0828aef01eee727d03c9b1e2ba90d2f4e247bd10bb431dda005a62966dc",
+    "competition_cornell_augmentation_runtime_execution.json": "12921aab4241094a0447ed08ce2e4ea3154951f1379c0e06e6dfcfb08b6147f2",
+    "competition_cornell_schedule_execution.json": "ed6af46c9e601168ad5a3d501da5d8b8a41419d60f4767bb4d86ede133c9101e",
+    "competition_cornell_validation_execution.json": "154e664d5456d5818a0e2809e31e9d02e51abb478a14fda7817622b6acfb68bc",
+    "competition_cornell_model_runtime_execution.json": "b33ed02e8992501388198fefa24326113e0fe14b5b5b2e1fa5d64a55b52e16b3",
+    "competition_cornell_training_execution.json": "88071e73b84201bbd87fb48003be8e24899336fa64f5bdba590cb60ca4a6d4fc",
+    "competition_cornell_voting_execution.json": "8a6fb6e5fc18c3109e831ab2ddc9b6f784d86c9baaf12032d74ccc5ebb3e5c54",
+    "competition_cornell_lifecycle_execution.json": "ae54a14d184a54c85bb3ca00245d216bd7d0a817c35634acb957e390ff46367d",
+    "competition_cornell_graph_execution.json": "ada1ca989c8dfc9d173146930dab0b32f90cba03b7988da34cb7ed3a2571cac4",
+    "competition_cornell_environment.json": "81d0fcb8fb2b441cae2ce4a91437eba8573b9e892d826065529f025bf2726656"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_cornell_execution.py": "10e2f42ee55409417efd129c21a67b0f99d2e1f46d8ad789a158b2fc91c08950",
+    "requirements/cornell-execution.txt": "86798d5e73dd5a9e60f4f5377be7f5ec6395e0a68fb7a80bba13bb0297d372d3",
+    "docs/licenses/Cornell-PANNs-MIT.txt": "7e540655d851d9737fafaa9f0cbd064c3a29bdfe5e937ee07a09360f85161975",
+    "docs/licenses/Cornell-audiomentations-license.txt": "fa815dc89b64faa17dbdedc372da7b14eb534eaccdeebc39ca3c6a5413e585e7",
+    "docs/licenses/Cornell-first-place-MIT.txt": "060641539bf9cf4ee112989ede9e7fcd0492f5d6dc726473bdf6d5a096579666",
+    "docs/licenses/Cornell-mixup-MIT.txt": "558d60d5c8e7f9c5d85200a7090f05b600435d7688a79f238cd0d2ffbbe909dc",
+    "docs/licenses/Cornell-pytorch_ignite-license.txt": "cd5a9e502d3bfebca09cd056d642bde731ae5b30920722081efccb46c89a53ef"
+  },
+  "catalog_mutations": 0
+}

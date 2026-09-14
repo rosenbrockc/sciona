@@ -1,0 +1,55 @@
+{
+  "documentation": "https://www.mathworks.com/help/signal/ref/resample.html",
+  "documentation_design": {
+    "neighbor_terms": 10,
+    "kaiser_beta": 5,
+    "filter_order": "2*n*max(reduced_p,reduced_q)",
+    "dc_gain": "reduced_p"
+  },
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "target_frequency": 128,
+      "synthetic_input_samples": 4001,
+      "documented_design_taps": 501,
+      "octave_default_taps": 1813,
+      "explicit_filter_max_error": 1.3322676295501878e-15,
+      "default_filter_max_difference": 0.1610106754483496
+    },
+    {
+      "target_frequency": 128,
+      "synthetic_input_samples": 236801,
+      "documented_design_taps": 501,
+      "octave_default_taps": 1813,
+      "explicit_filter_max_error": 2.6645352591003757e-15,
+      "default_filter_max_difference": 0.21398549595143965
+    },
+    {
+      "target_frequency": 256,
+      "synthetic_input_samples": 4001,
+      "documented_design_taps": 501,
+      "octave_default_taps": 1813,
+      "explicit_filter_max_error": 1.7763568394002505e-15,
+      "default_filter_max_difference": 0.2626908882043964
+    },
+    {
+      "target_frequency": 256,
+      "synthetic_input_samples": 236801,
+      "documented_design_taps": 501,
+      "octave_default_taps": 1813,
+      "explicit_filter_max_error": 2.220446049250313e-15,
+      "default_filter_max_difference": 0.3375193608333025
+    }
+  ],
+  "provider_sha256": "bc3fc43d9b59b026a64811d051650aca376a17f72bdec033400d9329dd965993",
+  "test_sha256": "7b644fd291aaa20ca618bf395c1c71d23b9a442ba46eefe36cd03b4854e5d22f",
+  "validator_sha256": "a964272cef5502324f22437dae0e58bf32552d884dbcf405b65071fc0b550de7",
+  "conclusions": [
+    "Octave default resample is not an interchangeable MATLAB-default reference.",
+    "With identical explicit coefficients, Octave and SciPy agree on polyphase filtering, output length and delay compensation.",
+    "Coefficients reconstruct current documented MATLAB design; historical MATLAB runtime/default coefficient parity remains unproven.",
+    "Provider cross-language execution validated with explicit coefficients; no full graph approval implied."
+  ]
+}

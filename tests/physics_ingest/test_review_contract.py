@@ -231,7 +231,7 @@ def test_require_publishable_raises_with_ordered_blockers() -> None:
     bundle["expression"] = {**bundle["expression"], "review_status": "automated_pass"}
 
     with pytest.raises(ValueError, match="review_status must be human_reviewed"):
-        require_publishable(**bundle)
+        require_publishable(**bundle, require_human_review=True)
 
 
 def test_phase5_review_reports_needs_human_and_blocked_trust_states() -> None:
@@ -246,7 +246,7 @@ def test_phase5_review_reports_needs_human_and_blocked_trust_states() -> None:
         },
     }
 
-    report = build_review_trust_report(**needs_human_bundle)
+    report = build_review_trust_report(**needs_human_bundle, require_human_review=True)
 
     assert report["publishable"] is False
     assert report["trust_status"] == "needs_human"
@@ -285,7 +285,7 @@ def test_phase5_review_summarizes_dashboard_rollups_json_safe() -> None:
             if key != "human_review"
         },
     }
-    needs_human = assess_publishability(**needs_human_bundle).to_report()
+    needs_human = assess_publishability(**needs_human_bundle, require_human_review=True).to_report()
 
     blocked_bundle = _publishable_bundle()
     blocked_bundle["candidate"] = {
@@ -426,3 +426,30 @@ def _publishable_bundle() -> dict[str, object]:
             },
         ],
     }
+
+
+def test_community_publication_preserves_absence_of_human_review() -> None:
+    bundle = _publishable_bundle()
+    bundle['expression']['review_status'] = 'needs_human'
+    bundle['expression']['evidence_json'].pop('human_review')
+    for bound in bundle['validity_bounds']:
+        bound['review_status'] = 'needs_human'
+    report = assess_publishability(**bundle).to_report().to_dict()
+    assert report['publishable'] is True
+    assert report['publication_tier'] == 3
+    assert report['trust_status'] == 'automated_pass'
+    assert report['human_reviewed'] is False
+    assert report['needs_human'] is False
+    assert report['blockers'] == []
+    assert next(g for g in report['gates'] if g['status'] == 'human_reviewed')['passed'] is False
+    assert assess_publishability(**bundle, require_human_review=True).publishable is False
+    assert bundle['expression']['review_status'] == 'needs_human'
+
+
+def test_community_publication_does_not_bypass_failed_bounds_or_runtime() -> None:
+    bundle = _publishable_bundle()
+    bundle['validity_bounds'][0]['review_status'] = 'blocked'
+    assert assess_publishability(**bundle).publishable is False
+    bundle = _publishable_bundle()
+    bundle['expression']['validation_status'] = 'failed'
+    assert assess_publishability(**bundle).publishable is False

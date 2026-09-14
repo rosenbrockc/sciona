@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "approved": false,
+  "augmentation_tests": 14,
+  "combined_detector_and_augmentation_tests": 28,
+  "sha256": {
+    "sciona/santander_augmentation.py": "7bc7a080d7bf0fe1ce0755a7422be14ef8e25ba0d20ebdb4ac054cc4bd6b7ed5",
+    "tests/test_santander_augmentation.py": "5bc7930a497ac53cabf30a93bb6b54eeee92748ac548a340d27c01ac69a534b7"
+  },
+  "checks": [
+    "Triplet correspondence retained",
+    "Class-conditional marginal distributions retained",
+    "Independent feature permutations",
+    "Positive/negative output label alignment",
+    "Input immutability",
+    "Reproducibility and RNG advancement",
+    "Evaluation preserves order and RNG state",
+    "Single-class and singleton handling",
+    "Invalid input rejected before RNG advancement"
+  ],
+  "limits": "Independent implementation of verified batch augmentation semantics; not full training or approved CDG. Explicit NumPy Generator; historical framework RNG sequence not claimed."
+}

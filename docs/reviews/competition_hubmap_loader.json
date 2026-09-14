@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_getitem_image_mask_label_rng_cases": 72,
+  "exact_ordered_batch_cases": 6,
+  "implementation_sha256": {
+    "sciona/hubmap_loader.py": "f3bf1edd803d74aafad49cd7e0b8668baff6bbb7c32b3798c76e083f67156bd1",
+    "sciona/hubmap_augmentation.py": "370f2ca831a8e8e4888802eeb60da5ac7781c4c45fe6068382744ead1db4e851",
+    "scripts/validate_hubmap_loader.py": "ac7b4bbb7bbc6b226c7ccc1f83b286cad2d0a69ff45b150baada776184c64258",
+    "scripts/validate_hubmap_augmentation.py": "f916e76c3c111df079c0eb262bb035f7467d71b123131b53566fd51a118b0e11",
+    "tests/test_hubmap_loader.py": "f334b7d5d492b505ec0f3eba2cf5e16a8f6ebe45aa405a88747286d4b5ce340f",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5",
+    "docs/reviews/competition_hubmap_augmentation_pins.json": "44977ff6956885588f3c30521110e5d038080551f3cf337fd5ec8a73ab9b23c0",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Source file reads/pickle IO replaced with synthetic decoded arrays and RLE text; codec fidelity is not claimed.",
+    "Valid ordered in-range RLE only; malformed runs reject explicitly.",
+    "Fixed sampler and single-process reference loader; historical shuffle/multiworker scheduling excluded.",
+    "Complete balanced-loader-to-epoch and raw tiling/inference graph remain."
+  ]
+}

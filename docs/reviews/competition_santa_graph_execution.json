@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "d8a470648f81c24045c539df9459430279df1ee7049dc3ccfe54174f2160e012",
+  "provider_sha256": "9515cd9fd5848c3cd550e4f8a2af5a3b397840b62c6e4a97bac5596a504292e0",
+  "code_sha256": {
+    "sciona/santa_agent_features.py": "b6cd7831b2dfe7b72024f24273092f5bf62ed297c19d30453cfcf04963b2a127",
+    "sciona/santa_boosting.py": "d6a525b6a80a335484d43f8fdf01b5e97bd0c9055ae2ef6262b77bfdab8c4779",
+    "sciona/santa_execution.py": "eb2c3f568c1a76ea2e674c8a9c5c02edf22b74396bacb82dac9fe63af8a76c1a",
+    "sciona/santa_graph.py": "a17ac27402f1a2e70eb4d08af03f7c4f7705f084f4b2b92f713009204bc2cca1",
+    "sciona/santa_replay_training.py": "f0033fc23cc0d7d3c777e5a0c69cbcde9e1b74c868bce32717f343be34892921",
+    "sciona/santa_simulation.py": "b47b10574ab715befe688b2a2539192bae8cee0606931d448755c984298f357f",
+    "sciona/santa_threshold_posterior.py": "17228b0cf24f76d530df7858df037fdef80ef2b5d8df5cb0fec010cb2d7b1b7f",
+    "scripts/santa_synthetic.py": "fd899ac565279b3d7dfe3b03de2674dcd94c5939f41e3650c96c6476212118b4",
+    "scripts/validate_santa_graph_execution.py": "15e1a367bc7d60366bc0cacdcb6ba0ab62b98b8ea4b67960fbab531b5310ed3b"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 3142,
+    "validation_rows": 3186,
+    "models": 2,
+    "query_step": 1,
+    "action_count": 100,
+    "finite_scores": true,
+    "heldout_best_iterations": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Synthetic corrected Santa replay-to-action execution; no served publication or historical performance claim."
+}

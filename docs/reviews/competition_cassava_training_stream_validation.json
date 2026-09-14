@@ -1,0 +1,27 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "training_dataset_ops": [
+    "MapDataset",
+    "RepeatDataset",
+    "MapDataset",
+    "ShuffleDatasetV3",
+    "BatchDatasetV2",
+    "PrefetchDataset"
+  ],
+  "shuffle_buffer": 1000,
+  "validation_batches_compared": 2,
+  "validation_remainder_retained": true,
+  "invalid_epoch_contracts_rejected": 5,
+  "training_stream_consumed": true,
+  "full_buffer_training_batches": 20,
+  "scope": "Training operation graph, full-buffer consumption and finite validation parity; full training lifecycle and original runtime remain unverified.",
+  "sha256": {
+    "sciona/cassava_training_stream.py": "d887b1f57d6d50e5bec4b0258c562531a15f1afb40f9d9019cb1181fec4d7535",
+    "sciona/cassava_training_images.py": "79bf5b6a09da1cf709c2477f9aa73a7a34f94fa6221b3e6126acb3bffbdf9902",
+    "scripts/validate_cassava_training_stream.py": "ae03cfac26469fc5472ae53251ace383b1c6c452008ba31488c4f446685ee195",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

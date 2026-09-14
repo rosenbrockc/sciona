@@ -1,0 +1,17 @@
+{
+  "approved": false,
+  "checks": {
+    "full_model_folds": 4,
+    "optimizer_updates": 12,
+    "terminal_checkpoints_used_for_inference": 4,
+    "ensembled_predictions": 1
+  },
+  "elapsed_seconds": 247.30079375003697,
+  "hashes": {
+    "sciona/contrails_lifecycle.py": "a9656c0908f79e8cd92013437be41822eb31bc8b3f4a651eb00af679e2ba8998",
+    "sciona/contrails_fold.py": "577cc12b5c2afc9c27e7ce52c68613c2e56e46483fe1c1568d2a978595b80d10",
+    "sciona/contrails_defaults.json": "0bac132713c178c616fc27cf3aadc5834306bae7d025753ed842fe1aeb398024",
+    "scripts/validate_contrails_lifecycle.py": "ece6a49946270c9cc1aec572d821a52bfecdb4bb2fb9410cabf5ea34d4b47ecc"
+  },
+  "scope": "All v43 folds, source-resolution models; synthetic distinct training/scoring/prediction populations. Explicit random init, one epoch without schedule rescaling, batch1/workers0. Full default schedule and pretrained performance not claimed."
+}

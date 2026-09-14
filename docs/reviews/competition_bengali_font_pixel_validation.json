@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "compared_images": 32,
+  "differing_pixels": 0,
+  "opencv_version": "4.13.0",
+  "sha256": {
+    "sciona/bengali_font_augmentation.py": "d5ee9776578f3c092c5b69adc85d878e84925125cc6ddf4357ebba1529d27c59",
+    "scripts/validate_bengali_font_pixels.py": "c162ba544d1b6bce40784fc5b3bdf265418118af7caece5967b5536e12fd08bb"
+  },
+  "limits": [
+    "Explicit parameters only; historical random draws and exact notebook environment remain unqualified.",
+    "Both sides use the same OpenCV runtime and installed translation composition.",
+    "Reference adapters restrict dtype/channel helpers to the tested uint8 RGB boundary."
+  ]
+}

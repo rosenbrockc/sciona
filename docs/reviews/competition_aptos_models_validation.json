@@ -1,0 +1,63 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "synthetic_only": true,
+  "pretrained_weights_used": false,
+  "families": {
+    "inception_resnet_v2": {
+      "input_size": 512,
+      "output_shape": [
+        1,
+        1
+      ],
+      "pool_attribute": "avgpool_1a",
+      "parameters": 54308002,
+      "independent_pool_head_comparison": true,
+      "all_parameters_trainable": true,
+      "backbone_module_sha256": "eba4e193378f11515444399c3b63d40dc3e5ccd645f2b956710eb8212f2a572d"
+    },
+    "inception_v4": {
+      "input_size": 512,
+      "output_shape": [
+        1,
+        1
+      ],
+      "pool_attribute": "avg_pool",
+      "parameters": 41144354,
+      "independent_pool_head_comparison": true,
+      "all_parameters_trainable": true,
+      "backbone_module_sha256": "35d027d3315bcc572714ecb3740bdfb200cba7e624c7bdc0fe19ba1c6d8af51d"
+    },
+    "seresnext50": {
+      "input_size": 512,
+      "output_shape": [
+        1,
+        1
+      ],
+      "pool_attribute": "avg_pool",
+      "parameters": 25512946,
+      "independent_pool_head_comparison": true,
+      "all_parameters_trainable": true,
+      "backbone_module_sha256": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243"
+    },
+    "seresnext101": {
+      "input_size": 384,
+      "output_shape": [
+        1,
+        1
+      ],
+      "pool_attribute": "avg_pool",
+      "parameters": 46908466,
+      "independent_pool_head_comparison": true,
+      "all_parameters_trainable": true,
+      "backbone_module_sha256": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243"
+    }
+  },
+  "scope": "Actual full-resolution evaluation with random initialization; no trained, pretrained, winning-head or full-workflow parity claim.",
+  "sha256": {
+    "sciona/aptos_models.py": "71859184e8a87f25115db150acfd3bcd8ffdb3856743d5bb914202db306d8b16",
+    "sciona/aptos_pooling.py": "6c7ffa9346a524370f1e700eb607ca3bbce7829b91e3ef23327c3d4c6466a33f",
+    "scripts/validate_aptos_models.py": "26d8907c6b51857f97a3178dca1f5c8b477816697d66df16cf631c911e6017a0"
+  }
+}

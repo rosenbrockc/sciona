@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "failed_run_session": 45795,
+  "stage": "EfficientNet final-refit normalization",
+  "error": "ValueError: Unbatching a tensor is only supported for rank >= 1",
+  "cause": "Normalization accepted tuples but passed them directly to from_tensor_slices, which treats tuples as nested structures.",
+  "fix": "Convert the validated list-or-tuple population to a list before tensor slicing.",
+  "focused_regression_passed": true,
+  "full_retry_passed": false,
+  "sha256": {
+    "sciona/cassava_training_images.py": "79bf5b6a09da1cf709c2477f9aa73a7a34f94fa6221b3e6126acb3bffbdf9902",
+    "tests/test_cassava_training_population.py": "47ae546f28b1a8b5298a949552f6314d5e7c53a772e10eba446021d16e309995"
+  },
+  "tuple_pretrained_lifecycle_passed": true,
+  "tuple_pretrained_lifecycle_evidence": "docs/reviews/competition_cassava_efficientnet_upstream_lifecycle_validation.json"
+}

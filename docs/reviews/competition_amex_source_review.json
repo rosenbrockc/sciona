@@ -1,0 +1,20 @@
+{
+  "approved": false,
+  "source_version_id": "d505faaa-7277-5559-b32c-f95c9f1f9d63",
+  "source_content_hash": "f03e6e0c5dfb38e00baa98ea53f9a45a43b9ac4536c343bac2449ca09dbff138",
+  "repository": "https://github.com/jxzly/Kaggle-American-Express-Default-Prediction-1st-solution",
+  "commit": "03b86f584bb61a34e31eb6343bd33ae753a92c02",
+  "public_software_files_verified": 13,
+  "primary_writeup": "https://www.kaggle.com/competitions/amex-default-prediction/writeups/lucky-shake-1st-solution-update-github-code",
+  "findings": [
+    "Original intake lists LightGBM/XGBoost/CatBoost, while author describes LightGBM and neural ensemble; checked-in model contains GRU and dense branches.",
+    "Final checked-in blend is direct prediction arithmetic with weights 0.3,0.35,0.15,0.1; no rank operation, and weights sum to 0.9. Do not silently normalize.",
+    "Source has seven pipeline scripts including denoising, manual/sequence/combined features, LightGBM and neural training; five-stage intake does not establish complete source coverage.",
+    "GitHub metadata reports no license and pinned repository tree contains no license file. Publication clearance remains unresolved; source access is not an approval."
+  ],
+  "limitations": [
+    "Source audit only; no implementation equivalence or complete reproduction claim.",
+    "Public software only cached privately; no competition data, records or weights retrieved."
+  ],
+  "source_pins_sha256": "073426bae899f52b26996294d4df83a6e9151b8e3edfae4b3dc3b5032cfdbf73"
+}

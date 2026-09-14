@@ -1,0 +1,16 @@
+{
+  "test_results": {
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python invoking pytest.main for tests/physics_ingest/test_dirichlet_mode.py tests/physics_ingest/test_dirichlet_mode_proof.py -q",
+  "timeout_seconds": 120,
+  "test_source_sha256": {
+    "tests/physics_ingest/test_dirichlet_mode.py": "993475f6fdb62dbe370edadd9552053b430a6c309f811cb3dd3d8e5ed3cdaf25",
+    "tests/physics_ingest/test_dirichlet_mode_proof.py": "2952958c2e6a7aa427ae8b9a377cd4fc7adcde8d1cb4ce8ccb8969d7b99b0795"
+  },
+  "provider_sha256": "7de2b884cf9e3a5be0c3e7d301b4c22188023125331a0ac3405d1834410300ad"
+}

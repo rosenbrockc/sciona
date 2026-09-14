@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 35,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_trig_exponential.py": "b82a2983bb037b62ffd0ff606e085f3dd9a173f7f20e102bab6b71127c392a11",
+    "tests/physics_ingest/test_trig_exponential_proof.py": "ef88632334bfe7ebeb36efff872b7c4269adad17328e849eebcb1961290577b9"
+  },
+  "provider_sha256": "421ddb34f42396eeffe6a51ac290b43699db505b9b83464659b3390035bceb8e",
+  "synthetic_only": true
+}

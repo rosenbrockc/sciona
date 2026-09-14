@@ -1,0 +1,15 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "7270d94f782ccb0850a8b1241386e52232c3fb2cfb916d1602610b8afb15cf14",
+  "provider_sha256": "db83a360acb7ab82a572df0bb3b2f922402deaed714148af1014fd1c6cd619bb",
+  "test_sha256": "f9d8af14ba61f507508c59c578a299cdea68cad63a0d9ca5d2f76c6d858b355f",
+  "tests_passed": 8,
+  "evidence_level": "Source formula/order inspection and synthetic contract tests; no MATLAB runtime parity",
+  "scope": "Within-clip feature imputation, selected log(1+x), first CSP component and MATLAB-order assembly with explicit row validity.",
+  "limitations": [
+    "Finite or NaN real input domain; infinities and complex log-domain inputs rejected.",
+    "Source validity excludes NaN only; generated negative infinity remains marked valid until downstream handling.",
+    "Caller selects valid training rows; prediction retains all rows and validity mask.",
+    "Full feature extraction, model execution and catalog promotion remain outstanding."
+  ]
+}

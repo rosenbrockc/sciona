@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "date_ranges": 16,
+    "lag_arrays": 64,
+    "available": 11925,
+    "unavailable": 8811
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_calendar.py": "e2ccf630fa3225e77373d4d8e40805d24ff152e35d877165e5f5d123c10dd205",
+    "scripts/validate_webtraffic_calendar.py": "4dd52d26f70e79984880e0ef89cdb5fcd39d89745db3eef361c94244efc97c0f",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "limitations": [
+    "Legacy .loc missing-date behavior explicitly adapted to reindex; raw current-pandas failure reproduced.",
+    "Naive daily ranges up to 800 days tested; source int16 storage retained, no long-range overflow generalization.",
+    "Calendar lags only; page features and full training/inference remain."
+  ]
+}

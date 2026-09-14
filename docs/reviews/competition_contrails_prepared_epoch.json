@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "cases": [
+    {
+      "branch": "single",
+      "prepared_batches": 2,
+      "accumulated_updates": 1,
+      "correction_bias_changed": true,
+      "all_parameters_finite": true,
+      "elapsed_seconds": 12.654445541033056
+    },
+    {
+      "branch": "temporal",
+      "prepared_batches": 2,
+      "accumulated_updates": 1,
+      "correction_bias_changed": true,
+      "all_parameters_finite": true,
+      "elapsed_seconds": 11.864603458030615
+    }
+  ],
+  "scope": "Full source-resolution models, source augmentation, two single-example batches and one accumulated update. Explicit test batch1/workers0; seed4 ensures initial unaugmented sample. No full-fold training or pretrained-quality claim."
+}

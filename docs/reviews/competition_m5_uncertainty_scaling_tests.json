@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "synthetic_only": true,
+    "tests_passed": 21,
+    "sentinel_preserved": true,
+    "shared_feature_target_scale": true,
+    "validation_group_exclusion": true,
+    "out_of_sample_retention": true,
+    "random_scale_scalar_oracle": true
+  },
+  "sha256": {
+    "sciona/m5u_loss.py": "838923d8f2bda7f7e0b7856412199afbf51d6e4e36232c60c8ffab0e20d2115f",
+    "sciona/m5u_sampling.py": "e908ff4711669c5e418318066ff4a5ba0692b1edc23706a1e0f6eadbaf545ff3",
+    "sciona/m5u_scaling.py": "68bae53e9c23c50ffc68fa2b8ae7f47b157ab81d121376da8692599a9c76635c",
+    "tests/test_m5u_loss.py": "a82b4974aa5fddd09cc40f752d8027762a2020bb1b69e9f8b13f1eb2afd8e97e",
+    "tests/test_m5u_sampling.py": "6a1d5568274a5ece7cec228bba662114b7c89d4cdfc6c7ee679b36453add35b1",
+    "tests/test_m5u_scaling.py": "bc34b1605256c67d80cf3366cc07164165cda9794f1fa3744d91f254ecab6e37"
+  },
+  "limitations": [
+    "Component-level scaling and filtering only; caller supplies target joins, group years and scaled feature roles.",
+    "Positive finite volume required; undefined zero-volume source arithmetic is explicitly rejected.",
+    "Independent explicit seed does not reproduce historical global RNG state."
+  ]
+}

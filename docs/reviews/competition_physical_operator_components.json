@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 21,
+  "source_version_id": "49c645b7-3659-5cfa-a386-78f7a51f7358",
+  "source_content_hash": "185e7d6e033ad27cfcf8c655d4da84ae680d6c9ec33795095b816e28e052055b",
+  "source_scope": "Generic five-stage physics-informed operator topology; independent periodic scalar diffusion realization.",
+  "reference": "https://arxiv.org/abs/2010.08895",
+  "implementation_origin": "Independent project code; no external code, data or weights copied.",
+  "completed": [
+    "Learned low-mode complex Fourier mixing plus local channel mixing and GELU operator blocks",
+    "Explicit DFT comparison on odd/even grids, Nyquist identity, high-mode removal, gradients, periodic translation and batch isolation",
+    "Euclidean nonnegative initial-mass simplex projection and convex periodic smoothing",
+    "Hand solution, KKT, nonnegativity, mass, zero-mass and smoothness checks"
+  ],
+  "pending": [
+    "Strict state/units/grid and split boundary",
+    "Actual training and validation checkpoint lifecycle",
+    "Analytic diffusion synthetic oracle and full execution",
+    "Provider graph, dependency closure and semantic/publication gates"
+  ],
+  "limitations": [
+    "No trained accuracy or PDE-solver parity established",
+    "Postprocessing preserves mass and positivity on uniform unchanged grids; not exact diffusion integration",
+    "No historical paper architecture, checkpoints or benchmark results reproduced"
+  ],
+  "sha256": {
+    "sciona/physical_operator_network.py": "1ec25a6498b57a468a377e878c39f5759fa05544a151e18f5b983105fbf8156b",
+    "sciona/physical_operator_projection.py": "31b5630cc9877ce93577d251d949b7326d666cd7995dda39c56d1fa855cdea0d",
+    "tests/test_physical_operator_network.py": "de469a21ed8652a16dbb34f69f981a951ec0769185f3a85d4382000599739ca2",
+    "tests/test_physical_operator_projection.py": "e329b6ce9a4469a8ecc493a92bc23af7dae7c70890432c104998c272d40971b8"
+  },
+  "catalog_mutations": 0
+}

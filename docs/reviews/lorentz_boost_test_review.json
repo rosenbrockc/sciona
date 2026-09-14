@@ -1,0 +1,15 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_lorentz_boost.py tests/physics_ingest/test_lorentz_boost_proof.py",
+  "test_results": {
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_lorentz_boost.py": "2497f18ffcea8902eb1df0400a5decd8f921f5adf17788996efffd866404c1b9",
+    "tests/physics_ingest/test_lorentz_boost_proof.py": "2a99ef4487f1a45bcc21394526ab427bc6b147745475cf1f48498c86584429a0"
+  },
+  "provider_sha256": "ad92f94218dddf71d49053234320f1f792adcf397c395f908b20c303070b1ccb"
+}

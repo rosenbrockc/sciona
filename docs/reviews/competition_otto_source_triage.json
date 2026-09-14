@@ -1,0 +1,25 @@
+{
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "approved": false,
+  "catalog_mutations": 0,
+  "classification": "material_intake_correction_required",
+  "source_scope": "Independent implementation of the documented complete Otto stacking method, qualified on the provisioned CPU runtime.",
+  "source_url": "https://www.kaggle.com/competitions/otto-group-product-classification-challenge/writeups/gilberto-titericz-stanislav-semenov-1st-place-winn",
+  "source_topic_id": 14335,
+  "stage_mapping": {
+    "numerical_engineering": "Explicit source-listed raw/log/scaled/square-root representations, fixed three-dimensional t-SNE and caller-configured clustering; no inferred GMM requirement.",
+    "interaction_features": "Forest-ranked selected-feature triple products for the Sofia variants plus source-listed distance/count/cluster supplements; no invented ratio bank.",
+    "stratification": "One common five-fold first-level partition and a separate four-fold meta partition; nine mutually exclusive classes, not repeated multilabel stratification.",
+    "base_modeling": "All 33 enumerated source entries including native and neural families; replace generic LightGBM/MultiOutputClassifier description.",
+    "level_2_meta_modeling": "XGBoost, Lasagne neural and AdaBoost-ExtraTrees selection and refits with complete 250/600/250 bags.",
+    "final_ensemble": "Mean within each bag; documented geometric/arithmetic blend; normalize only after the complete formula."
+  },
+  "independent_choices": [
+    "Explicit five-column t-SNE/cluster entry gives 293 first-level columns; reported historical width remains unresolved.",
+    "Caller controls, fold identities, metric counts, cluster counts and interaction subsets are explicit inputs; synthetic choices are not historical defaults.",
+    "CPU neural runtime, Python XGBoost/H2O interfaces and explicit SAMME are qualified independently of historical implementations."
+  ],
+  "evidence_scope": "Primary winner explanation re-read and six-node local intake inventory inspected read-only. Original intake correction is documented, not applied to the intake.",
+  "scope_document_sha256": "f88cdbcc9f6ca72b5d5cd38683ed4fdd994298bf1c671e74334ff8409aea35e8"
+}

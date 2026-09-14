@@ -1,0 +1,15 @@
+{
+  "format": "nab-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "a2b4057443917ecc795bae5e5a5721fe16181df897e07f197ea174c95141e903",
+  "validator_sha256": "57774ec834a392e5b83e4de2687492f3f78a9c426768daff5424207beb8fa621",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

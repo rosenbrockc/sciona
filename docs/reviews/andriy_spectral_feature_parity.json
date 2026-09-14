@@ -1,0 +1,65 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "EEG_subbands": "24c00ad052ff0501a6737646d41bb4b5b9cb3ef02485d94e73be1286ba6f3a95",
+    "spectral_edge": "cb353f26d08adcb6c3f93597a2b6fa30d737144033322b3613328038c57c18f6",
+    "EEG_PSD_features": "a7dbe6c1e4041082485a903e2351c5e24b20cc9862fd913985613b2ed05fc94a",
+    "spectral_entropy_g": "6bd6c7889c30f7c370c74245c0a1513cb96ba7dd15cab20dd229ed27a2761d77"
+  },
+  "provider_sha256": "857213d37a55929f66dca7e23752072ef291f1d5fb6f0c5c0d6fab8c8e4ef090",
+  "validation_sha256": "db6b84c1b849a346da769ffc8e8994fcd49335ed8ab05cf8b3cbe8012d4d4002",
+  "test_sha256": "ec4d3f2938bc0499df7b6f8cfebf7e3776a938a2fa5acc62b6c80941d0e2b24b",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 256,
+      "maximum_absolute_error": 4.263256414560601e-14
+    },
+    {
+      "seed": 10211,
+      "samples": 768,
+      "maximum_absolute_error": 4.547473508864641e-13
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 1.2278178473934531e-11
+    },
+    {
+      "seed": 10212,
+      "samples": 256,
+      "maximum_absolute_error": 2.842170943040401e-14
+    },
+    {
+      "seed": 10212,
+      "samples": 768,
+      "maximum_absolute_error": 2.8421709430404007e-13
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 1.4097167877480388e-11
+    },
+    {
+      "seed": 10213,
+      "samples": 256,
+      "maximum_absolute_error": 8.526512829121202e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 768,
+      "maximum_absolute_error": 3.410605131648481e-13
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 7.73070496506989e-12
+    }
+  ],
+  "limitations": [
+    "Unmodified numerical source helpers in current Octave; no original MATLAB runtime claim.",
+    "82 direct-FFT spectral features only; Welch moments, other helpers and full model execution remain outstanding."
+  ]
+}

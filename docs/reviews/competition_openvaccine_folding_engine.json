@@ -1,0 +1,296 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "engine_commit": "64f01d52f8fcba2b88c0011d56360554b9a95012",
+  "source_pins": [
+    {
+      "software_path": "LICENSE",
+      "sha256": "7babc2649b1dc94a31e11525be834c9fca93f3808d4eb61e88718a25efd73af9"
+    },
+    {
+      "software_path": "src/BundleMethod.hpp",
+      "sha256": "398b507553373af6531a15f78ad0cba2f00be8b5088a04b82b594e62a217edb9"
+    },
+    {
+      "software_path": "src/BundleMethod.ipp",
+      "sha256": "1b64efbd10ba10a8d4cc8d14f63220c8a8a3ad774850dbdcaa6b1b2769217ac9"
+    },
+    {
+      "software_path": "src/CGLinear.hpp",
+      "sha256": "f07fe342b4a215354d1f99b487c144edc0ff1d1d1757f1584827695d317ce890"
+    },
+    {
+      "software_path": "src/CGLinear.ipp",
+      "sha256": "08b0682d1c20e76666a2509b81dfd9125ae4a439358c8c346477d3fce51afc97"
+    },
+    {
+      "software_path": "src/CGOptimizationWrapper.hpp",
+      "sha256": "0cdeef5ba02405d55aeadefa9409203084b935b41492edd64624cf635bc8b99b"
+    },
+    {
+      "software_path": "src/CGOptimizationWrapper.ipp",
+      "sha256": "aabe069be5c6502b11633648d8e94f71e5ae931a3423d460b3d57beb9821ad96"
+    },
+    {
+      "software_path": "src/ComputationEngine.hpp",
+      "sha256": "7cfc7f17cec0dce2bf67a815a5355b1ec8570865d5fa5932aa3ccb22ca0c4a0f"
+    },
+    {
+      "software_path": "src/ComputationEngine.ipp",
+      "sha256": "cfcd5b02f60a1faeda1d6f49fb7d93425fd050fc02937f1b516cfecce6106ac9"
+    },
+    {
+      "software_path": "src/ComputationWrapper.hpp",
+      "sha256": "f60ef36c7040a0103828b651b7873ab600578d23f4e02a38bef70e5950125b3c"
+    },
+    {
+      "software_path": "src/ComputationWrapper.ipp",
+      "sha256": "83e4dcc3338ecb3fb6c4e00c291053cf8ad662f087fc21d74ec61b20c679b949"
+    },
+    {
+      "software_path": "src/Config.hpp",
+      "sha256": "f35ad4f08e688e9b5dd10d96e64ffdb75756cd359a8e8c8f535200be4868e05e"
+    },
+    {
+      "software_path": "src/Contrafold.cpp",
+      "sha256": "43b0391a93474c9459ab4dc7a291e8f1f1ae11322ca8a7d3e7f79f9f8320fd44"
+    },
+    {
+      "software_path": "src/Defaults.ipp",
+      "sha256": "b32eb15c9281eec3f83994e96c99b65f87977ef3dbccf2e671fc926f2a7466db"
+    },
+    {
+      "software_path": "src/DistributedComputation.hpp",
+      "sha256": "e0abfdb707aa67abd512432017902eab26a078700794983379f7286868879d83"
+    },
+    {
+      "software_path": "src/DistributedComputation.ipp",
+      "sha256": "ec2b0ad798eee724b8e18da118a1a47972d1ff5fc4cb5b3af6c038fa87d52303"
+    },
+    {
+      "software_path": "src/EM.hpp",
+      "sha256": "0f9c6aaf0b1a415b7b944d43b339da30685d0f041b48bc92c64b6eacbb8fe4fa"
+    },
+    {
+      "software_path": "src/EM.ipp",
+      "sha256": "52f8a13add928ec6d009cf5cfbbd146e98c3012d7f7a35611aa84c838414dda0"
+    },
+    {
+      "software_path": "src/EncapsulatedPostScript.cpp",
+      "sha256": "627a45402d5937f712e640f64cd370b2345cf6db4e3a43e5b03bff2a3263fe62"
+    },
+    {
+      "software_path": "src/EncapsulatedPostScript.hpp",
+      "sha256": "ccbf4dafd9d448b892dc125252c98846afff6f103bd226065d19203e1bc10ddb"
+    },
+    {
+      "software_path": "src/FileDescription.cpp",
+      "sha256": "5e4627d9280540f877e7ea1c14c0003fb9f74559054093adca808e54379de171"
+    },
+    {
+      "software_path": "src/FileDescription.hpp",
+      "sha256": "1c07e6525db62793a27116aa5421734359cbb32fe643dabfec119fe168a0d46f"
+    },
+    {
+      "software_path": "src/GammaMLE.hpp",
+      "sha256": "94741c871435d3098d008362f37c2d0237a4b8d6cdeaf538b54bab37754b9f69"
+    },
+    {
+      "software_path": "src/GammaMLE.ipp",
+      "sha256": "73df50e0133098cc9d91faa4a747c5766a182c511059f1658a7037553192d9e2"
+    },
+    {
+      "software_path": "src/InferenceEngine.hpp",
+      "sha256": "45e272db6da6e4b323dde928d19a8985574689a46fa9ef4ecc6ae88251008ca0"
+    },
+    {
+      "software_path": "src/InferenceEngine.ipp",
+      "sha256": "0f799329064f9ffa85c010bfac7678d6eed330ca796ba9bff7db623d94bab0d5"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapper.hpp",
+      "sha256": "f0f5527f243fad51abed5594ab6388a6ac61fa9b4f8fe7fef45ac6a5da442425"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapper.ipp",
+      "sha256": "91a2ade20aacfcb10cb1d9ed4920e51d6e041a63250d83ead0209075ee8ea8f4"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperBundleMethod.hpp",
+      "sha256": "52e8985ab96c4d96f4d20a64b4987967ff8de92ba173ec55195eb2a2a3e80ee3"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperBundleMethod.ipp",
+      "sha256": "ebbc594e23cf50fb745c9b9035818f8cd35b523b837a3d98b1997b12eafdd5b3"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperEM.hpp",
+      "sha256": "b7695f3498cca353ec932688cb0f8e1424522583d88be260af6fe1c4514016ec"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperEM.ipp",
+      "sha256": "4388d0d36f638c33788cb17bf9f68962446a1f2fe0491e949902a183fc55e467"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperLBFGS.hpp",
+      "sha256": "f50d2a6364b180b0ada08c498f83af36a7d77be322541af3fcdadfc0ae1d5b93"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperLBFGS.ipp",
+      "sha256": "806c3928c68e65767191d90203fa952797bd1d6da178f03ab7dde3b77208a70b"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperStochasticGradient.hpp",
+      "sha256": "cb823c02c8c3b161ec224c7c93fce983af9785418984649323d7f588df8e1d6a"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperStochasticGradient.ipp",
+      "sha256": "601cb2b7ea95c8b05ef56313b1d8b5620904b851127a7ed80b158ec2c759f4c8"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperSubgradientMethod.hpp",
+      "sha256": "4c3057a0a198ee7b0e8a2f8fe53bca5d2dabaa69dbdf78892fed57e854d0c60f"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperSubgradientMethod.ipp",
+      "sha256": "d34d370f7899dd5f0ec8859eb23ffa2cc0c8f0fda571689f700c5324735ccb97"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperViterbi.hpp",
+      "sha256": "1930ba3dae583d83eba4d5891b30ceb1d950bf0e71da43d9901bb118ce9571d1"
+    },
+    {
+      "software_path": "src/InnerOptimizationWrapperViterbi.ipp",
+      "sha256": "40744eab54dc5b2bd0653714debb32655e0e3e6b0b5a6230d68841761363b628"
+    },
+    {
+      "software_path": "src/LBFGS.hpp",
+      "sha256": "3939fa3b6779b90e65fc6dbbc5489efc3c9be31bf0f250bfee76ee86d26f0e30"
+    },
+    {
+      "software_path": "src/LBFGS.ipp",
+      "sha256": "582e640560581de42f12eb286589368b8db025e59a9a96a4910a896d57a92c24"
+    },
+    {
+      "software_path": "src/LineSearch.hpp",
+      "sha256": "0b3a5ac9d5e456b29abc15cf45f46dd98b31f1c46bba993796f294e9addbcf23"
+    },
+    {
+      "software_path": "src/LineSearch.ipp",
+      "sha256": "db245b213f4d9290d5ff98af986569c39835f7cc7a8c46828e089af1327b55ff"
+    },
+    {
+      "software_path": "src/LogSpace.hpp",
+      "sha256": "6ea7c71d91678a08dd155f0ddff5b185db0e54ef06f51df637acd80fb299145b"
+    },
+    {
+      "software_path": "src/MakeCoords.cpp",
+      "sha256": "b6e90c68fbe8fd07e46c89521f83adb1956a8f7c3a7e8b309f0474991c0b5f2c"
+    },
+    {
+      "software_path": "src/MakeCoords.hpp",
+      "sha256": "31d1101911bdfc768d39eced35d35a38269151560a576b1f132d72b576dfc509"
+    },
+    {
+      "software_path": "src/Makefile",
+      "sha256": "e52d71e6dd4fc3943e1cc6a86639059817517e6e3f7c708722bd63a1067acd34"
+    },
+    {
+      "software_path": "src/OptimizationWrapper.hpp",
+      "sha256": "8bb8b01bb53c2bb1f7fd69029f23d99bcd8da67e72fc313b28771ac3568fb3da"
+    },
+    {
+      "software_path": "src/OptimizationWrapper.ipp",
+      "sha256": "8885cfc8e2f92de48a96967dcf636086bc19a0bb9f67261aebf3c83051beeb7b"
+    },
+    {
+      "software_path": "src/Options.cpp",
+      "sha256": "73abff329ed8084ea8ca906c13b271e00d099117c3e75a9c6948777a0b361228"
+    },
+    {
+      "software_path": "src/Options.hpp",
+      "sha256": "6f44e103f2ed00efb9144a044e2fa764fe223bbc065579ea88ba9ac7c3c5ffd4"
+    },
+    {
+      "software_path": "src/OuterOptimizationWrapper.hpp",
+      "sha256": "5d7e8a8989d93f86372e6e74ba93e58a98565d4480c12f1d22e680efad42d677"
+    },
+    {
+      "software_path": "src/OuterOptimizationWrapper.ipp",
+      "sha256": "9429152393692c4457ad4c9eee273829ccc4f9e2fef322cfe3980d508620f754"
+    },
+    {
+      "software_path": "src/ParameterManager.hpp",
+      "sha256": "ec6a77d2ae3291e91f5d002cace2b79e0ebeb6e1d3c642d12d8797445a4f2d3b"
+    },
+    {
+      "software_path": "src/ParameterManager.ipp",
+      "sha256": "b3a17cd0fccb04d266ad1c7f4ee0786c0ce18265fe47d01d3e6a94b6df3db066"
+    },
+    {
+      "software_path": "src/PlotRNA.cpp",
+      "sha256": "8401d10d5ceeacf5734c8ba925a94f7fd5ed2d9aa0af23544fa517185429f12e"
+    },
+    {
+      "software_path": "src/SStruct.cpp",
+      "sha256": "abe4e1cb1de6e0f18a1edfb4793926ba4e5e2ce18a893f24c91ca7d5151bc913"
+    },
+    {
+      "software_path": "src/SStruct.hpp",
+      "sha256": "29b75fef01ea43b798d80b72e5f65002e69b67e197894b1675286ed91cb50fcc"
+    },
+    {
+      "software_path": "src/ScorePrediction.cpp",
+      "sha256": "ec678e27a977ef8758cbab23d02c898fbc5ec9f9b14ec5a2666be071d0a7d03e"
+    },
+    {
+      "software_path": "src/SparseMatrix.hpp",
+      "sha256": "225d39247c334fa7b21af5a5ede84328bce64d384e4c6d07252273492b2152cb"
+    },
+    {
+      "software_path": "src/SparseMatrix.ipp",
+      "sha256": "6e4ad2e3369721421204af339e481c86b4de61eaae05d22594cbeb8ae6fdca8f"
+    },
+    {
+      "software_path": "src/SubgradientMethod.hpp",
+      "sha256": "ab0463832bbbf07c327c3699e3f597ed9bf2ba266fd997d37dbf65befea7d786"
+    },
+    {
+      "software_path": "src/SubgradientMethod.ipp",
+      "sha256": "dfd15427822b05fb7e729586de0ae169e43349cea5a6e2518376cb2fe649aea9"
+    },
+    {
+      "software_path": "src/Utilities.cpp",
+      "sha256": "c56160d5380fa5de718832a47052f7fa53cd08f9b3b4c76f3b56d857d4988133"
+    },
+    {
+      "software_path": "src/Utilities.hpp",
+      "sha256": "cd3b64ff0b782b47453bc2ab277a597e286be2964aa3b9a81af775962b126319"
+    },
+    {
+      "software_path": "src/Utilities.ipp",
+      "sha256": "19bde77a68a3e9c56cc2a842aedab0e94e76a85f9d494b3014111cd3e33be762"
+    }
+  ],
+  "binary_sha256": "892a04952375e6ed540bb7695852108e80e90a39c9cbc1e4ae11d6b3fe04eaef",
+  "source_modified": false,
+  "compiler": "Apple clang version 16.0.0 (clang-1600.0.26.4)",
+  "build_flags": [
+    "-std=gnu++11",
+    "-O2",
+    "-include",
+    "unistd.h",
+    "-DEVIDENCE_SR",
+    "-DEVIDENCE_PARS",
+    "-DNDEBUG",
+    "-Wno-deprecated-declarations",
+    "-Wno-deprecated-register"
+  ],
+  "synthetic_cases": 6,
+  "structure_modes": 2,
+  "posterior_cases": 6,
+  "nonzero_posterior_cases": 5,
+  "parameter_scope": "Bundled CONTRAfold defaults; EternaFold parameter file not used",
+  "scope": "Actual unmodified pinned engine basic execution/invariants, not OpenVaccine folding equivalence or an independent numeric folding oracle.",
+  "validator_sha256": "5b12c611a0725bc0734985a1c9c5f12dca3b903f438eee48073969dade44ce9c"
+}

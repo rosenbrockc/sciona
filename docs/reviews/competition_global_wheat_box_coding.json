@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "cb80cd35f7f0ba41e5929c1bf37b1096ce6d2f0d1a34954d9dfa8d9ac3e29484",
+  "exact_encode_decode_and_decode_gradient_cases": 64,
+  "rpn_and_roi_weights_exercised": true,
+  "exponential_clipping_and_mixed_empty_images_exercised": true,
+  "validator_sha256": "047ee80346b4c4a742341f232999bd790823ffc117286329c7536130cd5c3f56",
+  "limits": [
+    "Positive-area boxes and nonempty total proposals only; historical all-empty decode is unsupported.",
+    "Float32/float64 CPU eager execution; historical TorchScript and native-kernel equivalence are not claimed."
+  ]
+}

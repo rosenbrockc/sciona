@@ -1,0 +1,56 @@
+{
+  "format": "avito-source-triage.v1",
+  "intake_version_id": "a28670d9-abdf-5940-b154-e82f4cbe19ba",
+  "intake_content_hash": "c6ab770c4a22927435ce9bf9a0653a133c035d65573085e8b4d0cfced1d27d1c",
+  "status": "primary_source_recovered_intake_reference_correction_required",
+  "version_bound_reference": "https://www.kaggle.com/c/avito-demand-prediction/discussion/60059",
+  "observations": [
+    "Original nested audit labels software availability writeup only; six stages cover image/text/tabular features, LightGBM, multimodal RNN and blend.",
+    "Original discussion URL and candidate first-place discussion 59880 returned no readable content through current web access.",
+    "Search results identify multiple baseline or lower-ranked repositories; none established as the full first-place implementation.",
+    "Third-party summaries point to Dance with Ensemble and discussion59880; this is a lead requiring primary verification, not accepted source correction."
+  ],
+  "candidate_primary_reference": "https://www.kaggle.com/c/avito-demand-prediction/discussion/59880",
+  "excluded_substitutions": [
+    "minerva-ml/open-solution-avito-demand-prediction: open baseline, not verified winner",
+    "khuangaf/Kaggle-Avito-NN: README explicitly 18th place",
+    "sibylhe/Avito: references the winner; not evidence it implements the winner"
+  ],
+  "limits": [
+    "Searches do not prove winning source is unavailable.",
+    "No code license or source-complete architecture approved.",
+    "No dataset files, images, weights, or archives downloaded."
+  ],
+  "next": "Recover the three linked team-member explanations and establish an executable, attributed and licensed reference; preserve the original intake as draft and bind any corrected execution to its exact provenance.",
+  "primary_recovery": {
+    "method": "Public Kaggle DiscussionsService/GetForumTopicById",
+    "topics": [
+      59880,
+      60059
+    ],
+    "http_statuses": [
+      200,
+      200
+    ],
+    "findings": [
+      "The version-bound topic60059 describes a team that missed the gold medals, so it cannot substantiate the first-place attribution.",
+      "Topic59880 is the Dance with Ensemble team account. It describes LightGBM, XGBoost and neural models in two layers followed by a final neural stacker.",
+      "The neural branch uses two-layer LSTMs, spatial dropout and fixed ResNet50 intermediate image features; precise complete model inventory and training configuration remain unresolved.",
+      "Winning-team member explanations are linked at comments349563,349386 and349710; these require separate recovery."
+    ],
+    "retention": "Paraphrased software-method findings only; no full article, images, competition records or weights retained.",
+    "first_place_identity": {
+      "topic_id": 59880,
+      "writeup_id": 8968,
+      "competition_ranking": 1,
+      "slug": "dance-with-ensemble-dance-with-ensemble-sharing-th",
+      "verified_from": "forumTopic.writeUp.message.competitionRanking"
+    }
+  },
+  "comment_recovery": {
+    "endpoint": "GetForumMessagesInTopic",
+    "http_status": 403,
+    "result": "permission_denied",
+    "action": "Stopped comment retrieval through this endpoint; no authentication bypass attempted."
+  }
+}

@@ -1,0 +1,4 @@
+# Direct numerical/image runtime dependencies; graph execution uses the matcher environment.
+torch==2.11.0
+numpy==2.4.2
+Pillow==11.3.0

@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "synthetic_only": true,
+  "folds": 10,
+  "epochs_per_model": 15,
+  "models": 10,
+  "optimizer_steps": 150,
+  "query_rows": 8,
+  "checkpoint_restoration_verified": true,
+  "sha256": {
+    "sciona/santander_training.py": "bd32ce0626d4e034a93592495b8e2b7e1a1045058a75aa4356fbeafa26928737",
+    "tests/test_santander_training.py": "083e19ee2efe774df3a481b86e8a7390b6a5b20cc80babe930d85950c51012ff",
+    "sciona/santander_preparation.py": "ad5c10bba0ed9b9de1e58e7913402cb162accc0d4d734213fa9fac8b32fffee8",
+    "sciona/santander_encoding.py": "db28fc3e83721741929c394a32add8e447b0428f0d1bafd53479b294bbcc25c5",
+    "sciona/santander_network.py": "9602955027f5bb745d474991816196d1f7bf4e68cb1696ed61a1561184a2b7d8",
+    "sciona/santander_augmentation.py": "7bc7a080d7bf0fe1ce0755a7422be14ef8e25ba0d20ebdb4ac054cc4bd6b7ed5",
+    "sciona/santander_features.py": "4ee95e6f91b5839d423f257a98c01383ae991bdd3279e59620db4861101b35e6"
+  },
+  "limits": [
+    "Neural branch only; pseudo-label and tree branch not yet implemented",
+    "Global source encoding/scaling means validation is not fold isolated",
+    "Explicit NumPy RNG, PyTorch initialization and singleton-tail merge; no historical seed/checkpoint replay",
+    "Ranks, not calibrated probabilities"
+  ],
+  "catalog_mutations": 0
+}

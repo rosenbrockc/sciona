@@ -200,6 +200,7 @@ async def test_catalog_macro_retriever_returns_catalog_cdg_candidate() -> None:
                     "version_id": "version-1",
                     "semver": "phase2.v1",
                     "content_hash": "hash-123",
+                    "trust_tier": 2,
                 }
             },
         ),
@@ -215,6 +216,7 @@ async def test_catalog_macro_retriever_returns_catalog_cdg_candidate() -> None:
     assert result.candidate.fqdn == "cdg.skeleton.signal_detect_measure"
     assert result.candidate.semver == "phase2.v1"
     assert result.candidate.content_hash == "hash-123"
+    assert result.candidate.trust_tier == 2
     assert result.candidate.terminal_on_match is False
     assert result.candidate.cdg is not None
     assert len(result.candidate.cdg.nodes) == 2
@@ -319,6 +321,7 @@ async def test_catalog_macro_retriever_matches_belief_propagation_from_catalog()
     assert result.candidate.fqdn == "cdg.skeleton.belief_propagation"
     assert result.candidate.semver == "v1"
     assert result.candidate.content_hash == "hash-abc"
+    assert result.candidate.trust_tier == 3
 
 
 @pytest.mark.asyncio
@@ -386,7 +389,13 @@ async def test_catalog_macro_retriever_ranks_over_catalog_rows_when_rpc_misses()
 
 
 @pytest.mark.asyncio
-async def test_catalog_macro_retriever_reads_raw_artifacts_when_served_catalog_misses() -> None:
+@pytest.mark.parametrize("status,publishable,expected", [
+    ("draft", False, False),
+    ("draft", True, False),
+    ("approved", False, False),
+    ("approved", True, True),
+])
+async def test_catalog_macro_raw_fallback_requires_approval(status, publishable, expected) -> None:
     document = {
         "artifact": {
             "artifact_id": "artifact-3",
@@ -433,7 +442,8 @@ async def test_catalog_macro_retriever_reads_raw_artifacts_when_served_catalog_m
                     "source_symbol": "kalman_filter",
                     "verified_leaf_coverage": 0.0,
                     "visibility_tier": "general",
-                    "is_publishable": False,
+                    "status": status,
+                    "is_publishable": publishable,
                 }
             ],
             documents={"cdg.skeleton.kalman_filter": document},
@@ -452,7 +462,10 @@ async def test_catalog_macro_retriever_reads_raw_artifacts_when_served_catalog_m
         MacroMatchRequest(goal="Estimate hidden state with a Kalman filter")
     )
 
-    assert result.success is True
-    assert result.candidate is not None
-    assert result.candidate.fqdn == "cdg.skeleton.kalman_filter"
-    assert result.candidate.semver == "v1"
+    assert result.success is expected
+    if expected:
+        assert result.candidate is not None
+        assert result.candidate.fqdn == "cdg.skeleton.kalman_filter"
+        assert result.candidate.semver == "v1"
+    else:
+        assert result.candidate is None

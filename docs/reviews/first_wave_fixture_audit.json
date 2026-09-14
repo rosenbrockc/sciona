@@ -1,0 +1,27 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "source_version": "693697cf-a97c-53bd-8d6b-19dc3c7697c1",
+  "source_hash": "97dbc4000139b6514d678829e16c39e045f02f47ecbe91356863028decb932b3",
+  "classification": "synthetic_parser_fixture",
+  "fixture": "tests/physics_ingest/fixtures/pdg_payloads/solve_substitute_chain.pdg.json",
+  "fixture_sha256": "6c292ce672c09efe66af87ab154646713eee72a1d8be81c89e4b2eb44b4ae506",
+  "exact_snapshot_match": true,
+  "exact_candidate_coverage": true,
+  "bindings": 4,
+  "equations": 3,
+  "served_cdgs": 69,
+  "disposition": "Retain as draft test provenance; exclude from externally sourced physics backlog.",
+  "missing_premises": [
+    "Nonzero mass for division (positive mass for the physical domain).",
+    "Acceleration equals the second time derivative of position.",
+    "Consistent time-dependent force and acceleration; twice differentiable position.",
+    "Inertial frame and net force for the Newtonian interpretation."
+  ],
+  "limitations": [
+    "Classification is not execution approval.",
+    "A future executable derivation must explicitly add premises and undergo independent validation.",
+    "No status, publication, binding, or pipeline selection behavior changed."
+  ],
+  "implementation_sha256": "e7216cd9c842792b98ad7eae4ead0506d29327543191f48933e475bd3019736c"
+}

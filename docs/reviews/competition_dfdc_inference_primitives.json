@@ -1,0 +1,28 @@
+{
+  "format": "dfdc-inference-primitives-validation.v1",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "result": "passed",
+  "checks": {
+    "source_ast_equalities": 3,
+    "confidence_source_comparisons": 45,
+    "spatial_source_comparisons": 24,
+    "independent_tests_passed": 16
+  },
+  "scope": "Synthetic primitive checks only. No detector, classifier, training, graph execution or promotion claim.",
+  "source_behavior_retained": [
+    "Strict confidence thresholds and count/fraction gates; NumPy input precision retained.",
+    "Resize long edge then truncate short dimension; area downsampling, cubic upsampling.",
+    "Top-left crop before centered uint8 zero padding; odd remainder to bottom/right."
+  ],
+  "limitations": [
+    "Original primitive functions assume valid inputs; runtime boundary validation is outstanding.",
+    "No original observations, frames, weights or fold assignments accessed."
+  ],
+  "code_and_evidence_sha256": {
+    "sciona/dfdc_inference_primitives.py": "034e91c430f0ace51acff217d76086514aedbc669165fb52872ad4736d4dbbaa",
+    "tests/test_dfdc_inference_primitives.py": "087de44b21bb94c0cf0fa9b04f353d7a5070cb1861e0c6914479dcf754a4d53b",
+    "scripts/validate_dfdc_inference_primitives.py": "05cab73c1f6992a2a704f0fd8b2e97591750cf0457f0fff71bfba58e5b25b462",
+    "docs/licenses/DFDC-MIT.txt": "0671780885c3623f2f1320c9668eea54252deea384a86acb8013abc3d3adf64c",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

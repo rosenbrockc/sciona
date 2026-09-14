@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "6e821a2dc2ca4abdd54bdb29046e2a0953cac7ebbfab837f284e90f81be19619",
+  "provider_sha256": "29da0e7e4100209f846fe5db614225335f3a929a0b9e1d11f44cb56eeb846693",
+  "code_sha256": {
+    "sciona/march_contract.py": "2a131fdec7724ec13ed6da2bb030afb94dc415aec71e1b33dd74824449e11b5c",
+    "sciona/march_features.py": "54a23fd4979ec75d8d3823d658f3b809b4bb51bc57240e6ae36094d09b633f55",
+    "sciona/march_graph.py": "4c183738598cdd3a0de456c6866ea2b805ec8fbc41dee421d57d937a100c6180",
+    "sciona/march_training.py": "3617008fefdff0d2748282b1407739bc956e1d9f61489216d720a9aa4fec86ee",
+    "scripts/march_synthetic.py": "c9579a596868e9ef25a63300b5513ca66b38460fdd3292408740461f950462aa",
+    "scripts/validate_march_graph_execution.py": "f1d882441186c2c2f1107e4ad862f9c27d610cb38b59bcad0060064dfa236362"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 4,
+    "calibration_rows": 4,
+    "predicted_matchups": 2,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual full synthetic season-feature, logistic-fit, held-out calibration and matchup prediction graph; no served publication, historical winning recipe or accuracy claim."
+}

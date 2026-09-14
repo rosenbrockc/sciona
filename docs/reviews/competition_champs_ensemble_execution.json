@@ -1,0 +1,67 @@
+{
+  "cases": [
+    {
+      "seed": 0,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 1,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 2,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 3,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 4,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 5,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 6,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 7,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 8,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 9,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 10,
+      "records": 40,
+      "exact_match": true
+    },
+    {
+      "seed": 11,
+      "records": 40,
+      "exact_match": true
+    }
+  ],
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "scope": "All eight coupling types and thirteen models; ties and permuted mapping order. Original functions executed with synthetic I/O, modern numpy aliases and synthetic cardinality assertion.",
+  "validator_sha256": "eff2b5d9ad8bebc8c9646913a1456dd5c982f946b4ca6b9075c313e58afd1ca3"
+}

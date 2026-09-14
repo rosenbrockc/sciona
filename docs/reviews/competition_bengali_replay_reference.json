@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "compared_queries": 6,
+  "compared_images": 265,
+  "pool_size": 50,
+  "exact_outputs_and_history": true,
+  "source_only_sha256": "600d64d01226bd5ca879a347ca06f148193fd73c88039222cee1832c847bc716",
+  "validator_sha256": "f6277ea72fed8c885aaeadc70c5c5f3050eda749b3c325ced7a8a39fd136407d",
+  "implementation_sha256": "9547a419e2e6c2c299a3e397e016059092f95e7c191f2ea96097928103cdf56d",
+  "limits": [
+    "Isolated replay-pool equivalence; complete CycleGAN and winning pipeline remain unexecuted.",
+    "Reconstruction clones caller inputs to prevent source history aliasing and uses explicit private RNG."
+  ]
+}

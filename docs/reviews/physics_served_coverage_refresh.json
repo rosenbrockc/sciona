@@ -1,0 +1,777 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "served_cdgs": 75,
+  "physics_families": 45,
+  "families_with_served_scope": 45,
+  "families_without_served_scope": 0,
+  "other_current_physics_graphs": [
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.2271186630.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "0a428811-9059-5b0e-9e3d-ec37a1082baf",
+      "content_hash": "9d1e07367452a8262cdfe401e20abc982da229e0f23dc3ba77dfaac266693faa"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.2715678478.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "d66eaae5-0ab0-5b3e-86f6-81b096d7ddb2",
+      "content_hash": "797fb0030f0d742d29d5cc827680620c1d9c8d9678947705a4113bc82f881ecc"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.4087145886.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "f0b0e181-3215-57df-967a-b8fa2e6c1ada",
+      "content_hash": "d308baff590b77fe1438c3083d910e5dec7298e6c84798421b2fc8f8d0435158"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.4128500715.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "fe8900f2-e1be-5ef0-8258-a566225b50c3",
+      "content_hash": "00dc8063357d8620ce58a3036bf4dd53726776242b6c1f52ff5ac86a2c62d4fe"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.4939880586.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "f9dc0b36-09c8-50cd-b8ab-4da48bba37fc",
+      "content_hash": "420273a154cd689586b580c9e3c89c10a98cc76bceed61e5b8443efd13694c90"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.6061695358.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "a8260ea8-9ea6-56e4-8ce7-fa1b736cc6d0",
+      "content_hash": "5f9bce1ea8e807162f7684d06fa112ceb3d904ca5685f000f3f8895e56694fe6"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.7217021879.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "f6894e8f-4bd3-50f4-9c09-96ec7c904577",
+      "content_hash": "e532ecf0647a8c3faaab1e213cb4b5e8aeb679694bc03875483a5d77f98176cf"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.7675171493.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "ea39b5fd-d371-5cfe-a340-b12578b16bfd",
+      "content_hash": "507d29a2f4b432cdc353104d1556b7421033c5e07a19e2fc02624e2dd88fbc16"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.9063568209.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "1a52039f-57ed-5e7a-80a8-b792e77e9e6a",
+      "content_hash": "8d6062f4bbf3e54d402eda435a7d96e34178c412380e97dc9548a520190ed25e"
+    },
+    {
+      "fqdn": "physics.pdg.remote_wave.equation.9243879541.residual_execution",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "308ff40f-ade3-524b-a962-9bd5ad84d8f2",
+      "content_hash": "bbcf4539d2296566744844dad49043b453202a017deb25bb85ce6c2541d2ab87"
+    }
+  ],
+  "families": [
+    {
+      "kind": "independent_source_family",
+      "source_version_id": "693697cf-a97c-53bd-8d6b-19dc3c7697c1",
+      "served_realizations": [
+        {
+          "artifact_id": "7fe59b58-16de-5f74-b7bd-7cb36acfd7df",
+          "version_id": "83cb2c13-5dde-5b20-be61-2306f5aa321d",
+          "content_hash": "c066e7425a566d0753301e27bcbba60e387707eb5399bdc738c1768b59e2dac6",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "requires_separate_source_review"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "ab2e405e-eb52-54f6-b73b-f4a1450a78f9",
+      "served_realizations": [
+        {
+          "artifact_id": "c1d185e9-51b5-5608-8463-e071e4b0a3cb",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "cb7e31f1-36e4-5ec8-8765-e4c64d4b1504",
+          "content_hash": "8965282d181bf46492b260b16d692ff1f939f1535a797811c061776c953fa26b",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "ffb043f3-05a3-5ca6-9d94-87a17ff512d3",
+      "served_realizations": [
+        {
+          "artifact_id": "87f52ee7-aa15-5bce-b2aa-a3ce464daaf0",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "987a2855-dca8-52e5-a6d5-47b6f7736b4e",
+          "content_hash": "0da8924b6ecac0c5130dc5ebee5cb486ea472724095677a42dcc2c9d4ec3e002",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "dbd302ec-4598-54ba-a2b4-2f828a22d66d",
+      "served_realizations": [
+        {
+          "artifact_id": "4c296669-b10f-5f4b-96a9-0b7e107aa6d2",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "b5f856e1-441e-5acd-8562-5546b7dd0b6c",
+          "content_hash": "bf93caa9bf493667cc920f3a580af7c7f90993c61d152232adc0e69c62725a19",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "0c31c38a-e31c-54ec-96e4-b01d00fcff6e",
+      "served_realizations": [
+        {
+          "artifact_id": "77ebed41-49c8-5e78-8eb4-a5a4a915d3db",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "4cc6e545-1c99-54b5-83f1-bf9560aaba61",
+          "content_hash": "86cb59ab776a439c50cf7643b36ec5c4f145fee9264692e547f596dab217429e",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "97e986ef-3194-5064-a050-7a65ac13ca34",
+      "served_realizations": [
+        {
+          "artifact_id": "972d19de-1088-5585-9165-9af6726805c3",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "d5a2ce42-251c-578a-9de8-1e87f4684166",
+          "content_hash": "4577fd801328b64aa93f71e810ed202ea5ad2e0b73a598a01f48c1aa2cd1bf57",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "source_comparison_mismatch"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "8d31398d-2174-589d-9624-c72abbf1a3d5",
+      "served_realizations": [
+        {
+          "artifact_id": "9d6d4a5e-5096-5e3f-a182-fb96c600f2a6",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "122c77f3-c414-5385-a6ae-60ae561b42e8",
+          "content_hash": "ad9ced2b4073e92d1358c47060cc04607081801634c224b104a27cd7eef8edc2",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "f999aa2b-2d62-57b0-8e7d-277dac1ae7a7",
+      "served_realizations": [
+        {
+          "artifact_id": "bbd11c16-8cc6-5d85-aded-a3ef31bffa15",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "16eee004-b2cf-5998-9bae-fe0a99deccc8",
+          "content_hash": "6889acdfcb6fffd76fdb0a617d0bd81b60091b90493630d532399a78f19175b9",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "e70acd5a-17a6-5e30-b307-78d427d5a207",
+      "served_realizations": [
+        {
+          "artifact_id": "55b7a85a-d7bf-5f34-bdf8-74df690143fc",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "6e7e25a9-3711-5b0f-b3db-baad5e9a9ce8",
+          "content_hash": "744cdc3d1504b795fe5d4bc2c853cc35bc31a30d562235f63def32b086569dff",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "e416bcf7-e977-5da2-b136-b9927f3236ef",
+      "served_realizations": [
+        {
+          "artifact_id": "a4fc34fd-27b9-53a3-99a2-cef8ebaedbdb",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "76787508-7a72-52db-8770-8065d78e1c37",
+          "content_hash": "2e0a7b63ecfe4810ad1fb6ec42f9af59533984fede077b3656a759f33920b83c",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "ec76168f-50f7-5a81-b2d7-0be499024080",
+      "served_realizations": [
+        {
+          "artifact_id": "064ff77d-a6d1-5276-8ae5-7b3fcb9b749f",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "4a472808-d08c-5686-83e2-ff1f8876260f",
+          "content_hash": "afa1cfaa47907fefb61c2d1f6c866eb556264472cc9eb11b98ac89c787c1da98",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "90400aa6-60ab-58d4-a7cd-295acde66d27",
+      "served_realizations": [
+        {
+          "artifact_id": "c09da1f2-79af-5253-a351-d8d346c9407a",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "2a0479f9-97b9-5f41-b4d8-3a3bb87122d4",
+          "content_hash": "7248ad5c7d249a124d203f1e729fbcc495855d0538072a2d80abe6a315394b09",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "060b8ea0-d956-5fbc-9224-a31ccb1229e9",
+      "served_realizations": [
+        {
+          "artifact_id": "7126d768-3484-51de-85e7-4f447de647fa",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "edf42a52-3799-530f-8f98-6f0ca26a9b70",
+          "content_hash": "c76b9d10fe7c0b8cb2d09a4daaea65e5d0606302850632e375b427a94de1425e",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "56d398db-3d6c-5144-a061-3b8c19ab598d",
+      "served_realizations": [
+        {
+          "artifact_id": "11d56eca-3dc2-5271-a674-ccb418e4f79c",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "2ad9f114-6449-54df-bbbe-97cc2a5153f8",
+          "content_hash": "8d80eacdeaf28c332b3a39fc3d7c38f7800d35cdac79582808e77fc12507744e",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "b8971460-66c8-50be-a7ce-5532d3133860",
+      "served_realizations": [
+        {
+          "artifact_id": "0ef0057c-9263-5d45-af06-e37dc212b282",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "25734209-2f61-59da-9be9-70020245ae1d",
+          "content_hash": "1182c5881cd36b7e70ab259ad2d5872c68cac16c61b8fd3fa63f7ee4e68c2494",
+          "trust_tier": 3,
+          "source_version_id": "40ae98f0-f033-5861-870c-6d6408edbd2b",
+          "source_content_hash": "d66ede579e855129e780446bba640b51c5ec10cf481988eca10eadd76629e5d1",
+          "source_derives_from": "b8971460-66c8-50be-a7ce-5532d3133860"
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "3e30bcec-9752-5d2f-90f9-c5e806d421d9",
+      "served_realizations": [
+        {
+          "artifact_id": "f5641c9b-9020-586e-abf9-721431c0b8c6",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "c98ea4ed-dfea-5f0d-b630-a433178b6948",
+          "content_hash": "f89847dc23ad2e68626d16933d0b9da019a4bca93527aff47fdff218700fc3e1",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "240e8f71-cd8a-5890-99a4-54d082f4a31d",
+      "served_realizations": [
+        {
+          "artifact_id": "25153e0f-2b7e-5058-98a2-e4b5d39ff5c7",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "15424642-64ea-5e95-a219-70d3d54f06a7",
+          "content_hash": "4a141edf57439e3a39d180535a7b84605d4cb2eb349b857b3de57d4a479e5f3e",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "caa3b69c-a9bf-5eca-a044-269528195b10",
+      "served_realizations": [
+        {
+          "artifact_id": "5f8c4391-33ad-5948-91a2-5ac2afdf12ae",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "78b4445d-1be3-598d-b4ce-4a82eb8c4930",
+          "content_hash": "7a00768ec06ef4283daf23913919bcc11d6415e04be7f3bb8490a8b00b5b32f9",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "229845ef-5dbc-5617-8485-718c0874d427",
+      "served_realizations": [
+        {
+          "artifact_id": "1c769de8-3f04-5d1c-96f0-bf703f636ee0",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "8f6d30d7-07bf-52bb-b60a-8e740db53752",
+          "content_hash": "439477c5b26269e51ccdcc6cee8a38168a0b02cfa7bc60b86dfa6bf5a2d1b394",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "e0057db3-ea2b-5d92-b1a4-5b46572574e1",
+      "served_realizations": [
+        {
+          "artifact_id": "4663fc88-cf28-59cb-8a79-b215f763e500",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "f6e4e814-b665-51f0-b64e-d4317a18c3ba",
+          "content_hash": "c8b8a24bb91b27dc127515ad35bbd35bcd1b1b3287dda19363f7583ec6b243ac",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "377af314-2216-5043-808c-ca33523e2beb",
+      "served_realizations": [
+        {
+          "artifact_id": "575fa75c-c75a-5c06-9398-2b705be56bf7",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "43036a08-5286-5690-a96e-fac7139d10c1",
+          "content_hash": "0da9ab278e319d45c80760ab68a8a042eca8f79841d0038b153327976ee7cdf6",
+          "trust_tier": 3,
+          "source_version_id": "36282a1e-6def-5656-a83c-1971318a6cbe",
+          "source_content_hash": "e58d9a93c9e8fe0bc16a46a5b710ee1b172fb1286ea91a8206c8cbd25a1f8d5d",
+          "source_derives_from": "377af314-2216-5043-808c-ca33523e2beb"
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "90bfde0a-dfb2-5514-98b4-9ed0944dbc41",
+      "served_realizations": [
+        {
+          "artifact_id": "a75cabe0-6b49-50ef-9e73-43d0686409e2",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "5210adbe-25db-5fbc-afc7-7dd61097cb4e",
+          "content_hash": "de9234628c939b69abe63f3789d1acdd2eedc2e5ff7a8b3526ebd6286607880a",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "67defffe-886c-5f47-9d9e-e66f7bba6525",
+      "served_realizations": [
+        {
+          "artifact_id": "b1d3d29f-9543-56b6-a4b1-2e6b919a43f3",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "ac7f33ec-f986-5338-a801-cfc1fa5c9087",
+          "content_hash": "8ca65c24831b6746a60211ea4d41d0c42e22e00021301972c26ab1e124385df8",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "200fb45c-6efe-5fed-aadc-7aff67423eb6",
+      "served_realizations": [
+        {
+          "artifact_id": "13b1b330-a196-50ce-a570-da4e059247f4",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "3432207b-0944-5f6d-9fcd-4778c3f45346",
+          "content_hash": "22766e242165b51543a6faf7a6eb7e3363a998435d0aa2b8039d375543d09647",
+          "trust_tier": 3,
+          "source_version_id": "f05dd820-e273-506d-87a3-625d4cd08e76",
+          "source_content_hash": "1281198730365e9b8a3c1fc0f0ac941cd9e82bc4d9ac63964ae30d9a8a0aba01",
+          "source_derives_from": "200fb45c-6efe-5fed-aadc-7aff67423eb6"
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "8c5bbb6a-f2a9-50a2-8b52-1cc328beaa16",
+      "served_realizations": [
+        {
+          "artifact_id": "c903adc7-86bb-5a62-a3a3-bb3e99831a72",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "3d49b274-bc55-59d6-8da9-cb6c447b8adc",
+          "content_hash": "bcedd4925681ea391fe6b2140798312a780b561bdff82598e13a0841b40d6925",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "4002eca6-d036-5850-a2d9-bf0818791436",
+      "served_realizations": [
+        {
+          "artifact_id": "7aa8c60e-4bdb-55fd-a8e5-d730f7299fe0",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "fc4233a1-436b-56c4-9bf8-bc97cffeb705",
+          "content_hash": "17208451057078703ecee21a1cb26bde902c80732d4fd17e3b250618450ab019",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "0873a091-c6f6-56a1-a80d-976b59b95a8c",
+      "served_realizations": [
+        {
+          "artifact_id": "4cae0d46-ecec-554a-b9bf-d016cc2018c7",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "470be6aa-1774-5f79-92f6-a78d3982047f",
+          "content_hash": "2fb8f5a7ffefb15ee6034c30e53b16b6d8bf93aa523bfb0f435ce721259ed11b",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "41c11625-ad96-5738-82bc-aa6fb7f95a10",
+      "served_realizations": [
+        {
+          "artifact_id": "1319c6f1-1acf-5395-8784-a0da3a610529",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "44918f03-3961-5bf6-8335-b3256abdb339",
+          "content_hash": "d18389483c9414ba7ecbda12d129eb13029a2a29c84a05df95ccfedaa768f8eb",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "abf1f483-647a-5634-8ddb-45924283770e",
+      "served_realizations": [
+        {
+          "artifact_id": "15a1e524-d106-5dc8-bf89-c857fa5f0b87",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "18b23400-3eb7-5b3e-af2e-f3358ed4970d",
+          "content_hash": "8d8f1690f0e917ef82d063d1511d991e8578b1f0d4349c69cb43ce1d091dd3aa",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "a8f28449-1e31-5c15-b514-b632020fc1a8",
+      "served_realizations": [
+        {
+          "artifact_id": "d0305dd4-b808-55fc-b22e-470c4b87778a",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "5602bd21-32e5-5762-8a8b-ff46b7564a10",
+          "content_hash": "cff3f41fe044cdebc3027678adc90596e4166581d1cb2625e896e8aaf80c2079",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "ac570cf4-7525-5ddb-8efb-63a438610c9e",
+      "served_realizations": [
+        {
+          "artifact_id": "23e98bdb-ff54-5d63-ba86-33eeb85247fa",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "5c183d8f-a12e-5955-b4f2-f3e8c2896dc0",
+          "content_hash": "2f7a765a6aa25711fef33bbcb0af805c743bdbf16a22c66aae771c2ca7811f1a",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "source_comparison_mismatch"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "cba4334a-0e0e-5a0e-855f-7aa7c41a5514",
+      "served_realizations": [
+        {
+          "artifact_id": "4b15efb4-b39a-5f7d-a264-7518dc32a0f3",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "78ad5987-56df-516e-b43d-a366257a6c2b",
+          "content_hash": "0bb36695b678ec531a3f37e1676c199568cce9c64a596c01e262e772c370d33d",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "080c8bb4-b136-5809-980f-ec6ac28d6fab",
+      "served_realizations": [
+        {
+          "artifact_id": "64f11916-f905-5c6b-8017-3856456c488a",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "0c91f363-240e-550a-9a53-4e2a63e50bcd",
+          "content_hash": "2a42b3d2b96f095ea9e4855f209e569c11ee579e7911aef98bc7b0645fa158e4",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "d37f885b-673f-5a2f-9a8b-ec0d6eebee99",
+      "served_realizations": [
+        {
+          "artifact_id": "ba29b5f0-a0f5-568b-a4be-872fc19981a0",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "7e15af61-0f2d-5f6a-b7be-450b09a7add2",
+          "content_hash": "89dc4eb1a20d24c1a93e739c832deebf520bc66740769c75b9a3f047ca3eb145",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "8b6af03c-7244-559f-98a1-f41d23eda79e",
+      "served_realizations": [
+        {
+          "artifact_id": "cde091c1-c26a-507c-b84e-b502a8322831",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "0b451040-35cb-5f50-96c0-d83485684552",
+          "content_hash": "d96dec7619d7090016e9088a7ab2632ed7735928dbe9ab12e0b092494c39f092",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "a6bee7b6-17cb-5f68-abe7-f56912e79dc2",
+      "served_realizations": [
+        {
+          "artifact_id": "365ef2a7-207c-512c-8261-1be8b3b60ce3",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "ee72ef2d-2c29-5ae5-b999-0eb4adf1ac78",
+          "content_hash": "37a3151af63da3fa17b21b87d80028502a3417bdb19eec70477d30af41404cd6",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "6e8e13f5-3652-5dc6-8be7-dfad57165a7a",
+      "served_realizations": [
+        {
+          "artifact_id": "6230a4a0-5a2b-5781-bca1-23b22796645d",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "3d6b613f-19b2-5b5e-92f2-ffcdfdf63916",
+          "content_hash": "3a15f947bf2e33a8572e91d973abac82c9ed868e8188b87522fc5fee7932a387",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "8d6afa2c-187c-5852-a936-815d8416125d",
+      "served_realizations": [
+        {
+          "artifact_id": "eda4cfae-3751-5b1d-88f6-3c357bd3db3c",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "d4bfc9bc-f905-581b-983f-d849930b3558",
+          "content_hash": "867e48812ae8788a8abacf4116abb4fe71105bc4bb7372ca189c3606b9723b06",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "e52a7e48-5681-5c6d-8626-4c156da09b48",
+      "served_realizations": [
+        {
+          "artifact_id": "f04cffc9-e566-5611-8e38-1a11833ad1c9",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "7c4e09cb-c51a-5fa0-be64-03b7ae73b204",
+          "content_hash": "7490da20ac0a47ddfcfa693608d33b193e4cdab49a96a0c0bff2b17a705e41de",
+          "trust_tier": 3,
+          "source_version_id": "2280ed36-ecc7-52c3-b6e0-4e7b40931467",
+          "source_content_hash": "3b9fa730adaa87278a723db633b100e4ef99846523153258c88fcdbe71d4d76e",
+          "source_derives_from": "e52a7e48-5681-5c6d-8626-4c156da09b48"
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "ba802b17-88be-59f5-a399-a53a3c385c9c",
+      "served_realizations": [
+        {
+          "artifact_id": "46ad2b63-c421-5e72-b7f5-f07507faa8b8",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "a7724d2f-bdf9-5b19-b186-cd25a83854c5",
+          "content_hash": "417cbce2183135e4ba74f736c03c1231a18fbc030a029e23212c21ba23caca12",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "e2b3b291-b9f3-50bf-be6c-fe2d390f27b7",
+      "served_realizations": [
+        {
+          "artifact_id": "43fd0e80-e10c-5114-a303-59e9c023b734",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "08ab0cf3-2d26-59cb-b108-aae378fb931d",
+          "content_hash": "e07e05589feaa4d2209a4b354e9340ab5dc4a6021afa9c726322dd15ef04037c",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "b46294cb-9225-5f6d-b945-1e30d4770bc8",
+      "served_realizations": [
+        {
+          "artifact_id": "874b95ec-4221-5166-8db8-2853c0a792d2",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "78ea51aa-e60a-5d7a-a1a6-73d3388c8591",
+          "content_hash": "caf2cb8c94ac6842cf3986e6c999fb91e1696e850fc15306530b2de4b0bb84a8",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "9bed89a4-8da7-59e4-a67a-1bdc0a1fffe0",
+      "served_realizations": [
+        {
+          "artifact_id": "6bc7d8d1-1e8f-55f3-a5e2-8d1fdf764c40",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "13ce0f68-4d29-5554-b001-dfdcfbeee1a0",
+          "content_hash": "ccd5afebadbdaace7cc0f3b360b0bc986b103a72bad9adcdf2c0c5bb00ec815d",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "e0b55979-db6a-51ed-aafb-d3c261bc288c",
+      "served_realizations": [
+        {
+          "artifact_id": "b2e08396-1029-5e7f-b4ba-79ee4d951b29",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "987857da-4754-5f30-80c7-3f2073f091c4",
+          "content_hash": "d8a256c338c19e4cbe04b1a9991f44706bf7e109fcdbfce4c0f4bf8226f9ac23",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    },
+    {
+      "kind": "remote_source_family",
+      "source_version_id": "c9b2afed-ec6a-569a-9a39-e74086c8d737",
+      "served_realizations": [
+        {
+          "artifact_id": "1ffbd24b-3bb7-503a-b42c-04bf9e4efe7b",
+          "status": "approved",
+          "is_publishable": true,
+          "version_id": "ae6f85af-dcd4-5eaa-8a83-5e30b3775d50",
+          "content_hash": "2b9405591ba7bbc614f69bab081db211d374d5ac36cc195170c2d98bba9390a6",
+          "trust_tier": 3
+        }
+      ],
+      "source_reconciliation": "same_source_representations"
+    }
+  ],
+  "representation_counts": {
+    "projected": 44,
+    "legacy": 45
+  },
+  "limitations": [
+    "A served corrected scope does not certify every original inference or equation.",
+    "Family coverage is based on exact source hashes or retained derives_from links.",
+    "Other current physics graph versions are reported separately, not silently treated as covered."
+  ],
+  "implementation_sha256": "889c2a61a67ecd1a0c8fe12c8a7d14cd074484889e3d3ef8dcd48e859f467dfc"
+}

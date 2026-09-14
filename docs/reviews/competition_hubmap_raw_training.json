@@ -1,0 +1,70 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "epochs": [
+    18,
+    19
+  ],
+  "populations": [
+    7,
+    8
+  ],
+  "trained_examples": [
+    6,
+    8
+  ],
+  "checkpoint_roles": [
+    "best_loss",
+    "best_score",
+    "snapshot_18",
+    "snapshot_19"
+  ],
+  "exact_metrics_model_optimizer_scheduler_checkpoints_rng": true,
+  "implementation_sha256": {
+    "sciona/hubmap_augmentation.py": "370f2ca831a8e8e4888802eeb60da5ac7781c4c45fe6068382744ead1db4e851",
+    "sciona/hubmap_batches.py": "f8fac1faece0bfa2fd7b127526ef7af820e6a11b909562acbf838854283aff3d",
+    "sciona/hubmap_checkpoint.py": "09f530be7192195dd1f37ae22cb4361818b1faf15efb3a4990741cc2e4ca4e9c",
+    "sciona/hubmap_checkpoint_policy.py": "9034386695a1c0369f441f6a674d0474eb97784ea25653f1307397428e1e1b39",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "sciona/hubmap_epoch.py": "92a61f859118f936de0fe1b943062f94dd8ec134780f6966fe9677b1a0022c50",
+    "sciona/hubmap_loader.py": "f3bf1edd803d74aafad49cd7e0b8668baff6bbb7c32b3798c76e083f67156bd1",
+    "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "sciona/hubmap_preparation.py": "6d879b22aafa81cbbc091727a1d35078a4a8f885160e8cd258f8050a0406122c",
+    "sciona/hubmap_range.py": "998aa08b1444276db5d68330a88412fac4dae426c8aed570f44c42ca775bbc75",
+    "sciona/hubmap_raw_population.py": "a32bacc34b571bd0452e2eebef41c73d6bfd84ec3f541302a441883c9c96752b",
+    "sciona/hubmap_raw_training.py": "605e089d2c233bc52b4417b86b58fb20bfc21e1dab7b2c602df26be9e5f2926c",
+    "sciona/hubmap_sampling.py": "857661887790f1b7539cb99040bb1e593cbbd763797cb874301a8a74064bb961",
+    "sciona/hubmap_schedule.py": "4d9290aec4c8cf34308cee346eaed06b94e7ae904d01a19c816cb10ddc4231d6",
+    "sciona/hubmap_tiling.py": "514df1fdf3a50f97ff409bac085241345a9fb738c387d6bc319e4f7c9c540f8d",
+    "sciona/hubmap_training.py": "8bf03836ca9e1246ee03a9b4288504c619ad4a9ee1ead50446d480b4360a6e04",
+    "sciona/hubmap_validation.py": "8a12689e3f016deeb0459ae1da7dc59643f7dff6158a220defa3bd86095bf1f5",
+    "scripts/validate_hubmap_augmentation.py": "f916e76c3c111df079c0eb262bb035f7467d71b123131b53566fd51a118b0e11",
+    "scripts/validate_hubmap_batches.py": "66f5fb0b14e9d447d2bf55df79a50f2a325a54116a09479343bbea4968475c36",
+    "scripts/validate_hubmap_checkpoint_policy.py": "2614f70bb3eee5e17f6a80aa1b484d2652aa087bb29b7b0c30cab9ab7af5c27d",
+    "scripts/validate_hubmap_epoch.py": "10ca208e7e5ee76661beb6b6b049c373bf9b5306bcc1ab92b438862ecbb13f46",
+    "scripts/validate_hubmap_loader.py": "ac7b4bbb7bbc6b226c7ccc1f83b286cad2d0a69ff45b150baada776184c64258",
+    "scripts/validate_hubmap_losses.py": "0fba8d784ca0659ca4d7d6ad4ef372f89694dbb76e1e5b43d632f837b8c8774b",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "scripts/validate_hubmap_partition.py": "df8ec9ccbbfaa119d60bb39a20a78aaaa79867c486cb04d17900b899b023f773",
+    "scripts/validate_hubmap_preparation.py": "11253a53d95ab52fb41e98811c381f346abad3ddec03537ad7a75efaff879d31",
+    "scripts/validate_hubmap_range.py": "ed71e81cbf7a28a701b832e8636fb9bc2ae48fa0cde7ef00738e83b6ae57ecf8",
+    "scripts/validate_hubmap_raw_population.py": "308e39fe0028313d3e56d2d31ef923cc557afb9bff857060029eb37634ebd354",
+    "scripts/validate_hubmap_raw_training.py": "5ccebadfbc10443780c47dd75506f350cfd874032c226cfa439460f678f648ac",
+    "scripts/validate_hubmap_sampling_schedule.py": "bcd8bff38c9a8b18a412621f1467793840186c874555a70a2268de1e1618b61e",
+    "scripts/validate_hubmap_tiling.py": "75ffe2746c57ad65628dc51a43d9cc92de5e96c886ecbd3c7a56b13e4dbb1cf4",
+    "scripts/validate_hubmap_training.py": "bb241a37b285cf7250dae09b1d1edd97459fd12e65fde7ed909f8adcecd46435",
+    "scripts/validate_hubmap_validation.py": "2b1922ff2001dd955527d911c64ed0640e0c0495e9e019c323bb8d6a169c67e5",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5",
+    "docs/reviews/competition_hubmap_augmentation_pins.json": "44977ff6956885588f3c30521110e5d038080551f3cf337fd5ec8a73ab9b23c0",
+    "docs/reviews/competition_hubmap_partition_pins.json": "aa23c467e433ca8f9cc7a75e45d2acd888ee213e4486b35ee223e004da609288"
+  },
+  "limitations": [
+    "Reference starts at separately source-validated preparation/partition boundary; candidate executes raw preparation within training.",
+    "Raw synthetic RGB/mask arrays, runtime group labels and explicit initial weights/RNG; TIFF IO and inference remain.",
+    "Current float32 CPU execution and explicit-generator zero-worker DataLoader; historical mixed precision/worker scheduling excluded.",
+    "Model-only retained checkpoint parity, not optimizer/RNG serialized resume or learned predictive accuracy.",
+    "Full serialized CDG and catalog publication gates remain."
+  ]
+}

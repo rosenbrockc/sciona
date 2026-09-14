@@ -1,0 +1,143 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "source_graph_version_id": "76274cb1-ebf6-533d-a777-b505190f3d17",
+  "composed_replay_passed": false,
+  "steps": [
+    {
+      "node_id": "pdg_step_1",
+      "rule": "change two variables in expr",
+      "local_replay_passed": true,
+      "required_conditions": []
+    },
+    {
+      "node_id": "pdg_step_2",
+      "rule": "substitute RHS of expr 1 into expr 2",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Symbol('pdg0002530'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_3",
+      "rule": "substitute LHS of expr 1 into expr 2",
+      "local_replay_passed": false,
+      "blocker": "replayed equation differs from source conclusion",
+      "structural_direction_matches": {
+        "insert_lhs": false,
+        "insert_rhs": true
+      }
+    },
+    {
+      "node_id": "pdg_step_4",
+      "rule": "substitute LHS of expr 1 into expr 2",
+      "local_replay_passed": false,
+      "blocker": "replayed equation differs from source conclusion",
+      "structural_direction_matches": {
+        "insert_lhs": false,
+        "insert_rhs": true
+      }
+    },
+    {
+      "node_id": "pdg_step_5",
+      "rule": "simplify",
+      "local_replay_passed": false,
+      "blocker": "replayed equation differs from source conclusion",
+      "candidate_common_factor": "Symbol('pdg0004851')",
+      "additional_division_condition": "Unequality(Symbol('pdg0004851'), Integer(0))"
+    },
+    {
+      "node_id": "pdg_step_6",
+      "rule": "multiply both sides by",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Mul(Symbol('pdg0002798'), Mul(Integer(4), Pow(Symbol('pdg0003141'), Integer(2)))), Integer(0))",
+        "Unequality(Symbol('pdg0002530'), Integer(0))",
+        "Unequality(Symbol('pdg0002798'), Integer(0))",
+        "Unequality(Symbol('pdg0003141'), Integer(0))",
+        "Unequality(Symbol('pdg0009491'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_7",
+      "rule": "raise both sides to power",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Mul(Rational(1, 4), Pow(Symbol('pdg0002530'), Integer(-2)), Pow(Symbol('pdg0002798'), Integer(-1)), Pow(Symbol('pdg0003141'), Integer(-2)), Symbol('pdg0005022'), Symbol('pdg0006277')), Integer(0))",
+        "Unequality(Pow(Symbol('pdg0009491'), Integer(-2)), Integer(0))",
+        "Unequality(Symbol('pdg0002530'), Integer(0))",
+        "Unequality(Symbol('pdg0002798'), Integer(0))",
+        "Unequality(Symbol('pdg0003141'), Integer(0))",
+        "Unequality(Symbol('pdg0005022'), Integer(0))",
+        "Unequality(Symbol('pdg0006277'), Integer(0))",
+        "Unequality(Symbol('pdg0009491'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_8",
+      "rule": "multiply RHS by unity",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Add(Symbol('pdg0002798'), Symbol('pdg0007652')), Integer(0))",
+        "Unequality(Symbol('pdg0005022'), Integer(0))",
+        "Unequality(Symbol('pdg0006277'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_9",
+      "rule": "substitute RHS of expr 1 into expr 2",
+      "local_replay_passed": false,
+      "blocker": "replayed equation differs from source conclusion",
+      "structural_direction_matches": {
+        "insert_lhs": false,
+        "insert_rhs": false
+      }
+    },
+    {
+      "node_id": "pdg_step_10",
+      "rule": "multiply RHS by unity",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Add(Symbol('pdg0002798'), Symbol('pdg0007652')), Integer(0))",
+        "Unequality(Mul(Integer(1), Pow(Symbol('pdg0002798'), Integer(-1))), Integer(0))",
+        "Unequality(Symbol('pdg0002798'), Integer(0))",
+        "Unequality(Symbol('pdg0005022'), Integer(0))",
+        "Unequality(Symbol('pdg0006277'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_11",
+      "rule": "simplify",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Add(Mul(Symbol('pdg0002798'), Symbol('pdg0005022'), Symbol('pdg0006277')), Mul(Symbol('pdg0005022'), Symbol('pdg0006277'), Symbol('pdg0007652'))), Integer(0))",
+        "Unequality(Add(Symbol('pdg0002798'), Symbol('pdg0007652')), Integer(0))",
+        "Unequality(Add(Symbol('pdg0005022'), Mul(Pow(Symbol('pdg0002798'), Integer(-1)), Symbol('pdg0005022'), Symbol('pdg0007652'))), Integer(0))",
+        "Unequality(Symbol('pdg0002798'), Integer(0))",
+        "Unequality(Symbol('pdg0005022'), Integer(0))",
+        "Unequality(Symbol('pdg0006277'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_12",
+      "rule": "divide both sides by",
+      "local_replay_passed": true,
+      "required_conditions": [
+        "Unequality(Symbol('pdg0002798'), Integer(0))"
+      ]
+    },
+    {
+      "node_id": "pdg_step_13",
+      "rule": "substitute LHS of expr 1 into expr 2",
+      "local_replay_passed": false,
+      "blocker": "replayed equation differs from source conclusion",
+      "structural_direction_matches": {
+        "insert_lhs": false,
+        "insert_rhs": true
+      }
+    }
+  ],
+  "scope": "Independent local diagnostics against stored intermediate equations; no composed proof, source correction or approval.",
+  "selection_sha256": "b6d06615ec12a910359c7cfa0d5b4ebce8882c679c3801eeda11417b849ae1ac",
+  "implementation_sha256": "0b91a1345fb17911835f49b412a445055d235265f805385987c7fc226d625af8"
+}

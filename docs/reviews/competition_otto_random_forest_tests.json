@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Native R nine-class vote probabilities and query batch invariance",
+    "Five excluding-fold fits and one full-training query fit",
+    "Heldout-label and query isolation",
+    "Overlapping identities rejected before fitting",
+    "Private temporary transport removed after runtime failure"
+  ],
+  "environment": {
+    "R": "4.6.1",
+    "randomForest": "4.7-1.2",
+    "C_compiler": "Apple clang 16.0.0 with -std=gnu2x",
+    "Fortran_compiler": "GNU Fortran 16.2.0"
+  },
+  "sha256": {
+    "sciona/otto_random_forest.py": "707e43b98241560efab17ab049617a340955805c72c3649093eae6200491ab68",
+    "sciona/otto_random_forest.R": "9be7d714a84f77fb7c99dfb5944dab9ace6b64a3aa30ad6af66d4932bf5116b3",
+    "sciona/otto_random_forest_crossfit.py": "28e466baec3c2ba2e215ebd0b0bec6c5203217fe162b2005772471a585fb803c",
+    "tests/test_otto_random_forest.py": "fa133cd754c9ff4eab1ff9e6795b4037fab69054ab53523eebb80a6a05fc2cef",
+    "tests/test_otto_random_forest_crossfit.py": "adb511fd763dc6157ab58985d548500d7dfb2fba359584d57663a8dc3a0c4861"
+  },
+  "limitations": [
+    "Historical package version, exact hyperparameters and seed schedule unresolved.",
+    "Current bridge imposes a 60-second timeout per native fit; synthetic validation only.",
+    "Native dependency closure, portable runtime packaging and license review pending.",
+    "Remaining winner model stack and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

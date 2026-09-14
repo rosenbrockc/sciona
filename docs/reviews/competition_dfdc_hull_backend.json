@@ -1,0 +1,26 @@
+{
+  "format": "dfdc-native-hull-backend-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "dependency": {
+    "dlib": "20.0.1",
+    "native_extension_sha256": "00abd246792b3ec2feddf356b1e6d9ff78647cd8893c34b486c9473111524152"
+  },
+  "checks": {
+    "actual_synthetic_predictor_training": true,
+    "predicted_landmark_count": 68,
+    "native_state_restoration_exact": true,
+    "builtin_frontal_detector_blank_case": true,
+    "native_predictor_source_hull_cases": 8,
+    "invalid_predictor_rejections": 3
+  },
+  "state_policy": "Caller explicitly supplies native predictor file; constructor checks native evaluation and68part cardinality. No default predictor path or Python pickle. Synthetic trained states discarded after tests.",
+  "limits": "Dlib20.0.1 is an explicit dependency pin; original source dlib version unspecified. Bundled frontal detector exercised on a blank negative fixture. Positive hull tests use actual synthetic-trained predictor with a controlled rectangle, not positive pretrained face detection. No competition images or external pretrained predictor files fetched; no quality/full lifecycle/promotion claim.",
+  "documentation": "https://dlib.net/python/index.html#dlib.train_shape_predictor",
+  "sha256": {
+    "sciona/dfdc_hull_backend.py": "8391c6d94aee1a4f5f3a362e25bc9f40b88845f3d0356168d865afdd8d4692e1",
+    "sciona/dfdc_convex_hull.py": "d3453cb21d8097764ddd2d698f5a67db76741a4cf4418fc1530e5ba7e805b0ec",
+    "scripts/validate_dfdc_hull_backend.py": "d76577531a01c8a969d129b00f48dee314740416bc2562181085d0bc1996d17f",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

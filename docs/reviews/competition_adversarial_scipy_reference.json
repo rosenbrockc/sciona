@@ -1,0 +1,17 @@
+{
+  "format": "adversarial-scipy-reference.v1",
+  "repository": "https://github.com/scipy/scipy",
+  "reference_tag": "v0.19.1",
+  "commit": "03b1092cf0e0bdebcbe98a44d289208a1e597416",
+  "files": [
+    {
+      "path": "scipy/misc/pilutil.py",
+      "sha256": "a287af4e3f8577ceaeb31fbf2c4dfc67e76c886a8cb5a5343834d00af5966acd"
+    },
+    {
+      "path": "LICENSE.txt",
+      "sha256": "142b6deb0132be1adba8d9ba9f9027629f5a9573be3a829ed8a53733473ae0a1"
+    }
+  ],
+  "limits": "Explicit contemporary reference; competition SciPy version unspecified."
+}

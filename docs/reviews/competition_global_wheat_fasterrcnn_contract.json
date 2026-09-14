@@ -1,0 +1,97 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_manifest": [
+    {
+      "file": "models/detection/backbone_utils.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/models/detection/backbone_utils.py",
+      "sha256": "698089e302ee1c07b3392bddf06d1b96a51c864679f3f44d9d3a1338e97dc2e5"
+    },
+    {
+      "file": "models/detection/faster_rcnn.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/models/detection/faster_rcnn.py",
+      "sha256": "b9df7856bad4aa091e67d04d363ea85e2bbf47ca4d0008f58418d6b8d304ff59"
+    },
+    {
+      "file": "models/detection/rpn.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/models/detection/rpn.py",
+      "sha256": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751"
+    },
+    {
+      "file": "models/detection/roi_heads.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/models/detection/roi_heads.py",
+      "sha256": "dfe9ac02abbbd2b6db522d66d00210ad0d7dac1cc66cf1f0c3e9bd628f37be2c"
+    },
+    {
+      "file": "models/detection/transform.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/models/detection/transform.py",
+      "sha256": "46024143aa8d85210135e659fc6487b642cd5d8b0296cc4b7f29f1a329a836aa"
+    },
+    {
+      "file": "models/resnet.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/models/resnet.py",
+      "sha256": "4e1b72ec251835ac5f6a6c3f32a378fa9168efc9dd20953af42ed140a7344a37"
+    },
+    {
+      "file": "ops/feature_pyramid_network.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/ops/feature_pyramid_network.py",
+      "sha256": "d5acedbbc2b192516044c9d655e1757dfecea662c518b6de9dfc5056f50f8d2e"
+    },
+    {
+      "file": "ops/misc.py",
+      "url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/ops/misc.py",
+      "sha256": "f75578efe5c4054e2fdd479db15bfb5cca15b610b909185b40f452c4b87a91db"
+    }
+  ],
+  "historical_fasterrcnn_defaults": {
+    "num_classes": null,
+    "min_size": 800,
+    "max_size": 1333,
+    "image_mean": null,
+    "image_std": null,
+    "rpn_anchor_generator": null,
+    "rpn_head": null,
+    "rpn_pre_nms_top_n_train": 2000,
+    "rpn_pre_nms_top_n_test": 1000,
+    "rpn_post_nms_top_n_train": 2000,
+    "rpn_post_nms_top_n_test": 1000,
+    "rpn_nms_thresh": 0.7,
+    "rpn_fg_iou_thresh": 0.7,
+    "rpn_bg_iou_thresh": 0.3,
+    "rpn_batch_size_per_image": 256,
+    "rpn_positive_fraction": 0.5,
+    "box_roi_pool": null,
+    "box_head": null,
+    "box_predictor": null,
+    "box_score_thresh": 0.05,
+    "box_nms_thresh": 0.5,
+    "box_detections_per_img": 100,
+    "box_fg_iou_thresh": 0.5,
+    "box_bg_iou_thresh": 0.5,
+    "box_batch_size_per_image": 512,
+    "box_positive_fraction": 0.25,
+    "bbox_reg_weights": null
+  },
+  "confirmed_contract": {
+    "backbone": "resnet152",
+    "pretrained_backbone_url": "https://download.pytorch.org/models/resnet152-b121ed2d.pth",
+    "initial_detector_classes": 91,
+    "replacement_predictor_classes": 2,
+    "frozen_backbone_prefixes": [
+      "conv1",
+      "bn1",
+      "layer1"
+    ],
+    "trainable_backbone_stages": [
+      "layer2",
+      "layer3",
+      "layer4"
+    ],
+    "fpn_channels": 256,
+    "frozen_batch_norm_eps": 0.0,
+    "input_image_size": 1024
+  },
+  "limits": [
+    "Static source contract only; full architecture, initialization and kernel equivalence remain to be qualified."
+  ]
+}

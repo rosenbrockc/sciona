@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "direct_engine_comparison_cases": 5,
+  "complete_feature_batch": 5,
+  "changed_dependencies_rejected": 2,
+  "subprocess_failure_cases": 2,
+  "scope": "Reusable pinned private folding and feature adapter; exact direct-executable comparison, not independent solver or historical competition-output parity.",
+  "runtime_sha256": "48769a1a6156e40bb014a7e2a99b2b58fb77ef23c9730166844d889eadbfdfce",
+  "validator_sha256": "62c1b12ca0643871d6841189b78d293077e012da3712c3f438dee3a713f13597"
+}

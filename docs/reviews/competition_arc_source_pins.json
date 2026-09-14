@@ -1,0 +1,276 @@
+{
+  "format": "arc-source-pins.v1",
+  "repository": "https://github.com/top-quarks/ARC-solution",
+  "commit": "9407072659de1270358c2ba34c527785214dd68b",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "c1bce530447da29e46a0b9055dab7c1ac04692889144530efbd0edbcbfff36e0",
+      "git_blob_sha1": "fc2410be3bf7be22dd6ce9835f46a4a10fc871f9"
+    },
+    {
+      "path": "Makefile",
+      "sha256": "41dca65bc23745dfb29068d793847e657bdcc162c23e3d709fe293881300822f",
+      "git_blob_sha1": "3d1ecfbd74223b4e70098dff1cb030e7d7272c2d"
+    },
+    {
+      "path": "README.md",
+      "sha256": "920c20e9ab7ad14b15632d56b28b86543784a481fbe6774460febe85f582e7bf",
+      "git_blob_sha1": "0d9a8474edd50e23d5ca7e03a38b5593f9f2e48b"
+    },
+    {
+      "path": "compare.py",
+      "sha256": "a30b5b44cf30d83f6f65bc8ad58318acd29d9ee9c7b56fdf3c0b3746af30e1b3",
+      "git_blob_sha1": "5263bd53f244b6fc82b8e89ec1b9c2ceb0395fe7"
+    },
+    {
+      "path": "headers/brute2.hpp",
+      "sha256": "ad0685484e4c7b79595b09ac3b8845155e2022621dcd84e1cec6dc954670987a",
+      "git_blob_sha1": "3f061953bdcb5e62161a82141dcfb2bdb2ec6116"
+    },
+    {
+      "path": "headers/brute_size.hpp",
+      "sha256": "3b715a17a4f13004e0d6635ba0f1f541e68d834e072d7c6564abbd1eebd80110",
+      "git_blob_sha1": "bca96ce31d759b81c37233b7bc084ea9fdbd9f09"
+    },
+    {
+      "path": "headers/compose2.hpp",
+      "sha256": "c6cfb87d5a6ffdedb08f3b658a9bbf0225d8e38cf9ecfd3df3fbd489ac3aac13",
+      "git_blob_sha1": "0c0d03198d524509e49d914d9e307cd99cb964c8"
+    },
+    {
+      "path": "headers/core_functions.hpp",
+      "sha256": "063c3740f2f77663460dfc2e0378d154dc1c0845acb6fc214b9076a849894bed",
+      "git_blob_sha1": "aa78e2e48f80fb3312dab38515bf4c50ec76261e"
+    },
+    {
+      "path": "headers/deduce_op.hpp",
+      "sha256": "64de804365cfee0ae68373b56421ff76987f01538c0b6b5808e1c8f4fd0d6ec0",
+      "git_blob_sha1": "167f576806940aef3037176bbb9dbe19640dbb59"
+    },
+    {
+      "path": "headers/efficient.hpp",
+      "sha256": "7b616a16bebad98a028668ddce697ace7d69e72ae10c411c2940b311d6f628f7",
+      "git_blob_sha1": "dc9bfec78777ee990325a97cbfd66aa822f0f6ee"
+    },
+    {
+      "path": "headers/evals.hpp",
+      "sha256": "75210eee2a87332dbc03343306b658d3086c140f50eea7fd79e6e604e7e59e59",
+      "git_blob_sha1": "372e4714b1d65a5b680a4bd704258c289c01e7be"
+    },
+    {
+      "path": "headers/image_functions.hpp",
+      "sha256": "34da8c28fd433855bdd9e67846068fa7f0af9b7afe7f8c6f0606d1021f50f75d",
+      "git_blob_sha1": "0433886840dabe08b7cd33a73513fc60a917a93e"
+    },
+    {
+      "path": "headers/image_functions2.hpp",
+      "sha256": "5cf1215715a7bba3eec078e70b39fbdb3e5e9569cb25f8abad22169022010e98",
+      "git_blob_sha1": "b7d7659391e19c08c754b3c63cf863875efb2b88"
+    },
+    {
+      "path": "headers/load.hpp",
+      "sha256": "15f0c7d4c48f3b7f6dfe8c311ffc9f5ae011144cf79c08b6b629f4ceab3788e6",
+      "git_blob_sha1": "5d4c1bb20c323bcc612b895746b2dd26d1ece08c"
+    },
+    {
+      "path": "headers/normalize.hpp",
+      "sha256": "23c28099dc264fc1a4576f176ae5bab3609cd8407a102ef810f7942c7fd69aab",
+      "git_blob_sha1": "fc759cd5078e85c29aa251e9c068820519a441d4"
+    },
+    {
+      "path": "headers/pieces.hpp",
+      "sha256": "795bb846b274c77c9738598f48445f64b60841241c5a398aedd8f15c449760da",
+      "git_blob_sha1": "94ca011df37f19091c06c44f0594bdd8567348b9"
+    },
+    {
+      "path": "headers/precompiled_stl.hpp",
+      "sha256": "f18c6a0ba94ab95e534221209a45086c1caa612aa48e4da23d61066abd6694a5",
+      "git_blob_sha1": "6925d627252d48e24d4316a18a6493ede95ef167"
+    },
+    {
+      "path": "headers/read.hpp",
+      "sha256": "956b869f3484fcc192841d8436a6006e41e7f9331eed66f4ff2c87edf1983e42",
+      "git_blob_sha1": "6451a2975278043556187a7f40d848a3a71fe85e"
+    },
+    {
+      "path": "headers/runner.hpp",
+      "sha256": "a0bfc8f32e8521605b3ea844ad161fc5376a4bac515a122cde2343dc6ce3ad0b",
+      "git_blob_sha1": "d77baa0d6abcff949a9ac32788b9631a08fb8d37"
+    },
+    {
+      "path": "headers/score.hpp",
+      "sha256": "1c8071d934ab1c25073afa393fec1afa5fad2ecae66d9d46a229fe7c16c38e85",
+      "git_blob_sha1": "85376d6da0e9a113979356494292e32aff87060d"
+    },
+    {
+      "path": "headers/spec.hpp",
+      "sha256": "8bfbe9109ac28f36c7b5792aa217975e6f09fed4803ec6fb8aff713be316d723",
+      "git_blob_sha1": "93067744b956a95a48e2f64f442d3f1dce383518"
+    },
+    {
+      "path": "headers/store.hpp",
+      "sha256": "7264a93dbcc6548f164291a53ea70211ccabecc862e4a4b132c804d82be12224",
+      "git_blob_sha1": "78a08aec8a274d080703bad2386171a72c37c504"
+    },
+    {
+      "path": "headers/tasks.hpp",
+      "sha256": "9cfa20f6917ff2ee8e18e05d14150ce76252766fcd0d769c8f4b21b026e70c9f",
+      "git_blob_sha1": "4074b1e07a1fe5b791cb822900e12dded96abe7b"
+    },
+    {
+      "path": "headers/timer.hpp",
+      "sha256": "bdff9329afd807cbb729edb181fb872b3bd1075ff3771821fb10bc8add405305",
+      "git_blob_sha1": "d11c1fd5a4265695c7a92778656b6f2fcff0399b"
+    },
+    {
+      "path": "headers/utils.hpp",
+      "sha256": "0ea4c63cacaeff8d3c77e80b6a88e4a76ce5b4b6cfb9ecfb33c3a8e6c787128f",
+      "git_blob_sha1": "4be18c3759c1e35b15d538458aa3069dff893112"
+    },
+    {
+      "path": "headers/visu.hpp",
+      "sha256": "db797783e9745f44a07388a9363a4000d46936d9dfd9e68559613178853be991",
+      "git_blob_sha1": "cf7770ab4fcf9f42a3d7c1fe301b61b6108bbd11"
+    },
+    {
+      "path": "run.py",
+      "sha256": "af9825869d1aa548e45d7ceeabbfe563076d35dfd1e718afdfff108933361972",
+      "git_blob_sha1": "f85e7b499e7e9fa509b8095b3b2be164f52193c0"
+    },
+    {
+      "path": "safe_run.py",
+      "sha256": "6efbe43874e8f18eceadcc9a9bad84959e76a9d341b7d3f8d0b883f8140e2a3d",
+      "git_blob_sha1": "67cb80990d96586f45cc9916ff03eee414ad5ab7"
+    },
+    {
+      "path": "src/brute2.cpp",
+      "sha256": "6fa3bfa35e75e1863162d46514fdc8b4a97491f7ad8df599534c0b0873beca63",
+      "git_blob_sha1": "00a3b26360269ebeca9a2f304d5f9592c1e5b643"
+    },
+    {
+      "path": "src/brute_size.cpp",
+      "sha256": "7faba5035a4e0960201602deeea4f0b97ec69754ff15098b06e26ef12c29c908",
+      "git_blob_sha1": "9b25c6917480c52b10ede16f133c1f0d96c406c2"
+    },
+    {
+      "path": "src/compose2.cpp",
+      "sha256": "444630213f756932430e54b9bfc441d20bbc3a5bfcee336ce87b10f32f340885",
+      "git_blob_sha1": "9cb8c2623792e49007deb088b0f502654148ab84"
+    },
+    {
+      "path": "src/core_functions.cpp",
+      "sha256": "7e49137de5a631359659431c4f936428d4b1861dd09d66ca1ea3e93d3bc3f9d0",
+      "git_blob_sha1": "f6999d973fd528594b2ad964f842c7e623b6df4a"
+    },
+    {
+      "path": "src/count_tasks.cpp",
+      "sha256": "c6ab622d2f460bd34cf57e0d75533c25df165d4aef6104f8f0b91a89f2bdd417",
+      "git_blob_sha1": "ea7ae5ae41514b55849f5928f3942399014702e9"
+    },
+    {
+      "path": "src/deduce_op.cpp",
+      "sha256": "bff9c1ac75753f45ae0b27fdf32f7d7b2c0e84db2f0be8c5b4683ebf5acb833d",
+      "git_blob_sha1": "a1b9921d7fd50d80c9c193dd8ff49c7b9f9ef31b"
+    },
+    {
+      "path": "src/efficient.cpp",
+      "sha256": "4e6578fb19c8e2f18a5387c8ca9a7e794ce1c0ec97459f9a9171e66a9c279ada",
+      "git_blob_sha1": "46c99a39fa7859b80791d4435b676a11adcabdac"
+    },
+    {
+      "path": "src/evals.cpp",
+      "sha256": "e780a5a254d1b58d7f6ec5ba4bc251d2687e2408118837426fab6810af82589a",
+      "git_blob_sha1": "692b56e6c6bc3c5fbfaa5d6efb0fd5a540d6e524"
+    },
+    {
+      "path": "src/image_functions.cpp",
+      "sha256": "af7987d0beeb9ecd68f021de2507a8578f06e743c5825446c201f202407ad006",
+      "git_blob_sha1": "5402f2009b5f71226ec75975335ff05fbc769273"
+    },
+    {
+      "path": "src/image_functions2.cpp",
+      "sha256": "992395d07723147f96760e5af62e0438dae77ce68758e7a874ba79bac170cc1f",
+      "git_blob_sha1": "7530a5b9ab5f92e921759dc67a2e69e4b3282a8a"
+    },
+    {
+      "path": "src/load.cpp",
+      "sha256": "80cdda6fecddd570d103989ca3858c3cf75f6661fad1f114a5140c24e70c5254",
+      "git_blob_sha1": "2da3357f8ae7dccb9734b619497c74c43cd47d94"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "b5a6eacfef80f74e687388ced558a89f3118e6bb9bd51e02b7fe1faa3a9681d7",
+      "git_blob_sha1": "e5fa4f865f5e8d0d695cf30cec6a4c5118af5d54"
+    },
+    {
+      "path": "src/normalize.cpp",
+      "sha256": "d3314d9f38f13ccde54ee53b3c1a263e332dc0e8b4576d77713dd88feaa05403",
+      "git_blob_sha1": "ce75fa3800d76dce2ca4bfe93d451d682f64ec59"
+    },
+    {
+      "path": "src/pieces.cpp",
+      "sha256": "a158f8b270be4d23c2991968e0c90c808e0fcbe48a9af1208dc74d299998669f",
+      "git_blob_sha1": "b2df37fd12bb8247925741afddc88fe4ed286a4c"
+    },
+    {
+      "path": "src/read.cpp",
+      "sha256": "1ab1854de355f802d8f1d1e029e875fd24a7f36b8aa0028929c6eccc51e5ed27",
+      "git_blob_sha1": "71681b4087a7765d5014e6864fc6f5f456ada10e"
+    },
+    {
+      "path": "src/runner.cpp",
+      "sha256": "bbf7df86444cdf7c0dac5b123158996e33f7bb0e337fac3a4069fa797888a193",
+      "git_blob_sha1": "819544ed29da544723d83bcd8ba9a716ea9828e5"
+    },
+    {
+      "path": "src/score.cpp",
+      "sha256": "58033f21b37033a2b38ee7f9a541150771f0ccf87b974ddc61920366377ac008",
+      "git_blob_sha1": "536787326264f4a5d96b537b94d718b012af3244"
+    },
+    {
+      "path": "src/score.py",
+      "sha256": "5c3cc070b69db69234ec08968c6fd87c04beb202a57fffdec9f0ffa818ce1a8a",
+      "git_blob_sha1": "abdac150cc8ca3bfd0f62050d4e0379e4d0b5112"
+    },
+    {
+      "path": "src/tasks.cpp",
+      "sha256": "e67ca003ba0614349ddf83d03cfc4a896003c1ddf641df34faed1410e0eff028",
+      "git_blob_sha1": "c6e956a1422b064701d9f422044a9566d9434438"
+    },
+    {
+      "path": "src/timer.cpp",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "src/visu.cpp",
+      "sha256": "b1c97aa69dfce677563a5a4c0d302b68d21d9fadf5ba6ecb2bd1e8275c70ca77",
+      "git_blob_sha1": "ece0b2dd8813a1f2d364ede51c0a7aec85c33523"
+    },
+    {
+      "path": "submission.py",
+      "sha256": "6881aa4cdacf188c84d2796c6e1e3f9c3b092bd13a8aeffa9583397483ea4ea2",
+      "git_blob_sha1": "f5fc85ec4269546188b8348199bc4c6540c1a175"
+    },
+    {
+      "path": "submit.sh",
+      "sha256": "7f60f9fe17dbb4c138c41df8170ce076a988f136cb17d41f75530b26b3b8a7cb",
+      "git_blob_sha1": "3196cebe52a8ff2f0b5f42b17725d55d2916ee46"
+    },
+    {
+      "path": "summary.py",
+      "sha256": "2bf674acd7fd2eb0231c7a351381e8fdc7b05d37df96d4589c260847884a699c",
+      "git_blob_sha1": "4292a1e847fbed0c98165616fba4372eaa7e8693"
+    },
+    {
+      "path": "visu.py",
+      "sha256": "942b45c659fd155475abfb60e4f80c995d505a981fe41432a9ba3b120559a333",
+      "git_blob_sha1": "b71288429b7bb4d242b3e1b378c0db0956855858"
+    }
+  ],
+  "license_notice": "docs/licenses/ARC-solution-MIT.txt",
+  "provenance": "Winner announcement links top-quarks/ARC-solution; intake topcoder-arc/arc-1st-place URL differs and must be corrected explicitly.",
+  "author_announcement": "https://www.kaggle.com/competitions/abstraction-and-reasoning-challenge/writeups/icecuber-1st-place-solution-code-and-official-docu",
+  "limits": "Public software/docs/license only. No task grids,images,JSON datasets or archives fetched. Software semantics and computational closure remain unreviewed; no approval."
+}

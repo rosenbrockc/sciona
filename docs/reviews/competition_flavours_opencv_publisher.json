@@ -1,0 +1,13 @@
+{
+  "package": "opencv-python",
+  "version": "4.13.0.92",
+  "filename": "opencv_python-4.13.0.92-cp37-abi3-macosx_13_0_arm64.whl",
+  "publisher_url": "https://files.pythonhosted.org/packages/fc/6f/5a28fef4c4a382be06afe3938c64cc168223016fa520c5abaf37e8862aa5/opencv_python-4.13.0.92-cp37-abi3-macosx_13_0_arm64.whl",
+  "sha256": "caf60c071ec391ba51ed00a4a920f996d0b64e3e46068aac1f646b5de0326a19",
+  "hash_verified": true,
+  "scope": "Exact publisher wheel payload matched in isolated overlay; shared environment unchanged.",
+  "isolated_installation": true,
+  "installed_version": "4.13.0.92",
+  "publisher_payload_files_matched": 179,
+  "synthetic_cv2_operation": "passed"
+}

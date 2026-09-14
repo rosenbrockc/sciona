@@ -1,0 +1,27 @@
+{
+  "synthetic_only": true,
+  "counts": {
+    "classifier_cases": 6,
+    "segment_cases": 6,
+    "eleven_model_blend_cases": 3
+  },
+  "maximum_classifier_absolute_error": 0.0,
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Alex_Gilberto_models_autocorrmat_TS_XGB.yml": "53626a0381a5ed4c3f0e5dbb2c877272cacadec5005b783a34911feeda617494",
+    "Alex_Gilberto_models_coherence_transposed_TS_XGB.yml": "d562f251c13b0de848898f0cb1250a2fd7e4c65696ef9178e4ee3c77d80351da",
+    "make_blend.py": "6a64446123cfa6d3a867837057cda256cf13442c674317bc239117d00520374b"
+  },
+  "implementation_hashes": {
+    "sciona.atoms.ml.xgboost.competition_bagging": "6b86609f1e7ec1c72c665aeab3c7858a29f25e75fabead34c5c06d71de9ea2d6",
+    "sciona.atoms.riemannian_bci.signal_processing.segment_scores": "ce9a4e5aaab1df7c5e578a234122e473936afd916ff1dd1404e58ff28c2d37f8"
+  },
+  "validation_script_hash": "19977afa62b3cd53769a300cfd5883d678c335a2223f97ee641d4517bd3dc1ba",
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "xgboost": "3.4.1"
+  },
+  "limitations": "Modern-library source-configuration parity only. No historical XGBoost/sklearn environment or competition performance claim. Eleven-model blend inputs are synthetic; only two model branches are reconstructed so far."
+}

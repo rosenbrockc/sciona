@@ -1,0 +1,10 @@
+{
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_sound_scale_proof.py -q",
+  "passed": 17,
+  "failed": 0,
+  "synthetic_only": true,
+  "implementation_sha256": {
+    "sciona/physics_ingest/sound_scale_proof.py": "cc8d5e72ca4d38101133550835a4292d5cad327942295f59af6f870a07cd8e14",
+    "tests/physics_ingest/test_sound_scale_proof.py": "6ae0511e13e2c7b4a85b23017781925c846ae48a1d0c6b814489ad3c15002122"
+  }
+}

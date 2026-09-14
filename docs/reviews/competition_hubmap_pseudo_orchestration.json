@@ -1,0 +1,29 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "preparation_stages": [
+    "04_01",
+    "04_02",
+    "04_03",
+    "04_04",
+    "04_05",
+    "04_06",
+    "04_07",
+    "04_08"
+  ],
+  "external_raw_tiler_numerical_ast_identical": true,
+  "external_inference_variants_numerical_ast_identical": 2,
+  "exact_binary_mask_rle_handoff_cases": 16,
+  "implementation_sha256": {
+    "scripts/validate_hubmap_pseudo_orchestration.py": "755717f44414e250870879a1fca1d7ebf96f66fc57fc96bfc6e54d1b306791d7",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5",
+    "docs/reviews/competition_hubmap_pseudo_pins.json": "e4aa409b4f7e53f69646dd49bee490ddedb65984e1d5c4e27df9e5c7e43942a9"
+  },
+  "limitations": [
+    "Numerical source equivalence after raster-open boundary; external file lookup, codecs and subdataset IO excluded.",
+    "Eight preparation stages audited for grid configs, sort and shared writer; not full script execution.",
+    "Binary masks with source small-mask threshold zero; no resized mask handoff claimed.",
+    "Complete inference-to-retraining lifecycle and final graph publication remain."
+  ]
+}

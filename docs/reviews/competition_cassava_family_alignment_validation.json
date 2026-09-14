@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "combined_tests_passed": 17,
+  "scope": "Identity-aligned four-family arithmetic and rejection contracts; does not replace full trained ensemble execution.",
+  "sha256": {
+    "sciona/cassava_family_alignment.py": "7e9ba23e23024ba8f0d4735352e55074cd29c5b118903c0edc3ab56e07b843b2",
+    "sciona/cassava_fold_contract.py": "4761d25e2787a0ffc04170af5e1868ef15b29c9b0967f6d6528638d69fe61a40",
+    "sciona/cassava_ensemble.py": "38e0f28336248aff6d6934ce59355d2803c6bf7ae7477a985c74861fe839aa0d",
+    "tests/test_cassava_family_alignment.py": "875878722d3a61d5feb00f568c0107c605bd84541eddcf765a470c262e215655",
+    "tests/test_cassava_ensemble.py": "ce27887e7426a06b64ee6e889f0bdcd011ad62ea6c1342f218d611b1e31e9a9f"
+  }
+}

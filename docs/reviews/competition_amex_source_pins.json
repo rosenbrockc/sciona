@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/jxzly/Kaggle-American-Express-Default-Prediction-1st-solution",
+  "commit": "03b86f584bb61a34e31eb6343bd33ae753a92c02",
+  "files": {
+    "README.md": "e500e2928e4dfd11d662a75caccc398b2219fcd6b6766db2d827400ad52e0b3e",
+    "S1_denoise.py": "078c26fbe40aead0489c2f76b7d7db782e8e0a1eb9655cf05368a6d13f96519b",
+    "S2_manual_feature.py": "6de0a4d65a17a0a25e10c8fdf19fa8efca6babd94aef1f6aabf71a72334a8911",
+    "S3_series_feature.py": "b32030a8ca1770d441e0bff024f45c27f5cf47908ea3c3023e4d921c907c53dd",
+    "S4_feature_combined.py": "aca38743b8264103736089292abca7962176bc61d848c7c1af6bb2f2b8084377",
+    "S5_LGB_main.py": "c8839e703a6561325af29aa1b70423ad260baa58c81ed9409e8ed378fd08aa67",
+    "S6_NN_main.py": "50136dc8681d2b8c4c62d5b7427baca6d0f720d861df4bf7171c1947e32d26c7",
+    "S7_ensemble.py": "cf7ea8d974bc7e0fa596f5eb54b5d29d05c984e3c74a16b6a76a45f2ca2df175",
+    "model.py": "cc56e0f2816a87ac7cde60f04e07c5de8bc4d18c183dfa79454f2a255d771f96",
+    "requirements.txt": "604b7dadced6687e0e24a7c217af461a191809c4441eeb61863f7a542e1c7791",
+    "run.sh": "0314e8de1aa9398f4f3a7fb5f6c7dda63b8ed9beafa6c5b5f8df70451af26e14",
+    "scheduler.py": "8222335cb8cdba5e754373565b42116ac27dc0f9db2a15f011a5776dd0911cdd",
+    "utils.py": "38291db3eca21f9e6eb8f87de166accbf8d178e68e2cdeaa8f0be3c158caaf70"
+  },
+  "license_status": "No repository license detected; publication clearance unresolved."
+}

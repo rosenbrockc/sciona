@@ -1,0 +1,112 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": {
+    "rpn.py": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751",
+    "faster_rcnn.py": "b9df7856bad4aa091e67d04d363ea85e2bbf47ca4d0008f58418d6b8d304ff59"
+  },
+  "cases": [
+    {
+      "head": "RPNHead",
+      "arguments": [
+        256,
+        3
+      ],
+      "input_shapes": [
+        [
+          1,
+          256,
+          200,
+          200
+        ],
+        [
+          1,
+          256,
+          100,
+          100
+        ],
+        [
+          1,
+          256,
+          50,
+          50
+        ],
+        [
+          1,
+          256,
+          25,
+          25
+        ],
+        [
+          1,
+          256,
+          13,
+          13
+        ]
+      ],
+      "initialized_state_exact": true,
+      "outputs_and_all_gradients_exact": true
+    },
+    {
+      "head": "TwoMLPHead",
+      "arguments": [
+        12544,
+        1024
+      ],
+      "input_shapes": [
+        [
+          32,
+          256,
+          7,
+          7
+        ]
+      ],
+      "initialized_state_exact": true,
+      "outputs_and_all_gradients_exact": true
+    },
+    {
+      "head": "FastRCNNPredictor",
+      "arguments": [
+        1024,
+        91
+      ],
+      "input_shapes": [
+        [
+          32,
+          1024
+        ]
+      ],
+      "initialized_state_exact": true,
+      "outputs_and_all_gradients_exact": true
+    },
+    {
+      "head": "FastRCNNPredictor",
+      "arguments": [
+        1024,
+        2
+      ],
+      "input_shapes": [
+        [
+          32,
+          1024
+        ]
+      ],
+      "initialized_state_exact": true,
+      "outputs_and_all_gradients_exact": true
+    }
+  ],
+  "torch_version": "2.11.0",
+  "torchvision_version": "0.26.0",
+  "installed_class_source_sha256": {
+    "RPNHead": "025b65c77d524f6d786534ec50cfc99437caa9a90f94773ea9b882074de8784b",
+    "TwoMLPHead": "d82fa0895d560f0ed03c2066b130b505410e48b52cd67874190f575d0f4aef51",
+    "FastRCNNPredictor": "1e71ea1fe475b44f097723ad016a02c513f76d974cd0708de2098bdbbe44309c"
+  },
+  "validator_sha256": "827f551c659eae821982d952bbadbce89d7089453aa88af9264041a2abd9bfd0",
+  "limits": [
+    "Neural heads only; anchor generation, proposal selection, ROI pooling, losses and complete detector integration remain pending.",
+    "Both paths use installed Torch kernels; no historical native-kernel equivalence claim."
+  ]
+}

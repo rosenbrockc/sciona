@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 43,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_sound_scale.py tests/physics_ingest/test_sound_scale_proof.py -q",
+  "test_source_sha256": {
+    "tests/physics_ingest/test_sound_scale.py": "51903c619e5dfb44823a06942d5f8362716a6adefbae3f19f4599504ae747d5d",
+    "tests/physics_ingest/test_sound_scale_proof.py": "6ae0511e13e2c7b4a85b23017781925c846ae48a1d0c6b814489ad3c15002122"
+  },
+  "provider_sha256": "17915f8308cfaec7c73437c1d1b2e141a067447fbe55fa0280b4d2f050b649fb"
+}

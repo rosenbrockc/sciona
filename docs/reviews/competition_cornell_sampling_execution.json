@@ -1,0 +1,59 @@
+{
+  "status": "passed",
+  "source_commit": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59",
+  "checks": [
+    {
+      "training": false,
+      "synthetic_samples": 959999,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": false,
+      "synthetic_samples": 960000,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": false,
+      "synthetic_samples": 960001,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": false,
+      "synthetic_samples": 1920017,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": true,
+      "synthetic_samples": 959999,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": true,
+      "synthetic_samples": 960000,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": true,
+      "synthetic_samples": 960001,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    },
+    {
+      "training": true,
+      "synthetic_samples": 1920017,
+      "exact_source_match": true,
+      "rng_advance_exact": true
+    }
+  ],
+  "invalid_inputs_rejected": 4,
+  "caller_waveform_and_global_rng_preserved": true,
+  "runtime_sha256": "d15565e956868e62d1e2d49c70a2470a6bec8a3d4f5093347999a2714db20879",
+  "validator_sha256": "d55ef5bbf8a13865a8a28e3cd0f13fea5b930615a2cbd062e8cef55096add937",
+  "scope": "Original post-augmentation waveform sampling only. In-memory synthetic data bypasses source file loading and eval; complete augmentation/training remains separate."
+}

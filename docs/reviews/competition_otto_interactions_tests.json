@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Native forest importance prioritizes synthetic informative features over constants",
+    "Exactly thirteen features with stable supplied-column tie order",
+    "Seeded selection repeatability",
+    "Explicit rank-triple subset agrees with hand products",
+    "Query batch invariance",
+    "Invalid or duplicate subsets and product overflow rejected"
+  ],
+  "sha256": {
+    "sciona/otto_interactions.py": "81f14071381f5e58ad6b318e9ff27ea7b353ab461f7b3a60793b3444726aeb6b",
+    "sciona/otto_interactions.R": "18bc8b375be1ddac8c03ec621be6aab81bb6ac9e306a933c43f26dd02f29ec75",
+    "tests/test_otto_interactions.py": "57db61bffcd7187db81ef09f228c27cc7ddeb7c1a9f2f12083b85c605cd4adf4"
+  },
+  "limitations": [
+    "Source specifies only some three-level interactions; historical subset and precise interaction encoding unresolved.",
+    "Triple products, Gini ranking and ties are explicit independent choices.",
+    "Feature block only; Sofia embedding/interaction assembly and fold-local selection lifecycle pending.",
+    "No model-family coverage increase or publication approval."
+  ],
+  "catalog_mutations": 0
+}

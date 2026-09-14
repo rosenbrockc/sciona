@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "tests_passed": 7,
+  "scope": "Provider contracts and actual serialized runner routing with a stubbed training entry point; actual trained graph validation remains pending.",
+  "sha256": {
+    "scripts/build_cassava_execution_graph.py": "86f3a15f955cd6cc340070065bc951e17b55337b1456727c76d0f478baa60356",
+    "tests/test_cassava_provider_contract.py": "4adb2ff154251049aef783ea5c93750c2fcc77221491c7a68d673d01a8a0be89",
+    "scripts/audit_cassava_provider_contract.py": "1c34cfee2a903409d6dcde33d1250772c7fe3d46dcb0584c8dadff5d9d205e57",
+    "scripts/cassava_graph_execution.py": "b0c8e0badf2c74435e118d8798e7a1dc107c7a4852a335d634774ac1519dce65"
+  },
+  "provider_sha256": "bf744f33fee70d6514edd40f3883a2cfacc5d2b94de7929329bd4c029ef24453",
+  "negative_cases_rejected": [
+    "missing_constraints",
+    "port_order",
+    "optional_control",
+    "wrong_provider"
+  ],
+  "actual_runner_routing": true,
+  "training_stubbed_in_routing_test": true
+}

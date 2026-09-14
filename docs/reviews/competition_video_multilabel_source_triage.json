@@ -1,0 +1,7 @@
+{
+  "source_version_id": "13b48adf-8fb5-5ea2-a26c-44344bb8907e",
+  "source_content_hash": "30d0444ec640598942c6221136e608d7b15449732ceb848939e1424321c496ad",
+  "source_scope": "Generic five-stage precomputed-feature video multilabel topology; independent attention/context/sparse-fusion realization.",
+  "implementation_origin": "Independent project code; no raw video, external code or pretrained weights copied.",
+  "catalog_mutations": 0
+}

@@ -1,0 +1,15 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "b53474aefc981102cc39cd550cc7d1d63210825003cd046e396555588bff2515",
+  "provider_sha256": "2a44ae93d51d644e7428ea3f11a6bcb1449aea9470a3dd08025caaced22769e9",
+  "test_sha256": "0f6b83d8297eec45d5e43348b4ef6ea84e19616857ec7f9a448f7c8c893021c8",
+  "tests_passed": 11,
+  "evidence_level": "source formula inspection with independent scalar difference-equation tests; no MATLAB runtime parity",
+  "scope": "Center, notch, highpass and inclusive edge trim; resampling excluded and still required.",
+  "limitations": [
+    "Float64 input execution; original storage-type behavior not reproduced for arbitrary MATLAB types.",
+    "Integer sampling rate above120Hz and at least eight seconds required.",
+    "Source trim retains n-8*fs+1 samples, including one sample at the minimum accepted duration.",
+    "128/256Hz source resampling and complete feature extraction remain outstanding."
+  ]
+}

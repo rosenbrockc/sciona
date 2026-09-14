@@ -1,0 +1,30 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_source_cases": {
+    "cylinder": 144,
+    "cap": 144,
+    "combined": 96,
+    "rays": 2
+  },
+  "recursive_calls": 166,
+  "vector_premove_scalar_source_cases": 96,
+  "successful_intersections": 47620,
+  "missed_intersections": 13820,
+  "analytic_surfaces_passed": true,
+  "implementation_sha256": {
+    "sciona/trackml_intersections.py": "9dbd24a154f80f700ffb2ed444d7ba469c64bfdccc14b23d73fa4a670c12f4cc",
+    "sciona/trackml_detector.py": "ec904e021ca03e817f883af672cd86c423ca58ba695b57ee66b264ee70afcf92",
+    "scripts/validate_trackml_intersections.py": "8c5df6b9a0d8e506fbe53037f8123a148b1eec4300f94cf6bab6e7e48d03ba5c",
+    "scripts/validate_trackml_detector.py": "1dd8b244f5e93046f63a80680f28dafe598270fd640d35f6fba1bc02d89064a0",
+    "docs/reviews/competition_trackml_source_pins.json": "d61b598dbf97fb73d7b8546d0af99c4657f894e953e79cf82f2242dfcf90219f",
+    "docs/licenses/TrackML-BSD-2-Clause.txt": "00404581925abc4b8435bb7813eee07ac1df8b834326a33ee969d8315e9471fe"
+  },
+  "limitations": [
+    "Synthetic discovered geometry and finite float64 helix inputs; no real detector records.",
+    "Original miss sentinels and recursive default pre-move behavior retained.",
+    "Corrector hooks retained but not exercised here; learned correction maps remain a separate gate.",
+    "Combined array pre-move uses guarded string dispatch; checked against unmodified source scalar calls per helix.",
+    "Intersections only; neighbor/correction/candidate lifecycle and CDG publication remain."
+  ]
+}

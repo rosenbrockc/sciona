@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "in_process_graph_exit_code": 139,
+  "in_process_reproduction_runs": 3,
+  "imports_completed_before_crash": true,
+  "precise_native_cause": "Not established",
+  "mitigation": "Execute the same training lifecycle in a fresh process using sys.executable from the reviewed virtual environment. Parent does not import the training module through this provider.",
+  "isolated_full_graph_passed": true,
+  "isolated_matches_direct": true,
+  "default_timeout_seconds": 3600,
+  "timeout_environment_variable": "SCIONA_FUTURE_SALES_TIMEOUT_SECONDS",
+  "private_transport": "JSON stdin/stdout pipes; native diagnostics captured and replaced with generic errors; no payload files created.",
+  "limits": [
+    "In-process execution inside the combined graph runner remains unsupported.",
+    "Worker timeout is configurable; large jobs may require explicit runtime configuration.",
+    "The same provisioned environment is required; clean-install or cross-platform equivalence is not qualified."
+  ],
+  "hashes": {
+    "sciona/future_sales_contract.py": "5af0f45358949919eb2310938a2a64b22eb35fb42dfb1a58330900fe31dd4b34",
+    "sciona/future_sales_worker.py": "a77232bdb88568ed0af39f6312d86a67bed1682a4d8889e907d08868ec8a6894",
+    "sciona/future_sales_graph.py": "ee55cc3d232f945cbfdea9cd40c9605b32f1e1c23dfb03677b0e5edaf7d67fd1",
+    "tests/test_future_sales_contract.py": "f414f57ee024111eff50c672f51c78ad09afa7c3571edc2e3ba8438b1f87d357",
+    "docs/reviews/competition_future_sales_graph_execution.json": "d274c0944da4fcc3ab7a7d8342f2bcd762d449a258ee2fa21c4f5c2bc059c22f"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "repository": "WaymentSteeleLab/EternaFold",
+  "commit": "87b9aac55cee14fd562049d08f7b92d3131f10ce",
+  "software_parameter_path": "parameters/EternaFoldParams.v1",
+  "sha256": "1421e89cc8df24b53a320eff6c72b8acfdb2771faba29ab9c798f7bdfc853a8a",
+  "parameter_file_history": [
+    {
+      "commit": "f3c16fa66402db9b1c4384b640245be55930a151",
+      "date": "2020-05-30T20:40:50Z"
+    }
+  ],
+  "parameter_directory_license_or_readme": [
+    "LICENSE",
+    "README.md"
+  ],
+  "repository_license_sha256": "8431990ae8dd84812802a5ef3d7cfe05d90257c96ed740c6e6f04ff32bc22afc",
+  "scope": "Published folding-engine coefficients only; no competition predictor weights or sequence datasets fetched.",
+  "parameter_license_pins": [
+    {
+      "software_path": "parameters/LICENSE",
+      "sha256": "b545ce6c0c8eb651f7e75ed1e074c3be8d1bb1b81b3b822750b69e5e18944597",
+      "url": "https://raw.githubusercontent.com/WaymentSteeleLab/EternaFold/87b9aac55cee14fd562049d08f7b92d3131f10ce/parameters/LICENSE"
+    },
+    {
+      "software_path": "parameters/README.md",
+      "sha256": "c25467ae138268f605e4e6d7f7b51e48aa840bcc67314fd7491a91f817b41103",
+      "url": "https://raw.githubusercontent.com/WaymentSteeleLab/EternaFold/87b9aac55cee14fd562049d08f7b92d3131f10ce/parameters/README.md"
+    }
+  ],
+  "historical_bytes_match": true
+}

@@ -1,0 +1,68 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "configurations": [
+    {
+      "backbone": "ed5",
+      "size": 512,
+      "checkpoint_sha256": "ef44aea85cc8780edd1be6a260bd2f31cbef581b5748433e691aa61540867220",
+      "complete_source_factory_state_exact": true,
+      "retained_pretrained_tensors_exact": 1507,
+      "fresh_one_class_tower_matches_source": true,
+      "full_loss_and_backward_passed": true
+    },
+    {
+      "backbone": "ed6",
+      "size": 640,
+      "checkpoint_sha256": "51cb0132a9c30e0aab1eb169f1881d3fccbcf78a71c1c9349af8eb04a181498b",
+      "complete_source_factory_state_exact": true,
+      "retained_pretrained_tensors_exact": 1675,
+      "fresh_one_class_tower_matches_source": true,
+      "full_loss_and_backward_passed": true
+    },
+    {
+      "backbone": "ed7",
+      "size": 768,
+      "checkpoint_sha256": "f05bf7142a08e3ed2fbd0202d6ecc79e886118aee1b5ad9ccb764933b14a0a12",
+      "complete_source_factory_state_exact": true,
+      "retained_pretrained_tensors_exact": 1675,
+      "fresh_one_class_tower_matches_source": true,
+      "full_loss_and_backward_passed": true
+    }
+  ],
+  "source_factory_sha256": "c9373461d6fc144ffe277d9975444f42c1a346d08dd8f9077988eac7fde3812b",
+  "publisher_artifacts": [
+    {
+      "file": "tf_efficientdet_d5-ef44aea8.pth",
+      "source_url": "https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d5-ef44aea8.pth",
+      "sha256": "ef44aea85cc8780edd1be6a260bd2f31cbef581b5748433e691aa61540867220",
+      "bytes": 135796946,
+      "publisher_filename_hash_prefix_verified": true
+    },
+    {
+      "file": "tf_efficientdet_d6-51cb0132.pth",
+      "source_url": "https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d6-51cb0132.pth",
+      "sha256": "51cb0132a9c30e0aab1eb169f1881d3fccbcf78a71c1c9349af8eb04a181498b",
+      "bytes": 209042487,
+      "publisher_filename_hash_prefix_verified": true
+    },
+    {
+      "file": "tf_efficientdet_d7-f05bf714.pth",
+      "source_url": "https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d7-f05bf714.pth",
+      "sha256": "f05bf7142a08e3ed2fbd0202d6ecc79e886118aee1b5ad9ccb764933b14a0a12",
+      "bytes": 209042487,
+      "publisher_filename_hash_prefix_verified": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/wheat_initialization.py": "ff112ab278b6a71f7e0df8bfba4d0413845eafb9897a59700dd73c2bf25de7e5",
+    "scripts/validate_wheat_initialization.py": "8a3be18ec63203cdae35ad524ee40738678ebd9a7d183f5cd51a74ebbae17a69"
+  },
+  "limits": [
+    "Source-prescribed pretrained detector initialization only; new classification towers remain untrained.",
+    "Both factory paths use the qualified private source overlay on modern Torch; historical kernel equivalence remains separate.",
+    "Artifact licensing, full detector training, ensemble integration and publication remain pending."
+  ]
+}

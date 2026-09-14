@@ -1,0 +1,157 @@
+{
+  "format": "aptos-source-triage.v1",
+  "approved": false,
+  "catalog_mutations": 0,
+  "intake_version_id": "94df8d52-0272-5d0b-b84f-1f150d8e11f0",
+  "intake_content_hash": "02129e9c5bef75cf05490e52f2291f5d336d70a92e114d022a1b635ad35b3f58",
+  "status": "source_contract_correction_required",
+  "intake_reference": "https://www.kaggle.com/c/aptos2019-blindness-detection/discussion/108065",
+  "primary_reference": "https://www.kaggle.com/competitions/aptos2019-blindness-detection/writeups/guanshuo-xu-1st-place-solution-summary",
+  "findings": [
+    "The winner used plain resizing, contradicting the intake retinal-cropping and local-color-subtraction stage.",
+    "The final ensemble contains eight Inception/SE-ResNeXt models; EfficientNet was suggested as future work rather than used.",
+    "Training used SmoothL1Loss, not the intake differentiable QWK loss.",
+    "The writeup describes combined training sources and a later label-refinement phase, not the intake restriction to fine-tuning two layers.",
+    "Final thresholds were manually changed to [0.7,1.5,2.5,3.5]; the claimed Nelder-Mead optimization is unestablished."
+  ],
+  "source_closure": "No complete attributable winner implementation identified in the inspected author repository listing. Full training and label-refinement closure remains open.",
+  "excluded_substitutions": [
+    "Lower-ranked open implementations cannot establish first-place fidelity",
+    "A generic image regressor with QWK calibration does not satisfy the corrected winning method"
+  ],
+  "next": "Inspect the primary inline pooling and training specification; resolve ensemble configuration and label-refinement details before complete reconstruction. No lower-ranked implementation substitution.",
+  "acquisition_scope": "Public writeup, software metadata, and pinned public pretrained model artifacts in private temporary storage; no competition images or records acquired.",
+  "public_discussion_recovery": {
+    "endpoint": "https://www.kaggle.com/api/i/discussions.DiscussionsService/GetForumTopicById",
+    "forum_topic_id": 108065,
+    "http_status": 200,
+    "software_links": [
+      "https://github.com/filipradenovic/cnnimageretrieval-pytorch"
+    ],
+    "finding": "Winning author explicitly attributes generalized mean pooling to this repository and includes an inline GeM implementation. The recovered software link covers pooling, not the complete winning training/refinement lifecycle.",
+    "retained_content": "Software link and bounded component finding only; no images, records, notebook outputs or full discussion payload retained."
+  },
+  "recovered_model_specification": {
+    "ensemble": "Arithmetic mean of eight models",
+    "models": [
+      {
+        "family": "inception_resnet_v2",
+        "count": 2,
+        "input_size": 512
+      },
+      {
+        "family": "inception_v4",
+        "count": 2,
+        "input_size": 512
+      },
+      {
+        "family": "seresnext50",
+        "count": 2,
+        "input_size": 512
+      },
+      {
+        "family": "seresnext101",
+        "count": 2,
+        "input_size": 384
+      }
+    ],
+    "loss": "nn.SmoothL1Loss",
+    "pooling": "Trainable generalized mean, p initialized to 3 and epsilon 1e-6; clamp before power and global spatial average.",
+    "source": "Winning author discussion 108065 inline code and method description",
+    "pooling_source_pins": "docs/reviews/competition_aptos_pooling_source_pins.json",
+    "pooling_catalog_search": "No generalized-mean/gem-pooling candidates found by named/description search; not a complete duplication proof."
+  },
+  "pooling_component": {
+    "implementation": "sciona/aptos_pooling.py",
+    "evidence": "docs/reviews/competition_aptos_pooling_validation.json",
+    "synthetic_tests_passed": 6,
+    "source_cases": 12,
+    "paired_optimizer_updates": 36,
+    "approved": false,
+    "scope": "Exact pooling forward, input/exponent gradients and updates only; no complete APTOS workflow claim."
+  },
+  "training_lifecycle_specification": {
+    "source": "Winning author discussion 108065",
+    "established": [
+      "Eight first-stage models, paired by architecture with different seeds.",
+      "Epoch selection probed in increments of five; exact selected budgets not stated.",
+      "Second-stage training includes soft pseudo-labels.",
+      "One supplemental-label role averages supplied ordinal labels with first-stage predictions.",
+      "Another supplemental-label role groups first-stage predictions by supplied ground-truth class and bounds outliers relative to each group mean.",
+      "Each first-stage model receives ten additional epochs after label preparation.",
+      "Final manually selected cut points are 0.7, 1.5, 2.5 and 3.5.",
+      "Both supplemental populations enter only the second stage; the first-stage base is the caller-prepared combined original labeled population.",
+      "The group-bounded supplemental role has four supplied label levels, encoded 0..3 in this reference."
+    ],
+    "open_details": [
+      "Exact first-stage epoch budgets, optimizer and learning-rate schedule.",
+      "Exact augmentation library and distribution semantics behind published parameter ranges.",
+      "Whether each refinement prediction uses an individual model or the eight-model mean.",
+      "Full group-bound rule: a lower-side deviation of 0.5 is demonstrated; symmetric clipping is a plausible inference, not established implementation parity.",
+      "Threshold equality convention and any inference-view averaging."
+    ],
+    "qualification_policy": "Any explicit reconstruction choices require documented conditional Tier 3 review; original historical execution parity is not inferred."
+  },
+  "ensemble_component": {
+    "implementation": "sciona/aptos_ensemble.py",
+    "evidence": "docs/reviews/competition_aptos_ensemble_validation.json",
+    "approved": false,
+    "historical_threshold_equality_proven": false
+  },
+  "ordinal_refinement_component": {
+    "implementation": "sciona/aptos_refinement.py",
+    "evidence": "docs/reviews/competition_aptos_refinement_validation.json",
+    "approved": false
+  },
+  "backbone_inspection": "docs/reviews/competition_aptos_backbone_inspection.json",
+  "model_construction_component": {
+    "implementation": "sciona/aptos_models.py",
+    "evidence": "docs/reviews/competition_aptos_models_validation.json",
+    "approved": false,
+    "pretrained_weights_used": false,
+    "reference_choice": "Single linear regression head; exact winning head details unproven."
+  },
+  "pretrained_reference_progress": {
+    "approved": false,
+    "mirror_pins": "docs/reviews/competition_aptos_pretrained_mirror_pins.json",
+    "passed_full_resolution_forward_and_single_training_update": [
+      "inception_resnet_v2",
+      "inception_v4",
+      "seresnext50",
+      "seresnext101"
+    ],
+    "remaining_families": [],
+    "scope": "Pinned maintainer mirror artifacts; synthetic inputs; single update only, not complete eight-model lifecycle or exact original winner artifact identity.",
+    "summary": "docs/reviews/competition_aptos_pretrained_family_summary.json"
+  },
+  "augmentation_reference": {
+    "implementation": "sciona/aptos_augmentation.py",
+    "evidence": "docs/reviews/competition_aptos_augmentation_validation.json",
+    "approved": false,
+    "original_library_parity": false,
+    "status": "Explicit reconstruction implemented and tested; complete workflow review pending."
+  },
+  "full_reference_workflow": {
+    "implementation": "sciona/aptos_pipeline.py",
+    "validator": "scripts/validate_aptos_pipeline.py",
+    "status": "Complete standalone and serialized-graph native executions passed; approval and publication gates pending.",
+    "approved": false,
+    "reference_choices": [
+      "Five first-stage epochs per model, explicit five-epoch budget increment",
+      "Eight-model arithmetic-mean teacher for all added populations",
+      "Adam at constant 1e-4, fresh optimizer at stage two, continued model weights",
+      "Ten second-stage epochs per model",
+      "Symmetric 0.5 group bounds and upper threshold ties",
+      "Reference augmentation before plain resize, then publisher normalization; single-view inference"
+    ],
+    "standalone_evidence": "docs/reviews/competition_aptos_pipeline_validation.json",
+    "graph_evidence": "docs/reviews/competition_aptos_graph_pipeline_validation.json"
+  },
+  "provider_graph": {
+    "builder": "scripts/build_aptos_execution_graph.py",
+    "provider": "sciona.atoms.ml.aptos_execution",
+    "structure_evidence": "docs/reviews/competition_aptos_provider_structure.json",
+    "approved": false,
+    "provider_boundary_tests": 6
+  }
+}

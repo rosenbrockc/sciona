@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "draws_per_backend": 64,
+  "backends": [
+    "legacy",
+    "sfc64"
+  ],
+  "pretraining_shear_limit": 20,
+  "exact_source_draws_and_following_rng": true,
+  "sha256": {
+    "sciona/bengali_shear_sampling.py": "73f677eacbc2bcc964146ec12bb7bc8b111e7e781da96b8aac6420f852a4498d",
+    "sciona/bengali_font_sampling.py": "b32c354711eed6aa3dbbf44a26353111e118a8ed19e5a0ac6bf9ca2f42060c92",
+    "sciona/bengali_pretraining_sampling.py": "ab13c39225e77014704ecc635ddfd85a9f996bc358e3a6086f22f5e3d93e501a"
+  },
+  "limits": [
+    "Historical source parameter functions run on installed NumPy; complete pretraining and historical environment qualification remain pending."
+  ]
+}

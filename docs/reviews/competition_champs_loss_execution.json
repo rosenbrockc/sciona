@@ -1,0 +1,21 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "objective": "global_mae",
+      "all_eight_types": true,
+      "unequal_type_counts": true,
+      "scalar_loss_and_gradient_match": true,
+      "auxiliary_and_padding_excluded": true
+    },
+    {
+      "objective": "mean_log_type_mae",
+      "all_eight_types": true,
+      "unequal_type_counts": true,
+      "scalar_loss_and_gradient_match": true,
+      "auxiliary_and_padding_excluded": true
+    }
+  ],
+  "scope": "Original loss on synthetic targets with fixed source type semantics; no optimizer/schedule/checkpoint claim.",
+  "validator_sha256": "a5a953c48570c494886be5feb11bf8e62b6552f335c69678f4d467937ef3841b"
+}

@@ -1,0 +1,15 @@
+{
+  "format": "aptos-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_pipeline_validation:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "fd7ce57b866d9d76cbb045a920a87d9623cea5b75e45cc9b8b5837a72763410f",
+  "validator_sha256": "89699777274c8cfdfb487d2e971f824814d2ed17f2dfe4363d669edd1ee5385f",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

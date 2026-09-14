@@ -1,0 +1,19 @@
+{
+  "format": "adversarial-inception-ops-validation.v1",
+  "result": "passed",
+  "checks": {
+    "scalar_pool_output_input_gradient_cases": 96,
+    "scalar_conv_output_input_weight_bias_gradient_cases": 28,
+    "independent_normalized_relu_values_input_gradients": true,
+    "frozen_state_and_mode_invariance": true,
+    "invalid_cases_rejected": 5
+  },
+  "limits": "Synthetic CPU float32/64 pooling and float64 convolution. Historical source reference inspected and hashed, not compiled or binary-compared. Max-pool gradient fixtures have unique maxima; tie parity unproven. Full Inception topology, heads, checkpoints and attack integration remain unvalidated. Historical average-pool sentinel collision explicitly rejected.",
+  "sha256": {
+    "sciona/adversarial_inception_ops.py": "2af2b4abb03548fc79a9421496da40e1fc9972afd0f919850ed544c690eb10b7",
+    "sciona/adversarial_normalization.py": "3af9580ea7f45eb3e56b71c8a7bfb308819363f9f9a08a933ca6ec67186aad92",
+    "scripts/validate_adversarial_inception_ops.py": "7dcca5ff3d0e5a7d099596b0337838bf39e5ab56a5462137c526415b4e230f43",
+    "docs/reviews/competition_adversarial_pooling_reference.json": "22622e875d9733f5201b11a4cd968be11d1b24d2457e3aa08fe536cdf405ac41",
+    "docs/licenses/Adversarial-TensorFlow-reference-Apache-2.0.txt": "d7c9068d896188264b60827b8cd1e25fdb9f5b5cad0b1589e90b96c87729c404"
+  }
+}

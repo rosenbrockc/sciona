@@ -1,0 +1,37 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "source_step_graphs": 44,
+  "complete_graph_rows_before": 10,
+  "complete_graph_rows_after": 10,
+  "dimensional_binding_blockers_before": 1389,
+  "dimensional_binding_blockers_after": 1159,
+  "nearest_candidates": [
+    {
+      "version_id": "dbd302ec-4598-54ba-a2b4-2f828a22d66d",
+      "nodes": 5,
+      "eligible_bindings": 11,
+      "total_bindings": 12,
+      "blocker": "Source symbolic RHS is blank; stored scalar parse does not preserve vector-dot-product equation.",
+      "expression_id": "e45d375a-c67b-57b5-a975-bf278b482b9c",
+      "next_action": "Explicit vector-aware source reconstruction and proof review; do not infer missing symbolic side."
+    },
+    {
+      "version_id": "ffb043f3-05a3-5ca6-9d94-87a17ff512d3",
+      "nodes": 13,
+      "eligible_bindings": 30,
+      "total_bindings": 31,
+      "blocker": "Pinned equation content hash has no catalog version.",
+      "missing_content_hash": "8d7dec2c3f13e7dcc89abc31b3d2e1539fff56acd55b0d78dfd7b36f7feca4cf",
+      "existing_versions": [
+        "ad66d88d-129e-5eb6-9b90-ebce06167487",
+        "49c27c45-7036-5231-ad96-12771fc01949"
+      ],
+      "next_action": "Trace original binding/source provenance and establish explicit reviewed replacement version; do not select latest by name."
+    }
+  ],
+  "limitations": [
+    "Binding blocker counts include repeated dependencies across paired graph representations, not unique equations.",
+    "Coverage inventory reads stored evidence; all version selections, source correspondence and whole-graph behavior require fresh verification."
+  ]
+}

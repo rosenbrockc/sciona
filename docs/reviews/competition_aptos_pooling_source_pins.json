@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "repository": "https://github.com/filipradenovic/cnnimageretrieval-pytorch",
+  "commit": "c3405405e988ec214f4d5969a8f2d04a85a9869b",
+  "selection": "Latest repository commit at or before the winning writeup date; contextual reference, not proof of the winner installed revision.",
+  "files": {
+    "cirtorch/layers/pooling.py": {
+      "url": "https://raw.githubusercontent.com/filipradenovic/cnnimageretrieval-pytorch/c3405405e988ec214f4d5969a8f2d04a85a9869b/cirtorch/layers/pooling.py",
+      "sha256": "c22d6d6b72e45d7f2454e6ea1b263b7ad45f548b8e50b1914fcce92bd74f8c64"
+    },
+    "cirtorch/layers/functional.py": {
+      "url": "https://raw.githubusercontent.com/filipradenovic/cnnimageretrieval-pytorch/c3405405e988ec214f4d5969a8f2d04a85a9869b/cirtorch/layers/functional.py",
+      "sha256": "c016ffb064d458c920c61add3f6d03f1f11ae2e89d1e06facf5854636e41019c"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/filipradenovic/cnnimageretrieval-pytorch/c3405405e988ec214f4d5969a8f2d04a85a9869b/LICENSE",
+      "sha256": "c31c66c3945689e8876c9bbdb360228d13e4a15d84a77452dbe2db0ab67558e7"
+    }
+  },
+  "scope": "Pooling source only. No example scripts, training inputs or pretrained weights acquired."
+}

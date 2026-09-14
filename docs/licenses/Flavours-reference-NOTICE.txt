@@ -1,0 +1,7 @@
+Flavours CPU reference attribution
+
+Independent mathematical implementation of the Go Polar Bears first-place method by Alexander Guschin and Vladislav Mironov. Method reference: aguschin/flavours-of-physics commit e642aafa4b2ddf8baa572cbdf2926450935ed005. No winning notebook code is included and no reuse license for that notebook is inferred. Source equations, algorithm settings and attribution are retained in the review.
+
+The runtime uses separately installed third-party dependencies. Preserve Flavours-dependency-NOTICES.txt and Flavours-libomp-NOTICE.txt with this reference. No dependency wheels, external model files or competition records are redistributed by this catalog publication. Future bundling or redistribution requires review of the relevant component terms, including bundled native components.
+
+Historical implementation identity and competition accuracy are not established. Caller is responsible for lawful runtime inputs and source feature semantics.

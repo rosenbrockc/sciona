@@ -1,0 +1,15 @@
+{
+  "format": "amex-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "afba4f7fbd1b7c6909a06295cd21e9b3f4e23d22193bc3cf8f4d5cba4f072820",
+  "validator_sha256": "f912e972113a61379d8c55eec2d4e022cb31310782ebdc9d26fb3cf65e02a824",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

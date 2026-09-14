@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "xgboost_tests_passed": 3,
+  "combined_meta_blend_tests_passed": 1,
+  "combined_meta_models_fitted": 1100,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Full 250-run XGBoost meta bag with seeded diversity and query-order invariance",
+    "Float64 probability normalization removes native float32 drift before strict blend",
+    "Full 600-run Lasagne CPU meta bag with fixed controls and varying seed only",
+    "All three actual full-size meta ensembles feed documented weighted geometric/arithmetic blend",
+    "Independent final blend arithmetic and nine-class synthetic learning"
+  ],
+  "sha256": {
+    "sciona/otto_meta_xgboost.py": "05765b6179e72913210c47eba22dad71348ced0d2dbd6a1e0319abb949f0a4e5",
+    "tests/test_otto_meta_xgboost.py": "d1064c87661d014b6212d571bee556bb44bbad7001e7c66231a5efb0e397a1e1",
+    "sciona/otto_meta_neural.py": "f4c74aa82515bbf1a7d994cd21beb19dbfc1bea11e098367d92a5b899ae30360",
+    "sciona/otto_meta_neural_worker.py": "d2627bb1820fce3a2acc3e0b8796607659c38501e78c2bcde8bfb814f5a2487d",
+    "tests/test_otto_meta_neural.py": "5cf502e76491c5909a713db3979db238666d2e7f71e2dc0853c29ca1b589da08",
+    "sciona/otto_lasagne_worker.py": "f2d8519cd416816300377db90181bcc3161fbda184244f55406d2e032b014489",
+    "sciona/otto_meta_adaboost.py": "ee5a6927e1e00724d8140a5427626b34821845a3f96b6cf6410b27617e7e16fe",
+    "sciona/otto_final_blend.py": "280e637eda6e36b8c649c6f8262817a5a90416b1120c7aade69f1f3c90960907"
+  },
+  "limitations": [
+    "Synthetic meta matrices are supplied directly; first-level OOF provenance and full-stack execution not yet verified.",
+    "Four-fold second-level tuning pending.",
+    "Historical architecture, optimizer controls, input layout and GPU behavior unresolved.",
+    "Native closure and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

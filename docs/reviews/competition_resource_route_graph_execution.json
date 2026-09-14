@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "641f783f01a3e5b5247a0e6fd86969663f48ad0b9c2fae2f037395d84fba191e",
+  "provider_sha256": "177d5adfa135191a5b7def34b85c2bd43393182704d57b341cab1caf177fa2fb",
+  "code_sha256": {
+    "sciona/resource_route_planning.py": "0e665377e805cd5e592c4692b2093b02be6c598ab9fc5aa0092deeebf13d6aea",
+    "sciona/resource_route_graph.py": "407470a336cc05062034aba524089fa50746fc3c5e954fc6343bfdbc22e215ec",
+    "scripts/resource_route_synthetic.py": "a6ced361bbdfbdcd4529f54a3eb05fe297ef73c58821c0c8b5a6deab49306c97",
+    "scripts/validate_resource_route_graph.py": "38d283b2665f8da925c1643abb931fffd6e5da2cdde8a569bc47f144c51f8a80"
+  },
+  "checks": {
+    "actual_runner_nodes": 5,
+    "serialized_edges": 4,
+    "executed_cases": 4,
+    "optimal": true,
+    "infeasible": true,
+    "search_limit": true,
+    "identity_route": true,
+    "witness_chain": true,
+    "strict_json_output": true
+  },
+  "limits": "Synthetic serialized execution only. No catalog approval or historical competition claim."
+}

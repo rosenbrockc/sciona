@@ -1,0 +1,25 @@
+{
+  "format": "cornell-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_commit",
+    "wrong_license",
+    "wrong_gradient",
+    "wrong_sampling",
+    "missing_resume",
+    "wrong_schedule",
+    "reduced_models",
+    "missing_continuations",
+    "wrong_provider",
+    "wrong_dependency"
+  ],
+  "sha256": {
+    "scripts/review_cornell_execution.py": "10e2f42ee55409417efd129c21a67b0f99d2e1f46d8ad789a158b2fc91c08950",
+    "scripts/validate_cornell_review_gates.py": "9fca4ee0a8229cf17b530ad318f62e4190700804fcf2e0613353dea0949453d1"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

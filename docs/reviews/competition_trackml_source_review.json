@@ -1,0 +1,19 @@
+{
+  "approved": false,
+  "source_version_id": "11c41ece-c648-50b4-b211-7e319ba36dea",
+  "source_content_hash": "c0b732d94cd161a98dfc8a24a70a1805453a3de2d5b4d71ee7719fda4c639183",
+  "repository": "https://github.com/edwinst/trackml_solution",
+  "commit": "f1a6e63969167159ef72c4ba32897e5aef7c3888",
+  "license": "BSD-2-Clause",
+  "source_stage_count": 11,
+  "findings": [
+    "Pinned software has concrete geometry/intersector/neighbor/correction/candidate/supervisor implementations matching the eleven-stage intake at an inventory level; complete execution fidelity is not yet established.",
+    "Optional hyperparameter-search script contains Python 2 print syntax; no broad source import or implicit migration was performed.",
+    "Source circle degeneracy uses large tangent circles and emits diagnostics; coincident origin points yield nonfinite output and are outside finite candidate contract."
+  ],
+  "limitations": [
+    "Public Python source, README and license only; result logs, inputs, detector files and learned maps were not fetched.",
+    "Only circle fitting has numerical source evidence; no CDG approval or complete reconstruction claim."
+  ],
+  "source_pins_sha256": "d61b598dbf97fb73d7b8546d0af99c4657f894e953e79cf82f2242dfcf90219f"
+}

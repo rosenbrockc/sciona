@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "masked_rollouts": 16,
+    "no_dropout_parity": 16,
+    "separate_state_output_checks": 8,
+    "rejections": 5
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_dropout.py": "e14169f15d2381f793b2d7e5fc5cf68bce8d2ad67ab4e6a44dd02f238c145259",
+    "scripts/validate_webtraffic_dropout.py": "d70b22e5ecf22cfacb364a59dc78c3f1eb635f044c70ca711c082929756d696a",
+    "sciona/webtraffic_decoder.py": "0a9aed75509a7991b4fb97458f8a5d7b03045519d1feef5fb6787289e90c3436",
+    "scripts/validate_webtraffic_decoder.py": "c4eadf9e13664bf1d67fc4e4388e20b3a1c9172fd0200657018cce8468897add",
+    "docs/reviews/competition_webtraffic_dropout_source.json": "f4d3fa69c49b046b6f59cccf78d00c310fa1bee533459c3fc706a6a84c5886cf"
+  },
+  "limitations": [
+    "Explicit boolean masks only; TensorFlow RNG/variational mask generation not reproduced.",
+    "Source s32 uses nonvariational decoder dropout; caller must supply one mask per time step.",
+    "Encoder-to-decoder gate dropout and full-width training integration remain.",
+    "No original TensorFlow runtime or checkpoint parity claim."
+  ]
+}

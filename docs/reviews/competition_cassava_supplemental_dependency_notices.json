@@ -1,0 +1,31 @@
+{
+  "approved": false,
+  "packages": {
+    "flatbuffers": {
+      "version": "25.12.19",
+      "source_url": "https://raw.githubusercontent.com/google/flatbuffers/v25.12.19/LICENSE",
+      "notice": "docs/licenses/Cassava-flatbuffers-Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "status": "version-tagged upstream license"
+    },
+    "tf-keras": {
+      "version": "2.20.1",
+      "source_url": "https://raw.githubusercontent.com/keras-team/tf-keras/v2.20.1/LICENSE",
+      "notice": "docs/licenses/Cassava-tf-keras-Apache-2.0.txt",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "status": "version-tagged upstream license"
+    },
+    "tensorboard-data-server": {
+      "version": "0.7.2",
+      "source_url": "https://raw.githubusercontent.com/tensorflow/tensorboard/2.14.0/LICENSE",
+      "module_reference_url": "https://raw.githubusercontent.com/tensorflow/tensorboard/2.14.0/tensorboard/data/server/pip_package/tensorboard_data_server/__init__.py",
+      "installed_module_sha256": "78204e97bfc44e702a8903915f7f63476befb49ff0742f030718286ee6f8fa33",
+      "upstream_module_sha256": "3bcee7ee2e1765d52f107e7f9092b60eb2fdb20534df02467548530c3481ac1e",
+      "notice": "docs/licenses/Cassava-tensorboard-data-server-Apache-2.0.txt",
+      "sha256": "d7c9068d896188264b60827b8cd1e25fdb9f5b5cad0b1589e90b96c87729c404",
+      "status": "Installed module Apache license header corroborated; upstream reference differs only in package version literal 0.8.0a0 versus installed 0.7.2.",
+      "exact_module_byte_match": false
+    }
+  },
+  "scope": "Supplemental upstream notices for packages lacking bundled files; complete dependency review remains pending."
+}

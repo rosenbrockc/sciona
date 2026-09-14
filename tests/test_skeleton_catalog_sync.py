@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from types import SimpleNamespace
 
 import pytest
 
 from sciona.architect.skeleton_assets import load_local_skeleton_assets
 from sciona.services.skeleton_catalog_sync import (
+    _AtomBinding,
+    _CatalogVerificationState,
+    _build_binding_hints,
     _execute_all_pages,
     build_skeleton_artifact_bundle,
     enrich_bundle_with_catalog_verification,
@@ -14,6 +17,43 @@ from sciona.services.skeleton_catalog_sync import (
     sync_bundle_to_supabase,
     sync_bundles_to_graph_store,
 )
+
+
+@pytest.mark.parametrize("verified_count,has_references,expected_coverage,publishable", [
+    (1, True, 1 / 3, False),
+    (3, False, 1.0, False),
+    (3, True, 1.0, True),
+])
+def test_promotion_requires_every_leaf_verified_and_structural_evidence(
+    monkeypatch, verified_count, has_references, expected_coverage, publishable,
+):
+    from sciona.services import skeleton_catalog_sync as sync
+
+    asset = next(a for a in load_local_skeleton_assets() if a.asset_id == "signal_detect_measure")
+    bundle = build_skeleton_artifact_bundle(asset)
+    if not has_references:
+        bundle = replace(bundle, references=[])
+    hints = list(_build_binding_hints(asset).values())
+    assert len(hints) == 3
+    bindings = {
+        hint: _AtomBinding(str(i), "synthetic.atom." + str(i), "v1", True, "matched_primitive_suffix", 0.8)
+        for i, hint in enumerate(hints)
+    }
+    state = _CatalogVerificationState(
+        bindings_by_hint=bindings,
+        verification_by_atom_id={str(i): {"verified": i < verified_count} for i in range(3)},
+        audit_rows_by_atom_id={str(i): [{"audit_type": "smoke_test", "passed": True, "status": "completed"}] for i in range(3)},
+        uncertainty_rows_by_atom_id={},
+    )
+    monkeypatch.setattr(sync, "_fetch_catalog_verification_state", lambda *args: state)
+    monkeypatch.setattr(sync, "_fetch_artifact_benchmarks", lambda *args, **kwargs: [
+        {"benchmark_name": "synthetic", "metric_name": "error", "metric_value": 0.0}
+    ])
+    enriched = enrich_bundle_with_catalog_verification(bundle, supabase=None)
+    assert enriched.artifact["verified_leaf_coverage"] == expected_coverage
+    assert enriched.artifact["is_publishable"] is publishable
+    if not has_references:
+        assert "structural_evidence_incomplete" in enriched.audit_rollup["trust_blockers"]
 
 
 class _FakeTable:

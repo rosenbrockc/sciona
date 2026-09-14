@@ -1,0 +1,31 @@
+{
+  "format": "dfdc-frame-prediction-edge-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "array_sampling_source_comparisons": 27,
+    "source_partial_decode_cases": 4,
+    "source_prediction_control_flow_cases": 8,
+    "independent_sampling_tests": 15
+  },
+  "observations": [
+    "Uniform requests exceeding clip length retain only the first frame due to repeated-index cursor behavior.",
+    "Empty source clips return None without releasing capture; array adaptation owns no capture.",
+    "Partial decoder failures return the successfully decoded prefix or None; not covered by complete-array API.",
+    "One face reaches the classifier but squeeze/index failure returns 0.5. No faces also return 0.5.",
+    "Default inference accepts at most 127 faces; normalization and half casting precede model call.",
+    "Empty model ensemble produces NaN in source and must be rejected at the future runtime boundary."
+  ],
+  "adaptations": [
+    "Array API receives caller-decoded RGB; source BGR-to-RGB path checked via synthetic capture.",
+    "Local historical np.int alias in source harness; implementation uses built-in int.",
+    "Source prediction tensor allocation redirected from CUDA to CPU for control-flow checks only."
+  ],
+  "limits": "No real media or weights. Synthetic capture and stand-in classifiers; not codec, detector, full-model, training, graph or promotion evidence.",
+  "sha256": {
+    "sciona/dfdc_frame_sampling.py": "565d4b2d5d4fd6712f4061be03b3dfa57e6c4b0d34fe22c141c0d7aeda807191",
+    "tests/test_dfdc_frame_sampling.py": "738ac8077edac8033c49195c019ade2ce8cdf160ac0f598294d5c5ae8d67eac4",
+    "scripts/validate_dfdc_frame_and_prediction_edges.py": "fc9bd08af4038e51cb64680e09a4c8535ffbc6581c78487e6337742d799d9b77",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

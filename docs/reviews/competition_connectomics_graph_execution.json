@@ -1,0 +1,48 @@
+{
+  "format": "connectomics-graph-execution.v1",
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "53dc75dcdd21723b0dc9da4018177ef8a8da210b900fa5df656d95bbb7ffd925",
+  "cases": [
+    {
+      "mode": "simple",
+      "directivity": false,
+      "pca_fits": 240,
+      "exact_source_match": true
+    },
+    {
+      "mode": "simple",
+      "directivity": true,
+      "pca_fits": 240,
+      "exact_source_match": true
+    },
+    {
+      "mode": "tuned",
+      "directivity": false,
+      "pca_fits": 480,
+      "exact_source_match": true
+    },
+    {
+      "mode": "tuned",
+      "directivity": true,
+      "pca_fits": 480,
+      "exact_source_match": true
+    }
+  ],
+  "independent_directivity_exact": true,
+  "actual_runner_nodes": 2,
+  "strict_json_output": true,
+  "graph_codec_roundtrip": true,
+  "provider_witness_contracts": true,
+  "caller_input_preserved": true,
+  "degenerate_covariance_rejected": true,
+  "tampered_source_rejected": true,
+  "provider_sha256": "e29240147d80d32ed8f99f83001b82443363d906f62e3c3e1127369b8ec5e5eb",
+  "code_sha256": {
+    "sciona/connectomics_graph.py": "145a7dbd2e0358a25134829c6d094a3d9b79bc52f1e5744632076d47e173ffb7",
+    "sciona/connectomics_runtime.py": "1e061d3a0384188e503b7e0935a984a2d351b9c500f9a4434d1b605e429d0211",
+    "sciona/connectomics_source.py": "5c8b13850cdb0a58f3587543decc303dc8c5a8eaf93dcb9f57f427c7c10336d1",
+    "scripts/validate_connectomics_graph_execution.py": "ae698263a4cc26e980f65abb9c17cc7ea35e48d1a31d280c215aa33ccfecbe30"
+  },
+  "limits": "Synthetic execution only; no historical accuracy or served publication claim. Private matrices remain in memory or temporary storage."
+}

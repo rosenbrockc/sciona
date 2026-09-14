@@ -1,0 +1,15 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_stitched_mask_and_model_call_cases": 60,
+  "implementation_sha256": {
+    "sciona/hubmap_inference.py": "c30e4eb325b47bc4eeecfafaf858104d98fab1c4fecbdd10aeb82028ff0a4c9b",
+    "scripts/validate_hubmap_inference.py": "4cf5383765907102249c87ac70eb543f1470e700617e0ec9be14c6c373f449b4",
+    "docs/reviews/competition_hubmap_pseudo_pins.json": "e4aa409b4f7e53f69646dd49bee490ddedb65984e1d5c4e27df9e5c7e43942a9"
+  },
+  "limitations": [
+    "Original inference loop executed; synthetic tile dataset and asymmetric synthetic models isolate TTA/resize/threshold/stitching.",
+    "Raw inference dataset/normalization and full-network classifier shortcut need independent checks.",
+    "No trained predictive accuracy, historical GPU fidelity or full CDG approval claimed."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "receipt_kind": "post_completion_synthetic_consistency",
+  "checkpoint_sha256": "b48e6000bc9445e7e41533c4a74d2106bb4e6bdae250726b729c517b6142eda0",
+  "completion_sha256": "9c70e49b1a3abb4196d7a3475e145f560874279b55cf9205211d4bf27f5e3aed",
+  "history_sha256": "261e8eaa192e127101f55332142443fa5beb8e7373e06b4c334b4beea36bf800",
+  "selected_epoch": 20,
+  "same_population_accuracy": 0.234375,
+  "selected_epoch_evaluation_replayed": true,
+  "training_time_checkpoint_digest_available": false,
+  "classifier_implementation_sha256": {
+    "sciona/bengali_classifier_fit.py": "1f8b45b4d06f0f395dbbdd75353d7b26cb3820da1b3d35ecea3cb759c0faa2b9",
+    "sciona/bengali_font_classifier.py": "3ffb988219fba2ae6c38b44030c9fbe93b2a161dab7369439d63db4a880330d9",
+    "sciona/bengali_population.py": "d72ac2ba1dac1f2ff3b0289779f4497f84931808ca5602e562630fb336b62889",
+    "sciona/bengali_preprocessing.py": "1a2cdb8f791a1a78d055ddca1f99b0a66b20e0f5d9c1e44dd556c92d9033e5b8",
+    "sciona/bengali_pretraining_sampling.py": "ab13c39225e77014704ecc635ddfd85a9f996bc358e3a6086f22f5e3d93e501a",
+    "sciona/bengali_pretraining_augmentation.py": "a67434b9ccf16e8c00640874323936be1a5526229349aea018a7fa3fe9f3b398",
+    "sciona/bengali_font_sampling.py": "b32c354711eed6aa3dbbf44a26353111e118a8ed19e5a0ac6bf9ca2f42060c92",
+    "sciona/bengali_font_augmentation.py": "d5ee9776578f3c092c5b69adc85d878e84925125cc6ddf4357ebba1529d27c59",
+    "sciona/bengali_shear_sampling.py": "73f677eacbc2bcc964146ec12bb7bc8b111e7e781da96b8aac6420f852a4498d",
+    "sciona/bengali_sampling.py": "fe6e3b33a43a734217f6179f17d0f880701c5b12f7b38b5a917e957b0124469f",
+    "sciona/bengali_joint_labels.py": "b9c1a52d6458f23217d2e84aabc1ba50302eb8edc9a8c81e3a43ec9f2ed1cb1d",
+    "sciona/bengali_label_corrections.py": "f34b64f59c1a78807e57dac5e9b3163bafb2016fc3da6048f6e82fe4d8623501",
+    "/Users/conrad/personal/sciona-matcher/scripts/run_bengali_classifier_training_probe.py": "e9c75a5a6c5d9f40dd9532ae24efd9dfd87000b0245f0a7ee678aa228852d148"
+  },
+  "verifier_sha256": {
+    "scripts/qualify_bengali_classifier_checkpoint.py": "6c0cac212a7ba1d037fdf509b089aee9db91aa8969312a140efaad9980d1f3a1",
+    "sciona/bengali_checkpoint_handoff.py": "50461fbb046cc75c72d986a251b25737a0473770123efafb970cd31bf697504e"
+  },
+  "limits": [
+    "Post-completion observation, not a recovered training-time checkpoint attestation.",
+    "Same-population synthetic intensity classification; no font recognition or held-out accuracy claim.",
+    "Does not qualify complete Bengali pipeline, dependencies, licensing or publication."
+  ]
+}

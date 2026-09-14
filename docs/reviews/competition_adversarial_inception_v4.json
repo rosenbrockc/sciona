@@ -1,0 +1,29 @@
+{
+  "format": "adversarial-inception-v4-validation.v1",
+  "result": "passed",
+  "checks": {
+    "pinned_source_topology_retrace": true,
+    "operations": 202,
+    "convolutions": 151,
+    "independent_endpoint_shapes": 22,
+    "full_299_main_and_aux_input_gradients": true,
+    "weighted_gradient_linearity": true,
+    "frozen_buffers_modes_rng": true,
+    "state_reload_neural_execution_exact": true,
+    "invalid_cases_rejected": 3,
+    "parameters": 45976626
+  },
+  "limits": "Shape-only source AST tracing with explicit Slim/TF adapters; separately validated Torch CPU primitives. Synthetic single-example float32 full network. No historical TensorFlow binary/initializer or checkpoint mapping, pretrained quality or full ensemble attack claim. Max-pool tie-gradient parity unproven.",
+  "sha256": {
+    "sciona/adversarial_inception_v4.py": "2f98b52b06d85aabf2a8d616c4a3e09888fe95c5f15731d9e23934a25c77fc3a",
+    "sciona/adversarial_inception_v4_topology.json": "f33a8109dc4c934b29dbc6677fdb19b23f15fc5583086d90ad60c67af92ae8a4",
+    "sciona/adversarial_inception_ops.py": "2af2b4abb03548fc79a9421496da40e1fc9972afd0f919850ed544c690eb10b7",
+    "sciona/adversarial_normalization.py": "3af9580ea7f45eb3e56b71c8a7bfb308819363f9f9a08a933ca6ec67186aad92",
+    "scripts/trace_adversarial_inception_v4.py": "c14ad53230fb7ce4f1209df1e8352b20e688b3f09e1420812253982a9a3999c8",
+    "scripts/trace_adversarial_inception_v3.py": "b35d1d918c180a14a66c5c69bb66bfda5290506922d544adb1cdbda7acb411d6",
+    "scripts/validate_adversarial_inception_v4.py": "ae7946be64939f10b85d3fcf88adbb285c0480cd96a971a0f7ad37c4ad10540e",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55",
+    "docs/reviews/competition_adversarial_inception_ops.json": "ef73e4f293dd4ba6198e64f92e60b8d2a3b3baad474048ed565634a7afb13c53",
+    "docs/licenses/Adversarial-non_targeted-Apache-2.0.txt": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+  }
+}

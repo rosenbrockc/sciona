@@ -1,0 +1,51 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "threshold": 0.3,
+      "batch_sizes": [
+        2,
+        1
+      ],
+      "exact_loss_dice_buffers": true,
+      "no_gradients": true
+    },
+    {
+      "threshold": 0.5,
+      "batch_sizes": [
+        2,
+        1
+      ],
+      "exact_loss_dice_buffers": true,
+      "no_gradients": true
+    },
+    {
+      "threshold": 0.7,
+      "batch_sizes": [
+        2,
+        1
+      ],
+      "exact_loss_dice_buffers": true,
+      "no_gradients": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_validation.py": "8a12689e3f016deeb0459ae1da7dc59643f7dff6158a220defa3bd86095bf1f5",
+    "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "scripts/validate_hubmap_validation.py": "2b1922ff2001dd955527d911c64ed0640e0c0495e9e019c323bb8d6a169c67e5",
+    "scripts/validate_hubmap_losses.py": "0fba8d784ca0659ca4d7d6ad4ef372f89694dbb76e1e5b43d632f837b8c8774b",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "scripts/validate_hubmap_training.py": "bb241a37b285cf7250dae09b1d1edd97459fd12e65fde7ed909f8adcecd46435",
+    "tests/test_hubmap_validation.py": "1b077f3c836449f8d5e5c6dcf7eb28fb5b70c832e30d6fdd0b66f33b56b774b5",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Full initialized network on synthetic float32 CPU inputs; no trained accuracy claim.",
+    "Zero global Dice denominator rejects explicitly rather than returning source NaN.",
+    "Loss terms accumulate separately as Python floats; unequal final batch included.",
+    "Complete epoch/checkpoint execution and CDG publication remain."
+  ]
+}

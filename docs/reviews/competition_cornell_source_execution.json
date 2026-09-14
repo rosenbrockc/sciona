@@ -1,0 +1,20 @@
+{
+  "source_commit": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59",
+  "complete_densenet121_topology": true,
+  "classes": 264,
+  "stft_reference_passed": true,
+  "logmel_reference_passed": true,
+  "max_abs_stft_error": 0.000141143798828125,
+  "max_abs_logmel_error": 1.1444091796875e-05,
+  "mixed_waveform_forward_backward": true,
+  "source_gamma_zero_loss_matches_bce": true,
+  "finite_backbone_attention_gradients": true,
+  "strict_state_reload_exact": true,
+  "caller_input_preserved": true,
+  "validator_sha256": "742dc66f1d3ef38f332bf2a5639e615e3afcfc6c8a654d297130387472a5b8ce",
+  "limitations": [
+    "Synthetic two-second waveforms; no complete training schedule or thirteen-model lifecycle claim.",
+    "Full DenseNet121 initialized without pretrained weights explicitly for offline topology/gradient evidence; no pretrained or competition accuracy parity.",
+    "Only modern librosa pad_center keyword compatibility changed; source classes executed through AST to avoid unrelated launchers and logging."
+  ]
+}

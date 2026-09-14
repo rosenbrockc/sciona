@@ -17,7 +17,7 @@ RawTrustPolicy = Literal["prefer_reviewed", "reviewed_only", "allow_raw"]
 
 _BLOCKED_STATUSES = {"blocked", "failed", "parse_failed"}
 _REVIEWED_STATUSES = {"human_reviewed", "automated_pass", "source_verified"}
-_HUMAN_REVIEWED_STATUSES = {"human_reviewed", "published", "approved"}
+_HUMAN_REVIEWED_STATUSES = {"human_reviewed"}
 _NEEDS_HUMAN_STATUSES = {"needs_human"}
 _PUBLISHED_STATUSES = {"published", "approved"}
 _RAW_STATUSES = {"", "raw_imported", "unreviewed", "parsed"}
@@ -372,8 +372,7 @@ class SymbolicArtifactCandidate:
     @property
     def human_reviewed(self) -> bool:
         return (
-            self.published
-            or self.review_status in _HUMAN_REVIEWED_STATUSES
+            self.review_status in _HUMAN_REVIEWED_STATUSES
             or self.candidate_status in _HUMAN_REVIEWED_STATUSES
         )
 

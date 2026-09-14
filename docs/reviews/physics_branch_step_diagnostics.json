@@ -1,0 +1,153 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "graphs": [
+    {
+      "steps": [
+        {
+          "node_id": "pdg_step_1",
+          "rule": "divide both sides by",
+          "status": "symbolic_difference",
+          "side_differences": [
+            "Mul(Symbol('pdg0001464'), Pow(Symbol('pdg0009139'), Integer(-1)), Add(Symbol('pdg0001939'), Mul(Integer(-1), Symbol('pdg0009139'))))",
+            "Integer(0)"
+          ],
+          "counterexample": {
+            "assignments": {
+              "pdg0009139": "Integer(2)",
+              "pdg0001939": "Integer(3)",
+              "pdg0004231": "Integer(1)",
+              "pdg0001464": "Integer(-1)"
+            },
+            "premise_satisfied": true,
+            "conclusion_satisfied": false,
+            "scope": "Finite real example with nonzero quadratic coefficient and real distinct roots; no extra a=b constraint imposed."
+          }
+        },
+        {
+          "node_id": "pdg_step_10",
+          "status": "not_evaluated_operation"
+        },
+        {
+          "node_id": "pdg_step_11",
+          "status": "not_evaluated_operation"
+        },
+        {
+          "node_id": "pdg_step_2",
+          "rule": "subtract X from both sides",
+          "status": "symbolic_difference",
+          "side_differences": [
+            "Mul(Symbol('pdg0001464'), Pow(Symbol('pdg0009139'), Integer(-1)), Add(Mul(Integer(-1), Symbol('pdg0001939')), Symbol('pdg0009139')))",
+            "Integer(0)"
+          ],
+          "counterexample": {
+            "assignments": {
+              "pdg0009139": "Integer(2)",
+              "pdg0001939": "Integer(3)",
+              "pdg0004231": "Integer(-4)",
+              "pdg0001464": "Integer(1)"
+            },
+            "premise_satisfied": true,
+            "conclusion_satisfied": false,
+            "scope": "Finite real example with nonzero quadratic coefficient and real distinct roots; no extra a=b constraint imposed."
+          }
+        },
+        {
+          "node_id": "pdg_step_3",
+          "rule": "add X to both sides",
+          "status": "exact_arithmetic",
+          "side_differences": [
+            "Integer(0)",
+            "Integer(0)"
+          ]
+        },
+        {
+          "node_id": "pdg_step_4",
+          "status": "not_evaluated_operation"
+        },
+        {
+          "node_id": "pdg_step_5",
+          "status": "not_evaluated_operation"
+        },
+        {
+          "node_id": "pdg_step_6",
+          "status": "not_evaluated_operation"
+        },
+        {
+          "node_id": "pdg_step_7",
+          "status": "not_evaluated_multiple_outputs"
+        },
+        {
+          "node_id": "pdg_step_8",
+          "rule": "subtract X from both sides",
+          "status": "symbolic_difference",
+          "side_differences": [
+            "Integer(0)",
+            "Mul(Integer(-1), Pow(Mul(Pow(Symbol('pdg0009139'), Integer(-2)), Add(Pow(Symbol('pdg0001939'), Integer(2)), Mul(Integer(-1), Integer(4), Symbol('pdg0004231'), Symbol('pdg0009139')))), Rational(1, 2)))"
+          ],
+          "counterexample": {
+            "assignments": {
+              "pdg0009139": "Integer(2)",
+              "pdg0001939": "Integer(3)",
+              "pdg0004231": "Integer(1)",
+              "pdg0001464": "Integer(-1)"
+            },
+            "premise_satisfied": true,
+            "conclusion_satisfied": false,
+            "scope": "Finite real example with nonzero quadratic coefficient and real distinct roots; no extra a=b constraint imposed."
+          }
+        },
+        {
+          "node_id": "pdg_step_9",
+          "rule": "subtract X from both sides",
+          "status": "symbolic_difference",
+          "side_differences": [
+            "Integer(0)",
+            "Pow(Mul(Pow(Symbol('pdg0009139'), Integer(-2)), Add(Pow(Symbol('pdg0001939'), Integer(2)), Mul(Integer(-1), Integer(4), Symbol('pdg0004231'), Symbol('pdg0009139')))), Rational(1, 2))"
+          ],
+          "counterexample": {
+            "assignments": {
+              "pdg0009139": "Integer(2)",
+              "pdg0001939": "Integer(3)",
+              "pdg0004231": "Integer(1)",
+              "pdg0001464": "Rational(-1, 2)"
+            },
+            "premise_satisfied": true,
+            "conclusion_satisfied": false,
+            "scope": "Finite real example with nonzero quadratic coefficient and real distinct roots; no extra a=b constraint imposed."
+          }
+        }
+      ],
+      "scope": "Independent elementary-operation diagnostics, not composed replay or approval",
+      "version_id": "40ae98f0-f033-5861-870c-6d6408edbd2b",
+      "content_hash": "d66ede579e855129e780446bba640b51c5ec10cf481988eca10eadd76629e5d1",
+      "prior_failed_evidence_id": "b0016809-ea53-56bf-bad5-56bf364e1227",
+      "prior_evidence_sha256": "63af81734f3efb5a7f36cbbf8a55077bd89e8b418da0b81144ce2b3db979cf85",
+      "expression_evidence_sha256": {
+        "1b867bbb-9ddb-5fc0-b212-1fb84953705d": "f5b232e1a8d0896fd72e10c41e5490c265d6516ee65beb940aeaaffe87c889f4",
+        "29d6ef08-9557-5fe2-86d5-1273abeef851": "f46dcf7291cfaf4f8d3bf4557d30f2c9b20b64f9483e9da00a39870507ae741c",
+        "8d0ba6a6-e382-5ed7-b259-bae650d4d007": "bb358fed6bbb21425f57aa51876cf8db25232911e51501c10f7f743acd3125f2",
+        "56b2b986-094e-598c-95e5-78b1070dc6e0": "8d3e5cfed7f6bd29b9c8e5dc7f5f78af25be925fc1c647ed6c0b2f4d018a400e",
+        "43d307fb-b829-588b-a2bb-f325f1166ec1": "f8b9b956894668f2873657d6bae7a8bae89f4b49cf881d27c6186f56c720f7e0",
+        "936b95f2-601a-54e1-b7eb-51f48557b18f": "49ed8f5016e5bbada3a9ed5741d424ccabaf740f6fed5f73153a145e4e3a5a93",
+        "596be988-7682-5a2a-956f-b35f3b75776a": "b71958033cd74e6597f3c047bf0466ab5c5924d5284aa1c785123d7374ab088a",
+        "df32a922-7bee-59c7-ab48-30dc4211d6bd": "042de5203f011ac2b34243c5b8d4f4ec39284d22c92aef605f4ad5cbe26b657b",
+        "ffcea57a-85ad-5288-9bf9-6034c481d1e6": "5bb36c3ca5f4b659e9607b6c338f0b965cf7e86f65a25ab3bdebc417cb0e1145",
+        "9e40ee16-fcfc-5daa-945e-5a86e51ee94b": "b88ac3dfe70cf38d303fac8bd5d00603011410d8de95ee059aeb78d4c89ca612",
+        "f2ab55fa-8fcd-5615-947a-079c910b70ce": "3ef7e1605f9a2cabb0bbbe41c68cbf2c871e82207bfbe43981cda9151dc811aa",
+        "2d56af90-c6a3-5ded-9d30-304dea0d9e7d": "97d2d78b9ebd986ffea1f9ad6de44e12b2aa77987a421ae04e28aabc19745857",
+        "aaa3796e-769f-51d1-bfa5-f1caabaf15de": "eb5484a580188440a77041538a2c03e5074743968e0e3a1b34df055472c367e0",
+        "af6ad3b2-74c9-5bee-8ef8-6255a932c000": "6723a89b7cfca85cb3bd59b9e468769350b3810db50cdb6865056d9d53f90377"
+      }
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/physics_ingest/pdg_step_diagnostics.py": "4e7d6d70b38cc61912c0ce5b44999ef7a3bd1f911cfd7703a2152b8508fb5d5d",
+    "scripts/audit_physics_branch_steps.py": "d3638475d77a6692213708b1aafd2a6b5f4b634227b865636f2588bce6c5cf10",
+    "tests/physics_ingest/test_pdg_step_diagnostics.py": "0697b07379d8e970cedb3e7af136a255e47e9265132d40ceed68d20839aa1765"
+  },
+  "limitations": [
+    "Independent operation diagnostics; zero differences do not establish a complete valid proof.",
+    "Previous failed replay evidence is retained; this validator does not modify catalog state."
+  ]
+}

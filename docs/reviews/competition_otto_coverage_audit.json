@@ -1,0 +1,440 @@
+{
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "approved": false,
+  "first_level": [
+    {
+      "source_entry": 1,
+      "family": "R forest",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_random_forest.py",
+      "crossfit_implementation": "sciona/otto_random_forest_crossfit.py"
+    },
+    {
+      "source_entry": 2,
+      "family": "logistic",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_classical_models.py"
+    },
+    {
+      "source_entry": 3,
+      "family": "ExtraTrees",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_classical_models.py"
+    },
+    {
+      "source_entry": 4,
+      "family": "scaled KNN",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_variant_knn.py",
+      "crossfit_implementation": "sciona/otto_variant_knn.py"
+    },
+    {
+      "source_entry": 5,
+      "family": "libFM",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_libfm.py",
+      "crossfit_implementation": "sciona/otto_libfm_crossfit.py"
+    },
+    {
+      "source_entry": 6,
+      "family": "H2O neural",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_h2o.py",
+      "crossfit_implementation": "sciona/otto_h2o_crossfit.py"
+    },
+    {
+      "source_entry": 7,
+      "family": "multinomial Bayes",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_classical_models.py"
+    },
+    {
+      "source_entry": 8,
+      "family": "CPU neural pair",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_lasagne.py",
+      "crossfit_implementation": "sciona/otto_lasagne_crossfit.py"
+    },
+    {
+      "source_entry": 9,
+      "family": "CPU neural bag",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_lasagne.py",
+      "crossfit_implementation": "sciona/otto_lasagne_crossfit.py"
+    },
+    {
+      "source_entry": 10,
+      "family": "t-SNE/clustering",
+      "status": "not_implemented",
+      "implementation": null
+    },
+    {
+      "source_entry": 11,
+      "family": "Sofia linear",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_sofia.py",
+      "crossfit_implementation": "sciona/otto_sofia_crossfit.py"
+    },
+    {
+      "source_entry": 12,
+      "family": "Sofia interactions",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_sofia_interactions.py",
+      "crossfit_implementation": "sciona/otto_sofia_interactions_crossfit.py"
+    },
+    {
+      "source_entry": 13,
+      "family": "Sofia ROC",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_sofia_roc.py",
+      "crossfit_implementation": "sciona/otto_sofia_roc_crossfit.py"
+    },
+    {
+      "source_entry": 14,
+      "family": "one-vs-rest boosting",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_ovr_boosting.py",
+      "orchestration": "sciona/otto_ovr_crossfit.py"
+    },
+    {
+      "source_entry": 15,
+      "family": "multiclass cluster boosting",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_augmented_boosting.py",
+      "orchestration": "sciona/otto_augmented_crossfit.py"
+    },
+    {
+      "source_entry": 16,
+      "family": "t-SNE/raw-cluster boosting",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_embedding_boosting.py",
+      "crossfit_implementation": "sciona/otto_embedding_crossfit.py"
+    },
+    {
+      "source_entry": 17,
+      "family": "t-SNE/log-cluster boosting",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_embedding_boosting.py",
+      "crossfit_implementation": "sciona/otto_embedding_crossfit.py"
+    },
+    {
+      "source_entry": 18,
+      "family": "t-SNE/scaled-cluster boosting",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_embedding_boosting.py",
+      "crossfit_implementation": "sciona/otto_embedding_crossfit.py"
+    },
+    {
+      "source_entry": 19,
+      "family": "two-layer GPU neural",
+      "status": "not_implemented",
+      "implementation": null,
+      "cpu_component": "sciona/otto_lasagne_120.py",
+      "cpu_validation": "full_120_run_bag_passed",
+      "gpu_validation": "pending",
+      "layer_count_convention": "independent hidden-layer interpretation",
+      "cpu_crossfit_implementation": "sciona/otto_lasagne_120_crossfit.py",
+      "cpu_crossfit_validation": "720_native_models_passed"
+    },
+    {
+      "source_entry": 20,
+      "family": "three-layer GPU neural",
+      "status": "not_implemented",
+      "implementation": null,
+      "cpu_component": "sciona/otto_lasagne_120.py",
+      "cpu_validation": "full_120_run_bag_passed",
+      "gpu_validation": "pending",
+      "layer_count_convention": "independent hidden-layer interpretation",
+      "cpu_crossfit_implementation": "sciona/otto_lasagne_120_crossfit.py",
+      "cpu_crossfit_validation": "720_native_models_passed"
+    },
+    {
+      "source_entry": 21,
+      "family": "bagged raw boosting",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_raw_boosting.py",
+      "orchestration": "sciona/otto_raw_boosting_crossfit.py"
+    },
+    {
+      "source_entry": 22,
+      "family": "raw/zero KNN",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_variant_knn.py",
+      "crossfit_implementation": "sciona/otto_variant_knn.py"
+    },
+    {
+      "source_entry": 23,
+      "family": "raw/zero/log KNN",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_variant_knn.py",
+      "crossfit_implementation": "sciona/otto_variant_knn.py"
+    },
+    {
+      "source_entry": 24,
+      "family": "raw KNN k=2",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 25,
+      "family": "raw KNN k=4",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 26,
+      "family": "raw KNN k=8",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 27,
+      "family": "raw KNN k=16",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 28,
+      "family": "raw KNN k=32",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 29,
+      "family": "raw KNN k=64",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 30,
+      "family": "raw KNN k=128",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 31,
+      "family": "raw KNN k=256",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 32,
+      "family": "raw KNN k=512",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    },
+    {
+      "source_entry": 33,
+      "family": "raw KNN k=1024",
+      "status": "tested_component_settings_unresolved",
+      "implementation": "sciona/otto_knn_models.py"
+    }
+  ],
+  "counts": {
+    "tested_family_components": 30,
+    "unimplemented_entries": 3,
+    "fully_source_qualified_entries": 0
+  },
+  "second_level": {
+    "xgboost": "tested_250_run_component_settings_unresolved",
+    "lasagne_neural": "tested_600_run_cpu_component_settings_unresolved",
+    "adaboost_extratrees": "tested_250_run_component_settings_unresolved",
+    "four_fold_tuning": "all_three_families_two_candidate_full_bags_tested",
+    "final_refit_bags": "all_three_full_run_counts_tested_on_synthetic_meta_inputs"
+  },
+  "final_blend": "tested_with_all_three_actual_meta_ensembles",
+  "environment": {
+    "Rscript": true,
+    "R_randomForest": "4.7-1.2",
+    "R_RSofia": {
+      "version": "1.1",
+      "commit": "00ed60b235b34541f8c6280f2f9efeae55298c81",
+      "compatibility_patch": "docs/reviews/otto_rsofia_compatibility.patch"
+    },
+    "R_xgboost": false,
+    "R_h2o": false,
+    "python_h2o": "3.46.0.8",
+    "python_xgboost": "3.4.1",
+    "python_torch": "2.11.0",
+    "R_version": "4.6.1",
+    "native_libFM": {
+      "version": "1.4.4",
+      "commit": "30b9c799c41d043f31565cbf827bf41d0dc3e2ab"
+    },
+    "R_Rcpp": "1.1.2",
+    "java": "OpenJDK 21.0.10",
+    "lasagne_runtime": {
+      "lasagne": "0.2.dev1",
+      "theano": "1.0.5",
+      "commits": {
+        "theano": "f3bb5b755ec5e92fb60b5364d83a10878fa9a211",
+        "lasagne": "5d3c63cb315c50b1cbd27a6bc8664b406f34dd99"
+      },
+      "execution": "CPU Python linker, NumPy BLAS",
+      "gpu_validated": false
+    }
+  },
+  "source_gaps": [
+    "Exact model hyperparameters and variant metric mapping",
+    "Learned preprocessing population scope",
+    "How the t-SNE/clustering entry yields the claimed nine-feature model block",
+    "Legacy-library behavior and required dependency environments"
+  ],
+  "architecture_diagram": {
+    "url": "https://storage.googleapis.com/kaggle-forum-message-attachments/79598/2514/FINAL_ARCHITECTURE.png",
+    "inspected": true,
+    "findings": [
+      "Three second-level learners confirmed",
+      "Feature eight feeds neural branch",
+      "Final blend agrees with implemented formula"
+    ]
+  },
+  "sha256": {
+    "sciona/otto_classical_models.py": "d75f98a0aa375542c22cba0d5527f90b368a223396e1f78563e3800c38643e72",
+    "sciona/otto_clustering.py": "227611641be342eb0245a128d4ac4954665d1332bb44af14b286b32d9c265ed7",
+    "sciona/otto_final_blend.py": "280e637eda6e36b8c649c6f8262817a5a90416b1120c7aade69f1f3c90960907",
+    "sciona/otto_knn_models.py": "7f049298cb817d676f268359c404272fe7918e5b56c8727fe3afbfeb93e8f910",
+    "sciona/otto_neighbor_crossfit.py": "1d3cac62677ee5c41bc99263dc1870f025ddcaa3a6e902f857339f70b5e5afc7",
+    "sciona/otto_neighbor_features.py": "ff96a5e315cf09e14d7773a59c896406c8d891dcb34aa69cfd18157351976742",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "sciona/otto_tfidf.py": "422c3dc036adc68fe89903e428372b0161321855d8afebdce8facfc8e90bb160",
+    "sciona/otto_tfidf_crossfit.py": "07ed2a7369cfae2fc26e3201bc98b9d05d6d1576515190232a1d9617da01296c",
+    "sciona/otto_ovr_boosting.py": "28cfb7c28aab6b08e5fb0d798cd7c245e433ce31682edebf84eeb68a14ab34b7",
+    "sciona/otto_ovr_crossfit.py": "6b0ca608740c664e2feed78ed5de0c4ac4dda6f3301de1200e0493e1214eb31d",
+    "sciona/otto_raw_boosting.py": "79a40c58057ac7010afa08aa81cc4b5da69fce6e3ec4e726cf2e133872fa8483",
+    "sciona/otto_raw_boosting_crossfit.py": "83ce202fa8b847576dff85930de9c87737ff10799cbe62c2c8bcb6f17f14483d",
+    "sciona/otto_augmented_boosting.py": "8f3067931468b062c5b5b4af2a451da7e968aa7a73ca8ca437cfdf17e641d6cc",
+    "sciona/otto_augmented_crossfit.py": "91b0ae050a678360f67dc8eb808169f0571087108d033d62ee40296f1e6c7aa5",
+    "sciona/otto_augmented_features.py": "17568a237b96a2db6e2152892699dfd782461a982059060523aa3eb36226776f",
+    "sciona/otto_random_forest.py": "707e43b98241560efab17ab049617a340955805c72c3649093eae6200491ab68",
+    "sciona/otto_random_forest.R": "9be7d714a84f77fb7c99dfb5944dab9ace6b64a3aa30ad6af66d4932bf5116b3",
+    "sciona/otto_random_forest_crossfit.py": "28e466baec3c2ba2e215ebd0b0bec6c5203217fe162b2005772471a585fb803c",
+    "tests/test_otto_random_forest.py": "fa133cd754c9ff4eab1ff9e6795b4037fab69054ab53523eebb80a6a05fc2cef",
+    "tests/test_otto_random_forest_crossfit.py": "adb511fd763dc6157ab58985d548500d7dfb2fba359584d57663a8dc3a0c4861",
+    "sciona/otto_variant_knn.py": "01e7f23ea9e6b13f8afa0aa6a74d40fdc6e07cfd12d1cdfd469a4af62d1e0784",
+    "tests/test_otto_variant_knn.py": "d5fa19cef432476c4b4fbf0485b604021bd6036bf190c1602f72c67fa9bb2cd0",
+    "sciona/otto_libfm.py": "8be7d1f4fa73943f1945b27eb06567bdd8f1a04aa265b50efe72fa1b9af358b9",
+    "tests/test_otto_libfm.py": "4482e31c7bf8d345e1a94a1dfcc0238e9d4d8a9185bf2b3fc9c313f38568976a",
+    "sciona/otto_libfm_crossfit.py": "8627de5375761ea3874a35dcb1a18ee829c245f5e932b3b2784eda044c33d4b4",
+    "tests/test_otto_libfm_crossfit.py": "8177e165a5c04b1794924bf906dcb027ad88cbc38ab5e934d6385dc3c70fa6d7",
+    "scripts/validate_otto_rsofia_runtime.R": "46be51386409a9ac72bd66b471f669d070f38c633e87bcd6d4f6e9a4b0a35882",
+    "docs/reviews/otto_rsofia_compatibility.patch": "71dcc2785e2b7205f3de5bd3db4daf54a44235b0dbb9b32214ed9ddaf311c459",
+    "sciona/otto_sofia.py": "fe364ae067492dea2524a6050a0bb656cbfe2bae39d4343e381a438f491bcdbb",
+    "sciona/otto_sofia.R": "332550b60603cc9cec371b857542856e2fb96283234e8c7183baa1aee5d15999",
+    "sciona/otto_sofia_crossfit.py": "decb90e5b7c8fd738cb5dc027f4abbb291b5bde4232e4a573c9f4ab2076732e7",
+    "tests/test_otto_sofia.py": "57ba44b854044662fb5070f21f8194246455c03acd07c76802131cbe4e481d3c",
+    "sciona/otto_interactions.py": "81f14071381f5e58ad6b318e9ff27ea7b353ab461f7b3a60793b3444726aeb6b",
+    "sciona/otto_interactions.R": "18bc8b375be1ddac8c03ec621be6aab81bb6ac9e306a933c43f26dd02f29ec75",
+    "tests/test_otto_interactions.py": "57db61bffcd7187db81ef09f228c27cc7ddeb7c1a9f2f12083b85c605cd4adf4",
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0",
+    "tests/test_otto_tsne.py": "c3194a90e94b96c8a1b15b66f735751d0cc798e6320d5b3006d70b43629857ac",
+    "sciona/otto_tsne_clusters.py": "e8872ae4914895d9bd1a08a5e3fe188f27a409bb228101ee3979bb1902427d31",
+    "tests/test_otto_tsne_clusters.py": "e7942a02cd9823b06ed82df36f67cbc0d41a9042f966f0a4b8c4b8272321e7eb",
+    "sciona/otto_embedding_boosting.py": "2de36d0de0136a846c93fd1e3f8e7b1d4a802b225649dd76ccdf78e8be4039d6",
+    "sciona/otto_embedding_crossfit.py": "29c7809b35e8f9bc987b7ff89080988ea7ff794d33a80ada9dde57c4f4f42235",
+    "tests/test_otto_embedding_boosting.py": "a1c9195edb6530ed2d275d4ffd115e86a18c3172455845e58f6bdea86ad17efb",
+    "sciona/otto_sofia_interactions.py": "c6a8801ff10c0a1913d2872c72dd08adc5d25351abde86ccc3cbb6a447e98375",
+    "sciona/otto_sofia_interactions_crossfit.py": "c0e3d4c4c96e135083f6fb08c772cda0a9e04dd02b8c47a5f57648a1b376a5e9",
+    "tests/test_otto_sofia_interactions.py": "5bcf3cff29cb291c31d3ed00528c7065d60ad99c3d3df0610807d6707e57d318",
+    "sciona/otto_sofia_roc.py": "fe99bb0ae39f47b40b582e2bfe7c275e380b74de7974e692a8f630f79b2f8ed8",
+    "sciona/otto_sofia_roc.R": "cd1a5f9d2b445291a4fc50b251b651db5dae21e855d0cb3fe7f690d201821d84",
+    "sciona/otto_sofia_roc_crossfit.py": "003bc2de52ad55150b7b2d86abae1da34497850f82b431411834ca38b0879a49",
+    "tests/test_otto_sofia_roc.py": "d8f5b64e396ebc0558359716e4d865b227caf0d5d3da81e33fcb91d82a4f14e3",
+    "scripts/validate_otto_h2o_runtime.py": "baa034870062ac67ecd3da4df9c03adba6f8c0284a41104cc2e802bfb98b6bc7",
+    "sciona/otto_h2o.py": "a8eee16e8dfd279e2d8a731ea8ae975b2270a97b2838e48c7582a83fbe7e4d6e",
+    "sciona/otto_h2o_worker.py": "da967f386a1d31f18c4bb1d4ccc1a08f4fa6ca19dbf09ac965661be234ec55ef",
+    "tests/test_otto_h2o.py": "66ca835ab4184bf9809cf0800edbe12223560c823e50e9c2f7bab5805bc7b541",
+    "sciona/otto_h2o_crossfit.py": "d9e884208062c2b8be0dd11b40f752fc51a976443f25e5218387d917fc9e1510",
+    "tests/test_otto_h2o_crossfit.py": "430553710c214e78a16cf0436d5c3e68decf51c4c0de0de5e6657f1da310e023",
+    "scripts/validate_otto_lasagne_runtime.py": "73d81abc46e4f9aa2baa4e468f888aad438ba43147b3134ffcb734a2eda95d0c",
+    "docs/reviews/otto_theano_numpy_compatibility.patch": "67c3dda8efdb755d1010ea3a4f6b24cd64d4395b57a772e64745b867e573d4fc",
+    "sciona/otto_lasagne.py": "6015601c9e189771b71ad66e060ec5a9210792857c34d427db8bbe58f49e9a37",
+    "sciona/otto_lasagne_worker.py": "f2d8519cd416816300377db90181bcc3161fbda184244f55406d2e032b014489",
+    "sciona/otto_lasagne_crossfit.py": "acd81d66c5e48c915ab29d6335e5fd80ce92b0301679f64fbb110ae81917bfd7",
+    "tests/test_otto_lasagne.py": "4f90a9029fea8e5118c972d890d872a3c6d74188890e2b5865bf9522fa773de0",
+    "tests/test_otto_lasagne_crossfit.py": "cc3ac7ab597404de7f1f5070c1eed9cffc429f69e1b8dd68c80a4ba7fd4e00e0",
+    "sciona/otto_lasagne_120.py": "8050c83e838da8b600c461dc7bb41ca35b185dc9aff5fcaee99aa2fe0093f0bb",
+    "sciona/otto_lasagne_120_worker.py": "9d266086caa634d0fa394141f1774a04cd2515a7b164a39698df4a98b8b7e836",
+    "tests/test_otto_lasagne_120.py": "b85a43859cf04e27da28b77428596227e0bbe7d48bde9fb71c23dd016c0958bf",
+    "sciona/otto_lasagne_120_crossfit.py": "1df31fcf0bcc4d35b9d84cf1b83551aa007a47698172ca1253cbcbf5ae82d94d",
+    "tests/test_otto_lasagne_120_crossfit.py": "5dcdc9768e354a2e59771d2fa1209f514b143267638f8873080547ac00aa1d13",
+    "sciona/otto_meta_adaboost.py": "ee5a6927e1e00724d8140a5427626b34821845a3f96b6cf6410b27617e7e16fe",
+    "tests/test_otto_meta_adaboost.py": "6e716a3f7c096b37517e393f0792e56d273329d25d50dac215f5a52828dc8ba5",
+    "sciona/otto_meta_xgboost.py": "05765b6179e72913210c47eba22dad71348ced0d2dbd6a1e0319abb949f0a4e5",
+    "tests/test_otto_meta_xgboost.py": "d1064c87661d014b6212d571bee556bb44bbad7001e7c66231a5efb0e397a1e1",
+    "sciona/otto_meta_neural.py": "f4c74aa82515bbf1a7d994cd21beb19dbfc1bea11e098367d92a5b899ae30360",
+    "sciona/otto_meta_neural_worker.py": "d2627bb1820fce3a2acc3e0b8796607659c38501e78c2bcde8bfb814f5a2487d",
+    "tests/test_otto_meta_neural.py": "5cf502e76491c5909a713db3979db238666d2e7f71e2dc0853c29ca1b589da08",
+    "sciona/otto_meta_tuning.py": "8967f71f6585b2d2125d1dbd8ccb52c0d972aa79e10019affbfba1f88e54e3d1",
+    "tests/test_otto_meta_tuning.py": "5546ba6bcc2c7c8c3876eb535d5199e63a5f12ef93159ac3ff52029c7c3934d5",
+    "tests/test_otto_meta_tuning_remaining.py": "0b98637162dc6e55b87d1707643625487b76239f3f0c9c95c2abfb8ffbe82f18",
+    "sciona/otto_meta_layout.py": "bf880395739b7436903b8c1f14de8a4826c762bf259b2fb490d213be518cd895",
+    "tests/test_otto_meta_layout.py": "8304d274eacf1bfb83e7578a88f557cd2bfaa831cce597a67c315bbe5f7294d6",
+    "sciona/otto_supplemental.py": "9db058edbddceb60a070dc52372c01fd8ee076b62676c1bc1c982156822537cb",
+    "tests/test_otto_supplemental.py": "f6e5b593b8236a7b6376bcbaf3f151e26efba1e9595aa67209cdd505c574fe18",
+    "sciona/otto_first_level.py": "7e2e58db50b22e51691fbb8f23c0d6e098f9f4584017013b6e4e9d17390bee50",
+    "scripts/validate_otto_first_level.py": "6e6a96c0e6243b81c0c332303f32d1258be408f5dedd3c7fbaf3976d8be5ad9b",
+    "tests/test_otto_first_level.py": "6f0014b1e735d59faaf005320246c3b3f5928d2f9f6f48f41c863ac9ad27c831",
+    "sciona/otto_meta_stage.py": "489743561317ab79611d75c863b230ed237e40ad8edc22c58b36f5799e70644a",
+    "scripts/validate_otto_full_pipeline.py": "8764adeb46271a0bb80e5e6cba10c59c6967e5f66d35fb83b89b57f0a177482d",
+    "tests/test_otto_meta_stage.py": "2fc31a7a3632cabc74cb645edc530241737fda7495ea9968a75fc162b7151c4b"
+  },
+  "catalog_mutations": 0,
+  "interaction_features": {
+    "status": "tested_component_only",
+    "implementation": "sciona/otto_interactions.py",
+    "selected_features": 13,
+    "subset": "explicit caller-selected rank triples",
+    "importance": "native R randomForest Gini",
+    "historical_choices_resolved": false
+  },
+  "tsne_features": {
+    "status": "tested_component_only",
+    "implementation": "sciona/otto_tsne.py",
+    "population_scope": "explicit fixed unlabeled population",
+    "out_of_sample_transform": false,
+    "historical_population_scope_resolved": false,
+    "cluster_implementation": "sciona/otto_tsne_clusters.py",
+    "feature_columns": 5,
+    "cluster_reference": "explicit identity subset in fixed embedding frame"
+  },
+  "meta_layout": {
+    "status": "tested_explicit_interpretation",
+    "implementation": "sciona/otto_meta_layout.py",
+    "first_level_width": 293,
+    "historical_width_resolved": false
+  },
+  "supplemental_assembly": {
+    "status": "all_seven_blocks_execution_tested",
+    "implementation": "sciona/otto_supplemental.py",
+    "historical_metric_multiplicities_resolved": false
+  },
+  "first_level_execution": {
+    "status": "all_33_entries_and_7_supplemental_blocks_passed",
+    "implementation": "sciona/otto_first_level.py",
+    "evidence": "docs/reviews/competition_otto_first_level_execution.json",
+    "gpu_validated": false
+  },
+  "full_pipeline_execution": {
+    "status": "passed",
+    "implementation": "sciona/otto_meta_stage.py",
+    "evidence": "docs/reviews/competition_otto_full_pipeline_execution.json",
+    "evidence_sha256": "a0b41df823aeaa01caab2880ba94938c45207aa3ba3d345fa8de5c851198ef8c",
+    "meta_tuning_fits": 8800,
+    "meta_refit_models": 1100,
+    "boundary_tests_passed": 5,
+    "gpu_validated": false,
+    "approved": false
+  },
+  "provisioned_runtime_verification": {
+    "status": "passed",
+    "evidence": "docs/reviews/competition_otto_runtime_identity.json",
+    "native_links": "docs/reviews/competition_otto_native_links.json",
+    "python_imports": 14,
+    "r_packages": 3,
+    "native_files": 273,
+    "gpu_validated": false,
+    "approved": false
+  }
+}

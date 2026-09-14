@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/Mcompetitions/M5-methods",
+  "commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "files": {
+    "Code of Winning Methods/U1/README.txt": "054f08ce9fb7706ffbff0e7bf3acdaa6b6a69e78919694c34f5ee07b3286b79c",
+    "Code of Winning Methods/U1/replication/join_submission_csvs.py": "d01c7adece2920e64c539869a30dd2885310c5ab4ca1db7824c3382cbb95e4f6",
+    "Code of Winning Methods/U1/replication/quantiles_sage_1to9_eval.py": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22"
+  },
+  "approved": false,
+  "license_status": "unresolved",
+  "scope": "U1 software and root README only; no data, models, outputs or notebooks retrieved"
+}

@@ -1,0 +1,656 @@
+{
+  "format": "global-wheat-source-triage.v1",
+  "approved": false,
+  "catalog_mutations": 0,
+  "intake_version_id": "69f4053f-d5c5-511b-bc47-5469bbc9f495",
+  "intake_content_hash": "7cedb98d94d5b83a39f7971a9248900e5ddf98d1da5679f822ed8b2edeac49ac",
+  "status": "winner_source_recovered_intake_contract_correction_required",
+  "primary_references": [
+    {
+      "topic_id": 175961,
+      "url": "https://www.kaggle.com/competitions/global-wheat-detection/discussion/175961",
+      "verified_rank": 2,
+      "body_sha256": "84a5d37b95b218c88ee2971b6c0528117126147159b72e95106b198dfd6881e0",
+      "role": "incorrect first-place citation in intake"
+    },
+    {
+      "topic_id": 172418,
+      "url": "https://www.kaggle.com/competitions/global-wheat-detection/discussion/172418",
+      "verified_rank": 1,
+      "body_sha256": "fd89bbd767f03f066519b023b3bb5ad93d6ba17c07ff3e2d4250d895f5dfbe79",
+      "role": "winner writeup retained in secondary intake provenance"
+    }
+  ],
+  "identity_evidence": "Public Kaggle DiscussionsService/GetForumTopicById: forumTopic.writeUp.message.competitionRanking",
+  "software": {
+    "original_repository": "https://github.com/dungnb1333/global-wheat-dection-2020",
+    "resolved_repository": "https://github.com/dungnb1333/Global-Wheat-Dection-1st-Place",
+    "commit": "7ae64ec763735579f6d77691d508ec6c31b9450c",
+    "files_sha256": {
+      "LICENSE": "11f4cab8a9d6103845fdb796387d5b1f71b81e87a9cfd9e44e913eee402c0e21",
+      "README.md": "4035e2f5868492c50d1edeff92faede465b0b820cc36fd68705c636290b8ba5e",
+      "requirements.txt": "78178e44e1998779e79cc6dc0e93e5165e2d735e57708c59208e6705cb818155",
+      "models.py": "c9373461d6fc144ffe277d9975444f42c1a346d08dd8f9077988eac7fde3812b",
+      "effdet_train.py": "d469f63af50abdb8a9e704bb756a569fd5f06383d3a5d09bd36b951220dbec4c",
+      "faster_rcnn_fpn_train.py": "46086931f010b57fdb31e0f613dfa4fdd4a76461d39c742edd288144dbc5a588",
+      "evaluate.py": "3d99942414899af04767cf2b98bbe79329cfc219a2e10d6a753c4d98897264b8",
+      "evaluation.py": "dd9e40d9a5ecdef68eac2055a3026b065e8aab7afeafc106fd2024298279053b",
+      "utils.py": "e65c0bb809340c05cab3351deda745c370fb8dc5a84afdf8fadd93e146b72466",
+      "warmup_scheduler.py": "631edf613cfc0b098bbe4e8f9a249c30488b9a12c1fe7e5e55f08c9367f9d8db",
+      "dataset.py": "8224574f23ae68f559e7f9a5a33bbb9e207dfd5ed76f6145db16dfb38c02c84c"
+    },
+    "license": "MIT"
+  },
+  "submission_source": {
+    "url": "https://www.kaggle.com/code/nguyenbadung/gwd2020",
+    "kernel_id": 10267395,
+    "retrieved_current_version_number": 170,
+    "code_cells": 15,
+    "code_only_sha256": "3ffd2f6dbc30822d6aeb104dd1ea6bae5856ed3f2c01a639f7fee27867d111ab",
+    "limits": [
+      "README links scriptVersionId39977641; current pull metadata exposes version number170 but not that script-version ID, so exact identity is not yet asserted.",
+      "Notebook license and external imported code must be qualified separately."
+    ]
+  },
+  "confirmed_method": [
+    "Custom border-preserving mosaic, MixUp and heavy augmentation.",
+    "Nine-model initial ensemble: EfficientDet-D7 at768for five folds and1024for two folds, D5at512for one fold, and FasterRCNN-FPN/ResNet152at1024for one fold.",
+    "Separate EfficientDet-D6at640base feeds two pseudo-label rounds of10then6epochs.",
+    "Multi-scale/TTA predictions are fused using weighted boxes fusion; inference notebook and repository evaluation source have been recovered.",
+    "Training scripts expose100epoch ceilings,20epoch population staging, patience40, one-epoch learning-rate warmup and cosine scheduling; full control review remains pending."
+  ],
+  "intake_discrepancies": [
+    "Primary intake citation is second place, not first.",
+    "YOLOv5 light detector is not the source EfficientDet family.",
+    "ResNeSt101/Detectron2 heavy detector does not match the source torchvision FasterRCNN-FPN/ResNet152.",
+    "Pseudo-label retraining is specifically staged through D6, not generic fine-tuning of both intake detectors."
+  ],
+  "scope": "Public software/source-only acquisition. No competition images, labels, weights, archives or notebook outputs downloaded; no original intake changed.",
+  "next": [
+    "Qualify remaining augmentation, FasterRCNN branch, artifact licensing and full training lifecycle; EfficientDet source initialization and synthetic execution are now verified.",
+    "Integrate checked checkpoint selection, pseudo population construction and restored8e-5round2schedule into the full pseudo-training lifecycle; qualify actual model/optimizer checkpoint handoff and Adam/Apex semantics.",
+    "Reconstruct and execute the full10base-fit plus2pseudo-fit method with source-controlled validation, augmentation, inference and fusion, retaining exact original intake provenance.",
+    "Complete dependency/license and publication rejection/rollback/apply/idempotency/served-selection gates before Tier3 approval."
+  ],
+  "runtime_source_recovery": {
+    "source_kind": "winner-notebook-linked software bundle",
+    "owner": "nguyenbadung",
+    "software_slug": "wheat-src",
+    "acquisition": "Individual public software-file downloads; no bundle archive or competition data acquired.",
+    "files_sha256": {
+      "LICENSE": "11f4cab8a9d6103845fdb796387d5b1f71b81e87a9cfd9e44e913eee402c0e21",
+      "models.py": "002ae6b58a64a17587c456e78381df4bd382af50d2a9c3a76c734f50371f4adc",
+      "effdet_train.py": "36551e0efd6b7d60778d2c4965a7dc4936e7101937bcde1cda4aeef1b9f5418b",
+      "predict.py": "db2780716d39d8c9c0900c4f4fe309ad5b0243095038631dc6e51f8e8ff4265f",
+      "dataset.py": "0a0c4a66d960b07aa5e56fe51c78b9a4081ae5f977e4969435596562c155e3bd",
+      "utils.py": "7498ce7dbfca13489c66dc515658240fad3156fb1e99ee2c01b56507f2bf5f3a"
+    },
+    "license": "MIT",
+    "license_matches_pinned_repository": true,
+    "verified": [
+      "Runtime predict.py is absent from pinned GitHub tree; software bundle supplies the notebook inference entrypoint.",
+      "Runtime effdet_train.py differs from base-training repository script and accepts notebook pseudo-round CLI options.",
+      "Runtime models.py and dataset.py recovered; complete transitive effdet source still requires pinning."
+    ],
+    "limits": [
+      "Current public software-file contents are hash-pinned; exact notebook-attached bundle version is not yet established.",
+      "Shared MIT license does not qualify transitive dependencies or pretrained artifacts."
+    ]
+  },
+  "inference_contract": {
+    "source_notebook_code_sha256": "3ffd2f6dbc30822d6aeb104dd1ea6bae5856ed3f2c01a639f7fee27867d111ab",
+    "initial_prediction_groups": [
+      {
+        "backbone": "ed7",
+        "size": 768,
+        "folds": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "backbone": "ed7",
+        "size": 1024,
+        "folds": [
+          1,
+          3
+        ]
+      },
+      {
+        "backbone": "ed5",
+        "size": 512,
+        "folds": [
+          4
+        ]
+      },
+      {
+        "backbone": "resnet152",
+        "size": 1024,
+        "folds": [
+          1
+        ]
+      }
+    ],
+    "tta": "Eight ordered combinations from horizontal flip, vertical flip and90degree rotation, with each present or absent.",
+    "fasterrcnn_score_multiplier": 0.8,
+    "fusion_stages": [
+      {
+        "stage": "initial_ensemble",
+        "iou_threshold": 0.5,
+        "box_threshold": 0.32,
+        "postprocess_threshold": 0.28
+      },
+      {
+        "stage": "pseudo_round1",
+        "iou_threshold": 0.5,
+        "box_threshold": 0.42,
+        "postprocess_threshold": 0.32
+      },
+      {
+        "stage": "pseudo_round2",
+        "iou_threshold": 0.5,
+        "box_threshold": 0.44,
+        "postprocess_threshold": 0.34
+      }
+    ],
+    "fusion_postprocess": [
+      "WBF uses weights=None.",
+      "Retain scores strictly greater than postprocess threshold.",
+      "Denormalize xyxy coordinates with per-image dimensions and clip to dimension minus1.",
+      "Final export converts coordinates to int32 before converting xyxy to xywh."
+    ],
+    "pseudo_rounds": [
+      {
+        "epochs": 10,
+        "backbone": "ed6",
+        "size": 640,
+        "batch_size": 5,
+        "nominal_cli_lr": 8e-05,
+        "mixup": false,
+        "load_optimizer": false,
+        "save_optimizer": true
+      },
+      {
+        "epochs": 6,
+        "backbone": "ed6",
+        "size": 640,
+        "batch_size": 5,
+        "nominal_cli_lr": 1e-05,
+        "mixup": false,
+        "load_optimizer": true,
+        "save_optimizer": false,
+        "verified_effective_base_lr": 8e-05
+      }
+    ],
+    "runtime_population_branch": "Notebook enables pseudo training only for query population larger than10; full synthetic reconstruction must exercise that branch.",
+    "optimizer_caveat": "Verified: round2restores initial_lr8e-5 from round1optimizer state. Historical LambdaLR initialization restarts its cosine multiplier at1, giving8e-5 effective base rate, not nominal CLI1e-5. Adam/Apex numerical state compatibility is a separate gate.",
+    "checkpoint_caveat": "Verified source behavior: round2inherits prior best validation loss and writes to the same inference artifact produced from round1best. If no strict improvement occurs, retain the explicitly qualified round1model. Never substitute final round2weights or unrelated stale files."
+  },
+  "pseudo_scheduler_followup": {
+    "status": "historical_scheduler_replay_passed",
+    "report": "docs/reviews/competition_global_wheat_pseudo_schedule.json",
+    "possible_round1_checkpoint_epochs_checked": 10,
+    "round2_effective_base_lr": 8e-05,
+    "round2_nominal_cli_lr": 1e-05,
+    "mechanism": "Restored optimizer param group retains initial_lr8e-5; LambdaLR uses it and initializes the cosine schedule at step0.",
+    "catalog_mutations": 0,
+    "approved": false,
+    "limits": [
+      "Pinned PyTorch1.4scheduler classes execute over installed Adam and synthetic optimizer state.",
+      "No claim of historical Adam numerical updates, Apex state or mixed-precision equivalence.",
+      "Full detector training, checkpoint selection, population construction and publication remain pending."
+    ]
+  },
+  "pseudo_population_progress": {
+    "status": "implemented_and_source_reference_checked",
+    "report": "docs/reviews/competition_global_wheat_pseudo_population.json",
+    "tests_passed": 4,
+    "source_reference_shuffle_seeds": 16,
+    "catalog_mutations": 0,
+    "approved": false,
+    "verified": [
+      "Sorted unique query identities, one row per predicted box, one negative row for empty query predictions.",
+      "Heldout fold separated before pseudo concatenation; empty annotations removed only from validation.",
+      "Source row ordering and NumPy shuffle reproduced with explicit seed; caller frame and global random state unchanged."
+    ],
+    "limits": [
+      "Synthetic population construction only; no detector predictions or pseudo-model training executed.",
+      "Reference and reconstruction share installed pandas/NumPy; historical library identity remains separate.",
+      "Unique original row index required; source duplicate-index side effects are rejected.",
+      "Full pipeline and publication gates remain pending."
+    ],
+    "license_notice": "docs/licenses/global-wheat-MIT.txt",
+    "files_sha256": {
+      "sciona/wheat_pseudo_population.py": "4bea880e7b3d59a11329729b97fb766680328fd4d4e8f4f7a801d2d5b95bbc4b",
+      "tests/test_wheat_pseudo_population.py": "f672ac96b759262ace7908abb15bc73de1cc25ffd9d7f0ae6c69ed706e5d8d51",
+      "scripts/validate_wheat_pseudo_population.py": "e453aeea58fde8bc98f9243383a555ad8207f51c3ffa6e43b4ae79b3f20b3771",
+      "docs/licenses/global-wheat-MIT.txt": "11f4cab8a9d6103845fdb796387d5b1f71b81e87a9cfd9e44e913eee402c0e21"
+    }
+  },
+  "checkpoint_selection_progress": {
+    "status": "implemented_and_source_replay_passed",
+    "report": "docs/reviews/competition_global_wheat_checkpoint_selection.json",
+    "tests_passed": 7,
+    "source_sequences_checked": 128,
+    "inherited_fallback_cases": 7,
+    "approved": false,
+    "catalog_mutations": 0,
+    "verified": [
+      "Strict validation improvement controls saving; ties preserve earlier best.",
+      "Round1has10epochs and saves model/optimizer/best loss. Round2has6epochs and saves model only upon improvement.",
+      "Notebook round2destination equals existing round1inference artifact; no improvement reuses that qualified inherited model.",
+      "Incomplete observation budgets and nonfinite metrics cannot produce completed selection results."
+    ],
+    "limits": [
+      "Selection and save-payload structure only; actual tensor/optimizer checkpoint provenance remains a caller responsibility.",
+      "Nonfinite validation metrics are rejected by reconstruction even though source comparison could silently ignore them.",
+      "Full training, inference, artifact qualification and publication remain pending."
+    ],
+    "files_sha256": {
+      "sciona/wheat_checkpoint_selection.py": "65c76343b09ce1a4af804691ed7a638d62eaa097eb63f33021009c46e8fe8178",
+      "scripts/validate_wheat_checkpoint_selection.py": "7b43b722e9180cee24a4ca64f970d7d08672615dca77e687907a45cdfc5ce537",
+      "tests/test_wheat_checkpoint_selection.py": "31044bd35bbf6f83ee270db0050650cfac60911d8f1d3e15149215885e2ad54a"
+    }
+  },
+  "runtime_detector_source_closure": {
+    "report": "docs/reviews/competition_global_wheat_runtime_source_closure.json",
+    "verified_python_files": 20,
+    "unresolved_local_imports": [],
+    "detector_package_files": 15,
+    "status": "static_source_closure_passed",
+    "approved": false,
+    "catalog_mutations": 0,
+    "limits": [
+      "Python AST import closure does not prove dynamic behavior or compatibility with installed external libraries.",
+      "Exact original notebook-attached software-bundle version and full dependency/weight licensing remain separate gates.",
+      "Pinned historical package versions must be qualified without changing active training environments."
+    ]
+  },
+  "fusion_progress": {
+    "status": "implemented_and_notebook_reference_checked",
+    "report": "docs/reviews/competition_global_wheat_fusion.json",
+    "exact_synthetic_cases": 72,
+    "approved": false,
+    "catalog_mutations": 0,
+    "publisher_wheel": {
+      "package": "ensemble-boxes",
+      "version": "1.0.4",
+      "wheel_url": "https://files.pythonhosted.org/packages/5c/b8/ecf44eaf796feee16a32dab193fcbbb625c61a188be47c7616aa020bc97c/ensemble_boxes-1.0.4-py3-none-any.whl",
+      "wheel_sha256": "2f39ae15304b8b60524d41b5b4ce4bdef3a5732ded5668544bf016ce0bfe67e8",
+      "files_sha256": {
+        "ensemble_boxes-1.0.4.dist-info/RECORD": "676b30a9a4862e281976088a02bd8fb22591f2b8fa81d6fa8158d48fe83adfca",
+        "ensemble_boxes-1.0.4.dist-info/WHEEL": "bfcb257dfe61982a6f7224371b9e5dd9dd429ce06ea630c52470c4d9d51bd40a",
+        "ensemble_boxes-1.0.4.dist-info/top_level.txt": "58a09c9b98236552c039d1093584cd914207a8b6b220ff2a36afbb706495846c",
+        "ensemble_boxes-1.0.4.dist-info/METADATA": "45df992af06ac8c2479ede5098b5b2b5fcb5bd557a7cb2a64fbcea128b014e7d",
+        "ensemble_boxes/ensemble_boxes_wbf.py": "9bab56d66ff11c4453e6176ae94b76df6c21954d287957f927e961fa98b8f27b",
+        "ensemble_boxes/ensemble_boxes_nms.py": "993f387c824c3b2b14c7a99457407d757ed6c1c16813bbc504391c6ea1293bc0",
+        "ensemble_boxes/ensemble_boxes_nmw.py": "8edf6e2002018fe19ba0e17256f6daede04fa74f9c36eba870eb1b1c3cc95a5e",
+        "ensemble_boxes/__init__.py": "d10f8abf628ee194e0ad4e4b6ecc08ceedcc4814ac69568d56b4f0c34fc6b77e",
+        "ensemble_boxes/ensemble_boxes_wbf_experimental.py": "82f780f73c45eb802ac6d451c0cb7b11154a291d05fe4eb883dda64cd6cdb23f",
+        "ensemble_boxes/ensemble_boxes_wbf_3d.py": "c24a07a8b3030e63fa186e426ec9e126e8c6bb228c64e65666387b263b73ee26"
+      }
+    },
+    "runtime_versions": {
+      "numpy": "2.4.2",
+      "numba": "0.65.1"
+    },
+    "verified": [
+      "Full ordered72-view initial ensemble and8-view pseudo fusion stages are required.",
+      "Empty views remain in confidence normalization; one isolated high-confidence view cannot become a full-ensemble confidence by dropping empty views.",
+      "Three source stage thresholds, strict post-filtering and pixel clipping match the pinned notebook helper."
+    ],
+    "limits": [
+      "Both wrapper paths use the same hash-verified1.0.4fusion package; this is not independent WBF algorithm reimplementation.",
+      "Installed NumPy/Numba backend is used; historical numeric/runtime dependency qualification remains separate.",
+      "Full detector predictions, TTA reversal, pseudo training and publication remain pending."
+    ],
+    "files_sha256": {
+      "sciona/wheat_fusion.py": "28a656a0cfc307386085e4359ae47f931cf9be5210c24e340dd3653c3c8c4ba9",
+      "scripts/validate_wheat_fusion.py": "14fee23a917c5dd490e5f5e6ed1ecca300c0e2842652e28f58bc15ad8671a69b"
+    }
+  },
+  "tta_progress": {
+    "status": "implemented_and_source_reference_checked",
+    "report": "docs/reviews/competition_global_wheat_tta.json",
+    "approved": false,
+    "catalog_mutations": 0,
+    "exact_box_cases": 80,
+    "exact_tensor_and_list_view_cases": 40,
+    "verified": [
+      "All eight source-ordered flip/rotation combinations match on both detector tensor and image-list paths.",
+      "Inverse boxes match for float32/float64, empty inputs, reversed endpoints and out-of-image coordinates.",
+      "All four source detector sizes checked; source flip axis naming and reverse transform order preserved.",
+      "Input arrays and tensors unchanged."
+    ],
+    "limits": [
+      "Image permutations and inverse boxes only; detector inference and full pipeline remain pending.",
+      "Current NumPy/Torch execute both paths; historical dependency equivalence is separate."
+    ],
+    "files_sha256": {
+      "sciona/wheat_tta.py": "a1e1080b19c42772da8e2dfa65667e2bb060d914c1ae35a0aa0cb7da43944997",
+      "scripts/validate_wheat_tta.py": "0e85392cafeaf156aad6fd03c8efb0718ec4206f57877ca67a095a62a3ad8c2b"
+    }
+  },
+  "prediction_boundary_progress": {
+    "status": "implemented_and_source_replay_passed",
+    "report": "docs/reviews/competition_global_wheat_prediction_boundary.json",
+    "tests_passed": 4,
+    "exact_source_cases": 256,
+    "approved": false,
+    "catalog_mutations": 0,
+    "verified": [
+      "FasterRCNN confidence scaled0.8before strict score>0.2filter.",
+      "EfficientDet xywh converted to xyxy before inverse TTA.",
+      "Inverse TTA, score filtering, normalization, clipping and zero class labels preserve source ordering.",
+      "All four detector resolutions, eight views, float32/float64 and empty views checked."
+    ],
+    "limits": [
+      "Synthetic detector outputs only; learned prediction quality and detector execution are not qualified.",
+      "Full training, inference integration, dependency qualification and publication remain pending."
+    ],
+    "files_sha256": {
+      "sciona/wheat_prediction_boundary.py": "bdc08921229695e1f3de97928cd52e9ed0025b27be102e090d4c21f52049eb19",
+      "scripts/validate_wheat_prediction_boundary.py": "56487b277f7848ec38b3fcc5813ad4727655b01feb74b231c8fb7702c842911e",
+      "tests/test_wheat_prediction_boundary.py": "31cddbc7ccedab6c6bd8b4bc58e3c48557d7afe03dc0ab511cbe94025e572cf4"
+    }
+  },
+  "detector_execution_progress": {
+    "status": "all_four_full_synthetic_loss_backward_paths_passed",
+    "report": "docs/reviews/competition_global_wheat_detector_execution.json",
+    "approved": false,
+    "catalog_mutations": 0,
+    "configurations": [
+      {
+        "backbone": "ed5",
+        "image_size": 512,
+        "parameters": 33421826
+      },
+      {
+        "backbone": "ed6",
+        "image_size": 640,
+        "parameters": 51563397
+      },
+      {
+        "backbone": "ed7",
+        "image_size": 768,
+        "parameters": 51563397
+      },
+      {
+        "backbone": "ed7",
+        "image_size": 1024,
+        "parameters": 51563397
+      }
+    ],
+    "verified": [
+      "Historical timm0.1.28 and OmegaConf2.0.0 publisher wheels checked by content hash in a private overlay.",
+      "Original PyTorch1.4 torch._six helper restores removed import compatibility without changing shared installed packages.",
+      "D5at512,D6at640,D7at768and1024execute full recovered detection losses and backward passes.",
+      "Input gradients are finite and nonzero; every trainable parameter has a finite gradient."
+    ],
+    "limits": [
+      "Full random-initialized detector loss/backward execution, not training or winning accuracy.",
+      "Historical timm/OmegaConf and original torch._six run on modern Torch; numerical equivalence to historical kernels is unproven.",
+      "Pretrained artifacts, augmentation, Apex/optimizer behavior, full training and publication remain pending."
+    ],
+    "verifier_sha256": "a90d81ced424c6c307e9bcc08f9479d04911766346523b7f7c263cd132236cd5"
+  },
+  "decoder_inference_progress": {
+    "status": "legacy_index_semantics_restored_and_full_d6_inference_passed",
+    "report": "docs/reviews/competition_global_wheat_decoder_inference.json",
+    "approved": false,
+    "catalog_mutations": 0,
+    "indices_checked": 20000,
+    "connected_d6_tta_views": 8,
+    "verified": [
+      "Unmodified source index division fails modern gather because indices become floating-point.",
+      "One hash-pinned AST division operator is changed to floor division to preserve historical integer semantics.",
+      "Independent NumPy indexing verifies selected class/box values and20,000anchor/category indices.",
+      "Full random D6 forwards decode100detections per view across eight TTA views and complete source box conversion plus pseudo1fusion."
+    ],
+    "limits": [
+      "Random D6 inference through eight TTA views, detector boundary and fusion; no recognition or trained-model claim.",
+      "Historical NMS/kernel equivalence and remaining detector configurations require separate qualification.",
+      "Full training and publication remain pending."
+    ],
+    "semantics_reference": "https://github.com/pytorch/pytorch/releases/tag/v1.6.0",
+    "files_sha256": {
+      "sciona/wheat_legacy_decode.py": "6995c05bb2f92528a728310a0aafc07022443cff690a8f374bde1bd10d0e40b1",
+      "scripts/validate_wheat_decoder_inference.py": "4da45a72796d09e2236e6c0243a2cb7ee0845faa5c71c151577fac79f4878b58"
+    }
+  },
+  "pretrained_initialization_progress": {
+    "status": "all_three_source_artifact_initializations_verified",
+    "report": "docs/reviews/competition_global_wheat_initialization.json",
+    "approved": false,
+    "catalog_mutations": 0,
+    "publisher_artifacts": [
+      {
+        "file": "tf_efficientdet_d5-ef44aea8.pth",
+        "source_url": "https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d5-ef44aea8.pth",
+        "sha256": "ef44aea85cc8780edd1be6a260bd2f31cbef581b5748433e691aa61540867220",
+        "bytes": 135796946,
+        "publisher_filename_hash_prefix_verified": true
+      },
+      {
+        "file": "tf_efficientdet_d6-51cb0132.pth",
+        "source_url": "https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d6-51cb0132.pth",
+        "sha256": "51cb0132a9c30e0aab1eb169f1881d3fccbcf78a71c1c9349af8eb04a181498b",
+        "bytes": 209042487,
+        "publisher_filename_hash_prefix_verified": true
+      },
+      {
+        "file": "tf_efficientdet_d7-f05bf714.pth",
+        "source_url": "https://github.com/rwightman/efficientdet-pytorch/releases/download/v0.1/tf_efficientdet_d7-f05bf714.pth",
+        "sha256": "f05bf7142a08e3ed2fbd0202d6ecc79e886118aee1b5ad9ccb764933b14a0a12",
+        "bytes": 209042487,
+        "publisher_filename_hash_prefix_verified": true
+      }
+    ],
+    "verified": [
+      "D5,D6,D7publisher artifacts match source-specified filename hashes and observed full content digests.",
+      "All pretrained tensors validated before strict loading; the entire classification tower is then replaced as in source.",
+      "Complete initialized model state matches the pinned source factory under identical seeds.",
+      "Retained backbone/FPN/box tensors match checkpoints exactly; all three full detector loss/backward checks pass.",
+      "Invalid checkpoint rejected before deserialization."
+    ],
+    "limits": [
+      "Source-prescribed pretrained detector initialization only; new classification towers remain untrained.",
+      "Both factory paths use the qualified private source overlay on modern Torch; historical kernel equivalence remains separate.",
+      "Artifact licensing, full detector training, ensemble integration and publication remain pending."
+    ],
+    "files_sha256": {
+      "sciona/wheat_initialization.py": "ff112ab278b6a71f7e0df8bfba4d0413845eafb9897a59700dd73c2bf25de7e5",
+      "scripts/validate_wheat_initialization.py": "8a3be18ec63203cdae35ad524ee40738678ebd9a7d183f5cd51a74ebbae17a69"
+    }
+  },
+  "fasterrcnn_progress": {
+    "contract_report": "docs/reviews/competition_global_wheat_fasterrcnn_contract.json",
+    "normalization_report": "docs/reviews/competition_global_wheat_frozen_normalization.json",
+    "normalization_exact_cases": 20,
+    "approved": false,
+    "pending": [
+      "Complete source base-training lifecycle, augmentation and checkpoint selection",
+      "Complete base-fit inventory and initial nine-model ensemble integration"
+    ],
+    "backbone_report": "docs/reviews/competition_global_wheat_resnet_backbone.json",
+    "pretrained_backbone_artifact": {
+      "file": "resnet152-b121ed2d.pth",
+      "url": "https://download.pytorch.org/models/resnet152-b121ed2d.pth",
+      "sha256": "b121ed2db97ec7e9f55a91300ceaf85a326de955e8a4ae09e3a0c8170d27f14f",
+      "bytes": 241530880
+    },
+    "verified_backbone_summary": {
+      "initialized_tensors": 777,
+      "exact_historical_feature_maps": 4,
+      "internal_image_size": 800,
+      "finite_gradient_parameter_tensors": 144,
+      "restricted_legacy_reader": true
+    },
+    "feature_pyramid_report": "docs/reviews/competition_global_wheat_feature_pyramid.json",
+    "neural_heads_report": "docs/reviews/competition_global_wheat_detector_heads.json",
+    "feature_pyramid_qualification": {
+      "full_resolution_and_odd_shapes_passed": true,
+      "initialization_outputs_input_and_parameter_gradients_exact": true,
+      "historical_convolution_defaults_preserved": true
+    },
+    "neural_heads_qualification": {
+      "rpn_five_levels_passed": true,
+      "roi_mlp_passed": true,
+      "original_91_class_and_replacement_2_class_predictors_passed": true,
+      "initialization_outputs_input_and_parameter_gradients_exact": true
+    },
+    "loss_report": "docs/reviews/competition_global_wheat_detection_losses.json",
+    "anchor_report": "docs/reviews/competition_global_wheat_anchors.json",
+    "loss_qualification": {
+      "exact_loss_and_gradient_cases": 64,
+      "rpn_regression": "L1",
+      "roi_regression": "Smooth L1 beta=1.0",
+      "installed_regression_defaults_differ": true
+    },
+    "anchor_qualification": {
+      "feature_dtypes": [
+        "float16",
+        "float32",
+        "float64"
+      ],
+      "exact_full_ordered_arrays": true,
+      "historical_base_rounding_and_float32_grid_shifts_preserved": true
+    },
+    "matching_sampling_report": "docs/reviews/competition_global_wheat_matching_sampling.json",
+    "proposal_filter_report": "docs/reviews/competition_global_wheat_proposal_filter.json",
+    "proposal_qualification": {
+      "matcher_exact_cases": 128,
+      "sampler_mask_and_rng_exact_cases": 128,
+      "exact_filter_cases": 16,
+      "raw_logits_preserved": true,
+      "training_and_evaluation_proposal_budgets": true
+    },
+    "box_coding_report": "docs/reviews/competition_global_wheat_box_coding.json",
+    "target_assignment_report": "docs/reviews/competition_global_wheat_target_assignment.json",
+    "box_coding_qualification": {
+      "exact_encode_decode_and_decode_gradient_cases": 64,
+      "all_empty_total_decode_unsupported_in_source": true
+    },
+    "target_assignment_qualification": {
+      "exact_assignment_cases": 128,
+      "rpn_empty_ground_truth_rejection_preserved": true,
+      "roi_empty_ground_truth_guard_required_at_integration": true
+    },
+    "image_transform_report": "docs/reviews/competition_global_wheat_image_transform.json",
+    "image_transform_qualification": {
+      "training_and_evaluation": true,
+      "float32_and_float64": true,
+      "exact_pixels_padding_boxes_postprocessing_rng": true,
+      "exact_normalization_resize_gradients": true,
+      "historical_padding_autograd_incompatible_with_modern_torch": true
+    },
+    "roi_pooling_report": "docs/reviews/competition_global_wheat_roi_pooling.json",
+    "roi_pooling_qualification": {
+      "exact_cases": 8,
+      "all_four_levels_exercised": true,
+      "exact_outputs_and_feature_gradients": true,
+      "mixed_empty_images_and_cached_scales_exercised": true
+    },
+    "full_execution_report": "docs/reviews/competition_global_wheat_fasterrcnn_execution.json",
+    "full_execution_qualification": {
+      "synthetic_sgd_steps": 1,
+      "input_size": 1024,
+      "all_four_losses_finite": true,
+      "trainable_parameter_tensors_with_finite_gradients": 174,
+      "predictor_updated": true,
+      "frozen_parameters_unchanged": true,
+      "inference_detections": 100
+    },
+    "assembled_reference_report": "docs/reviews/competition_global_wheat_assembled_reference.json",
+    "assembled_reference_qualification": {
+      "initialized_tensors_exact": 805,
+      "four_losses_exact": true,
+      "parameter_gradients_exact": 174,
+      "training_rng_exact": true,
+      "inference_exact": true,
+      "input_size": 1024
+    }
+  },
+  "base_training_control_progress": {
+    "schedule_report": "docs/reviews/competition_global_wheat_base_schedule.json",
+    "checkpoint_report": "docs/reviews/competition_global_wheat_base_control.json",
+    "exact_learning_rates": 200,
+    "exact_checkpoint_histories": 128,
+    "source_epoch2_learning_rate_dip_preserved": true,
+    "fasterrcnn_zero_ap_fit_has_no_checkpoint": true,
+    "approved": false,
+    "pending": [
+      "Complete base-fit lifecycle",
+      "Complete ten-base-fit and two-pseudo-fit inventory"
+    ],
+    "validation_metric_report": "docs/reviews/competition_global_wheat_validation_metric.json",
+    "mixup_report": "docs/reviews/competition_global_wheat_mixup.json",
+    "validation_metric_exact_batches": 128,
+    "mixup_exact_cases": 256,
+    "population_report": "docs/reviews/competition_global_wheat_base_population.json",
+    "population_exact_cases": 160,
+    "crop_report": "docs/reviews/competition_global_wheat_crop.json",
+    "crop_exact_cases": 128,
+    "mosaic_report": "docs/reviews/competition_global_wheat_mosaic.json",
+    "mosaic_exact_cases": 64,
+    "augmentation_runtime_report": "docs/reviews/competition_global_wheat_augmentation_runtime.json",
+    "source_augmentation_operations_executed": 14,
+    "augmentation_policy_report": "docs/reviews/competition_global_wheat_augmentation_policy.json",
+    "augmentation_policy_exact_cases": 128,
+    "dataset_report": "docs/reviews/competition_global_wheat_dataset.json",
+    "dataset_exact_cases": 128,
+    "dataset_retry_cases": 16,
+    "sampler_report": "docs/reviews/competition_global_wheat_sampler.json",
+    "loader_contract_report": "docs/reviews/competition_global_wheat_loader_contract.json",
+    "sampler_exact_cases": 256,
+    "worker_report": "docs/reviews/competition_global_wheat_workers.json"
+  },
+  "optimizer_progress": {
+    "status": "source_order_dense_cpu_updates_qualified",
+    "approved": false,
+    "catalog_mutations": 0,
+    "baseline_report": "docs/reviews/competition_global_wheat_optimizers.json",
+    "qualified_report": "docs/reviews/competition_global_wheat_source_order_optimizers.json",
+    "source_sgd_exact": true,
+    "installed_adam_exact": false,
+    "source_order_adam_exact": true,
+    "updates_per_configuration": 100,
+    "precisions": [
+      "float32",
+      "float64"
+    ],
+    "tests_passed": 5,
+    "checkpoint_continuation_exact": true,
+    "restored_optimizer_rate_preserved": true,
+    "implementation_sha256": {
+      "sciona/legacy_detection_adam.py": "0da67a56c52d728d4ef22837576437c30887903c38cf8ec5980b6a482b8b5f77",
+      "scripts/validate_wheat_optimizers.py": "65d32902f35c4e20a9d6d61b5c809e088c4205dd17e3994c35b0367659bddde3",
+      "tests/test_legacy_detection_adam.py": "7c82963dc2b372a9188761f85e47e3230d02e348e63a7f0bdd32ba9edec91671"
+    },
+    "limits": [
+      "Dense CPU synthetic gradients; full EfficientDet training and Apex O1 remain pending.",
+      "Running Faster R-CNN implementation and controls were not modified."
+    ]
+  },
+  "precision_runtime_preflight": {
+    "report": "docs/reviews/competition_global_wheat_precision_environment.json",
+    "report_sha256": "361303fcb0916b380392a1ea3d0f4042eb02838b2f6b04bd29e441b7dd1bab97",
+    "runtime_ready": false,
+    "missing_requirements": [
+      "CUDA device unavailable",
+      "Torch was built without CUDA",
+      "Apex API unavailable: amp_initialize",
+      "Apex API unavailable: amp_scale_loss"
+    ],
+    "requested_precision": "Apex O1",
+    "historical_apex_revision_qualified": false,
+    "numerical_precision_qualified": false,
+    "approved": false,
+    "catalog_mutations": 0,
+    "tests_passed": 6,
+    "next": "Obtain an existing CUDA runner, run the preflight there, then qualify the actual Apex O1 detector step and full source-budget training; no FP32 substitution."
+  }
+}

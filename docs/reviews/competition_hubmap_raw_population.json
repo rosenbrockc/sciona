@@ -1,0 +1,44 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "tile_size": 16,
+      "slides": 2,
+      "generated": 18,
+      "selected": 13,
+      "grids_with_ties": 3,
+      "exact": true
+    },
+    {
+      "tile_size": 32,
+      "slides": 2,
+      "generated": 18,
+      "selected": 13,
+      "grids_with_ties": 3,
+      "exact": true
+    },
+    {
+      "tile_size": 1024,
+      "slides": 2,
+      "generated": 18,
+      "selected": 11,
+      "grids_with_ties": 3,
+      "exact": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_raw_population.py": "a32bacc34b571bd0452e2eebef41c73d6bfd84ec3f541302a441883c9c96752b",
+    "sciona/hubmap_tiling.py": "514df1fdf3a50f97ff409bac085241345a9fb738c387d6bc319e4f7c9c540f8d",
+    "sciona/hubmap_preparation.py": "6d879b22aafa81cbbc091727a1d35078a4a8f885160e8cd258f8050a0406122c",
+    "scripts/validate_hubmap_raw_population.py": "308e39fe0028313d3e56d2d31ef923cc557afb9bff857060029eb37634ebd354",
+    "scripts/validate_hubmap_loader.py": "ac7b4bbb7bbc6b226c7ccc1f83b286cad2d0a69ff45b150baada776184c64258",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5"
+  },
+  "limitations": [
+    "Decoded RGB array boundary; TIFF and raster subdataset codecs excluded.",
+    "Current NumPy sort and OpenCV JPEG backend; historical binary equivalence excluded.",
+    "Training partition, pseudo-labeling and inference remain separate gates."
+  ]
+}

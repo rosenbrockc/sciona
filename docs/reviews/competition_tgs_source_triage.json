@@ -1,0 +1,979 @@
+{
+  "status": "corrected_full_workflow_reconstruction_started",
+  "intake_version_id": "1796103a-eea9-5b66-9dff-ecdea34a459d",
+  "intake_content_hash": "0a144d569512b1cae9884bbbb48ee831ede61475c68fbf1f1732752351d91a3e",
+  "repository": "ybabakhin/kaggle_salt_bes_phalanx",
+  "source_commit": "2f81d4dd8d50a01579e5f7650259dde92c5c3b8d",
+  "primary_writeup": "https://www.kaggle.com/competitions/tgs-salt-identification-challenge/writeups/b-e-s-phalanx-1st-place-solution-with-code",
+  "paper": "https://arxiv.org/abs/1904.04445v3",
+  "source_identity": "Winner writeup links this repository; repository identifies first-place solution and links the author paper.",
+  "source_sha256": {
+    "train.sh": "850f2b94c9e7f2777b0e1c8f530709af919d62b5afb9507c86897b87cadf9592",
+    "predict.sh": "63532ee6743639d1a5d7187c62b784a354baf619e19f6c327ced816b38f17581",
+    "bes/params.py": "2bc6493efcd36ad6b26d98c23974066f75058c166189af38e78078593fc9de93",
+    "bes/stage1.sh": "0f87f3e8e4ea1239404ef0c8f10efc5ac592346a17eab5d76476982cc10ed45b",
+    "bes/stage2_train.sh": "31bb0da6aef127976cef0b9271bcf0d32dfb25448265c26e2be4703af78033c7",
+    "bes/models/models.py": "f695a7611cb657121549fb6197972141d3e9d4a6cc416e28a86b6b9878cac0c0",
+    "bes/losses.py": "4ac9cce31613e4319f77f065709688ef2f6f9af7ccb2d2e206266d60ff2708e0",
+    "phalanx/stage1.sh": "9a2dacf78199a5451fd95dffcbc92f7f738fd04cf5197888661f7d2d2cd3b200",
+    "phalanx/stage2.sh": "4b6449763b2e8fbc27244a2508c7612fcbb6563a7046061bbb3f14660d257994",
+    "phalanx/stage3_train.sh": "78133d6e0fdb7b54331a3fec0e9e0c42500c3dc7e2f52394bbcc7481112235ed",
+    "phalanx/unet_model.py": "3e9cecb80dc14d3b105c3be0f29f76d2817dbe0cfd1c0cc24462e779ca31a68c",
+    "phalanx/train_cv.py": "c86b621719919e5cdd3e5f5ef36471d2ee07dede1aa5364fdc4aa83161bae0b2",
+    "phalanx/train_pseudo.py": "9da1d58698b61d4367cf3eba682454d420d0fba532a0cc75f2768c04cc9523fc",
+    "phalanx/make_pseudo.py": "da73b71798fd2cc72c1a2cb40138b985a296fe70ceb12b441c0c842473097569",
+    "bes/datasets/generators.py": "2366ad8ff92e1082803dd6a823d81a32a558c309c946fb1055e1f0a5fca359c9",
+    "bes/ensemble.py": "e88e98076b0a613d0b4766cb7271adb5d990dadcf3f17f4f44d503edfef65342",
+    "bes/predict_test.py": "472918a7f0be8a953516ba228fa3cdeabc348371213adb406bd27aa96650b978",
+    "bes/train.py": "750ed5e32e938de4f1f4cddb7f631c35aee363eb41396b346d914d6665e22b90",
+    "bes/stage2_predict.sh": "4e33b9a12dbba7e9e3d9ca09be1d0b63cae52d87d847053fdd519a9a71f018b5",
+    "bes/models/models_zoo.py": "a11fd15a9dd9b794284be594e8744c399a93ff2d9e4fc8292dacb76314ef3ca6",
+    "phalanx/salt_dataset.py": "3ffa02ac8edd3053817855d5a90f40f00c56b11ee7b44ca36a51386732074fad",
+    "phalanx/submit34.py": "10d3bc8198a6426537424464f9f2986b4c92ea9b22b812ea0257c2e061b2a8f6",
+    "phalanx/stage3_predict.sh": "3d770220a4da99f3cd3eeec34f530bc66d44b0ac733f63ffa218b328e02278db",
+    "phalanx/transform.py": "d1237c77bfc475093d3ae5aa3e04de00bb34775cfc3191402a219c65a3fd47a7",
+    "bes/datasets/Generate_Mosaic.R": "7376a727ed8c9cc4a30b1072e0bb61f91b3802e1bfb9f50f23e43a3f92fdd9c9",
+    "phalanx/lovasz_losses.py": "00b38a28367599c2690e952d5b39f2e8dc7b42c2804c1dc1becf0ccba9deb4f2",
+    "bes/segmentation_models/unet/model.py": "1dceb510a6ab18844d1b0dfffc781f69aaf503e94f9f39382d32b298dbb09ddc",
+    "bes/segmentation_models/unet/builder.py": "146c3c88d135a34bebb0875d8963f03a3af2c5f5ea3211a8098da35b4f64e7bf",
+    "bes/segmentation_models/unet/blocks.py": "2b00210c4efc22b08305b63084e52830890a058a139c87d3a3679bb5a939ddf5",
+    "bes/segmentation_models/backbones/classification_models/classification_models/resnext/blocks.py": "6e7d97b1aa97c787781d45fbdaa69cb1773c47d0b2b65168faacc1a67ce1926f",
+    "bes/segmentation_models/backbones/classification_models/classification_models/resnext/builder.py": "a158fd8b1ee20c3c1457157b2219fcff1206ff6ae6776142bf8ebfb81b834bae",
+    "bes/segmentation_models/backbones/classification_models/classification_models/resnext/params.py": "64591b4465f936f609a17791631f1607d874ec78d81032d6c0bfd5b1edd7b197",
+    "bes/segmentation_models/backbones/classification_models/classification_models/resnext/models.py": "462f42b80147a9f8d0330677f8e4c3bb6da53a6d4ee9c6def209aefb426d8905",
+    "bes/callbacks/callbacks.py": "56c29d1fe1798a20ac07a9972f20c6ac35a191649229a2af5a561c30f2465414",
+    "bes/callbacks/snapshot.py": "ab11dc3aeacb130dce190a7b31c0624f4d7518731b401d70ff6692b25dedac3f",
+    "bes/segmentation_models/backbones/preprocessing.py": "d92a9b7a585d1f394ac553a11c63c8ced3a4ba320bf3d7cc30863f35c3570376",
+    "bes/segmentation_models/backbones/classification_models/classification_models/resnext/preprocessing.py": "8105815185b5008a2b4191bac9a275e25e362e76ecf6023da335fc7a10923151",
+    "bes/augmentations.py": "b5897858fc589377d1b249542ff12656ae5d5812baa3009e5c589f0442e8e7aa",
+    "docker/Dockerfile": "922ba10447ffb2cdf4af6d3c159836058afe45ba732eb7cb30fcad9e115c85f1",
+    "phalanx/utils.py": "4a26ab925d5c7647eced09c47f93e9dca42a85d2bce88866a134de6f04324694",
+    "phalanx/precisioncv.py": "db29c09dcbc9e5009e5570118775ebf39ba78a8e8141da1883ed883c1cf035c8",
+    "bes/utils.py": "1ff593c0a556d85f1958fbd61dea94ca986763e754b54e838db59b5aea50ff4b",
+    "bes/segmentation_models/backbones/classification_models/classification_models/weights.py": "3777def812bcd3ffab1cfdfe1b0e311041f910634193399a549eea6e9c3741c2"
+  },
+  "license_review": {
+    "github_license_metadata": null,
+    "license_named_file_in_recursive_tree": false,
+    "verdict": "No explicit repository-wide reuse grant established. Independent mathematical reconstruction remains possible; do not copy winning implementation or infer permission from public visibility."
+  },
+  "intake_corrections": [
+    "Five sequential intake stages omit iterative pseudo-label training, multiple backbones, snapshot/fold aggregation and training lifecycle.",
+    "Paper describes ResNet34 and ResNeXt50 encoders, concurrent spatial/channel excitation, feature pyramid attention and hypercolumns.",
+    "Paper specifies three rounds, initialization reset each round, pseudo-label-only training followed by labeled fine-tuning in later rounds, and final averaging of rounds two and three.",
+    "Pinned source uses binary Lovasz hinge, not a multiclass softmax loss. Keras flat hinge uses ELU plus one for sorted errors.",
+    "Depth-channel intake claim still requires comparison against actual preprocessing; do not assume it matches source."
+  ],
+  "source_script_findings": [
+    "Keras first-stage training specifies five folds and successive 125,125,40,40,40 epoch calls; later stage specifies 40,40,125,20,20,25 epochs. These are not the uniform paper schedule.",
+    "PyTorch scripts select different Res34Unet variants across stages; training includes optional multi-head auxiliary losses.",
+    "PyTorch train_cv constructs a model before its five-fold loop and explicitly reloads per fold only for res34v5. Cross-fold initialization isolation for the other variants is not established.",
+    "PyTorch model forward calls functional dropout without training=self.training. Synthetic current-runtime probe confirms parent eval does not disable this pattern.",
+    "Best checkpoint uses state_dict without cloning. Synthetic current-runtime probe confirms the saved mapping changes with parameter updates.",
+    "RandomSampler is passed through shuffle. Current runtime treats it as truthy and constructs another sampler; this is not evidence of an immediate exception.",
+    "PyTorch depth channels are image, vertical unit ramp and their product; they do not consume measured depth metadata.",
+    "Keras ensemble weights reverse-ordered snapshots equally in stage one and 1,1,1,3 in later stages; branch blend is equal-weighted.",
+    "PyTorch ensemble scores are globally min-max normalized over the supplied query population; constant ranges divide by zero in source.",
+    "Constant-image suppression applies to the Keras branch only. Final masks use strict score above 0.5; confidence counts strict score below 0.2 or above 0.8.",
+    "Source pseudo-label selectors use confidence and predicted area conditions; these differ from the paper no-filtering recipe.",
+    "Final source script enables mosaic-based mask propagation postprocessing, which must be included in full workflow reconstruction."
+  ],
+  "probe": "docs/reviews/competition_tgs_source_probe.json",
+  "retention": "Only software source reviewed privately and software hashes/paraphrased method findings retained in review. No competition records, images, weights or archives acquired.",
+  "catalog_mutations": 0,
+  "next_steps": [
+    "Implement full source augmentation recipes and phase-loop wiring for both branches.",
+    "Resolve pretrained initialization and checkpoint handoffs, then execute source schedules and actual held-out metrics.",
+    "Integrate TTA, pseudo-label selection, blend and mosaic postprocessing in serialized graph.",
+    "Qualify dependencies and reference scope, then run Tier3 rejection/rollback/apply/served gates."
+  ],
+  "implementation_progress": {
+    "component": "sciona/tgs_ensemble.py",
+    "scope": "Independent aligned snapshot/fold/branch blend before mosaic postprocessing; not full intake coverage.",
+    "validation": "tests/test_tgs_ensemble.py",
+    "tests_passed": 5,
+    "synthetic_only": true,
+    "changes_from_source": [
+      "Reject nonfinite or constant normalization ranges explicitly.",
+      "Generalized confidence denominator to supplied spatial area; full historical-shape pipeline boundary still pending."
+    ],
+    "source_sha256": {
+      "sciona/tgs_ensemble.py": "6ecca8a69ff84a7de6884b2414f96cbc25cf491a3a3c404e81565f4df08d5255",
+      "tests/test_tgs_ensemble.py": "9bcdc87a64ae3a01274035fdfb413f12c5dd415e8f10efb35dc62ba4b5b52155"
+    }
+  },
+  "mosaic_implementation_progress": {
+    "component": "sciona/tgs_mosaic.py",
+    "scope": "Independent vertical mask propagation over caller-supplied ordered positional mosaic grids; mosaic construction and complete training remain required.",
+    "validation": "tests/test_tgs_mosaic.py",
+    "tests_passed": 6,
+    "combined_tgs_tests_passed": 11,
+    "synthetic_only": true,
+    "source_semantics": [
+      "First qualifying training mask per column wins.",
+      "Fully vertical nonempty nonfull masks propagate down and to preceding tile only for source row index at least three.",
+      "Masks vertical only over final 50 rows propagate down only.",
+      "Constant training images are excluded; later column/grid matches overwrite previous predictions."
+    ],
+    "explicit_runtime_choice": "Caller supplies deterministic mosaic ordering; source enumerates directory entries without sorting.",
+    "source_sha256": {
+      "sciona/tgs_mosaic.py": "66a6178a075282abcdf19094ec66151bacb7b7eb0c8861718ea7baca00a9d888",
+      "tests/test_tgs_mosaic.py": "368d52cd502137b729bf61908af45016a2c7aa6578e4d52cfe8e6d84856302f3"
+    }
+  },
+  "boundary_implementation_progress": {
+    "component": "sciona/tgs_boundaries.py",
+    "scope": "Boundary features only; full mosaic construction not yet implemented.",
+    "reference_report": "docs/reviews/competition_tgs_boundary_reference.json",
+    "reference_report_sha256": "a5ebca9bf12658ac6e08f0d69b5c3193297f237e5bcae7b8e89e46e1ae4b0cbf",
+    "combined_tgs_tests_passed": 16,
+    "synthetic_only": true,
+    "input_axis_contract": "Population,x,y matching imager; row/column images require transpose.",
+    "source_scaling": "Boundary extrapolation followed by population sample scaling and within-image sample scaling; constant-induced missing values zeroed only afterward.",
+    "verified_export_defect": "Source shifts mosaic coordinates to zero then uses them directly in one-based R matrix indexing; synthetic R probe confirms origin assignment is omitted.",
+    "remaining": [
+      "Nearest-neighbor candidate selection including source join multiplicities and confidence ratios.",
+      "Strip and connected-component assembly with explicit conflict/tie policies.",
+      "Corrected coordinate export preserving row/column orientation."
+    ]
+  },
+  "assembly_implementation_progress": {
+    "component": "sciona/tgs_assembly.py",
+    "validation": "tests/test_tgs_assembly.py",
+    "tests_passed": 6,
+    "other_tgs_tests_passed": 16,
+    "synthetic_only": true,
+    "scope": "Boundary nearest-neighbor join, strips, connected components, consistent placement and corrected coordinate export implemented. Full image-pipeline integration and historical runtime parity remain unverified.",
+    "source_behavior": [
+      "Forward/reverse join multiplicities preserved without substituting a reciprocal-neighbor test.",
+      "Strict source distance and compatibility thresholds; equal-distance or zero-range ties rejected.",
+      "Stable component ordering by size then smallest positional index."
+    ],
+    "intentional_corrections": [
+      "Retain zero-coordinate tiles with max+1 grid dimensions.",
+      "Reject contradictory cycles, coordinate collisions and incomplete component placement.",
+      "Explicit deterministic component order."
+    ],
+    "reference_scope": "Independent mathematical implementation; no winning code copied. Existing source reuse limitations remain.",
+    "sha256": {
+      "sciona/tgs_assembly.py": "8ad9fdee6e6f7b14d0936fb5428972c7cb1c14015fa074935b90620be3b9f637",
+      "tests/test_tgs_assembly.py": "c8607e783bbef3f4848d3482b1abe184ed27d5ee43bc8a8ae7c9978565ecd570"
+    }
+  },
+  "postprocessing_integration": {
+    "component": "sciona/tgs_postprocessing.py",
+    "tests": "tests/test_tgs_postprocessing.py",
+    "synthetic_scene_tiles": 16,
+    "combined_tests_passed": 26,
+    "verified": [
+      "Image spatial-axis conversion and permutation-invariant known layout.",
+      "Actual boundary scaling, neighbor search, assembly and mask propagation with no numerical mocks.",
+      "No-neighbor score threshold preservation and invalid-score rejection."
+    ],
+    "sha256": {
+      "sciona/tgs_postprocessing.py": "dd74916f352befe3e1a62795fc35be4ca516f36320c3ebc762d6a5cee4b11d94",
+      "tests/test_tgs_postprocessing.py": "638cb0406fb523a881781432d00a39660ab062af685727b606223de7b0c6a9d0"
+    },
+    "tests_passed": 5
+  },
+  "training_inventory": "docs/reviews/competition_tgs_training_inventory.json",
+  "loss_implementation_progress": {
+    "component": "sciona/tgs_losses.py",
+    "tests": "tests/test_tgs_losses.py",
+    "tests_passed": 6,
+    "synthetic_only": true,
+    "reused": "sciona.hubmap_losses.binary_lovasz_hinge",
+    "implemented": [
+      "Keras per-image ELU-plus-one arithmetic supporting fractional resized coverage.",
+      "Keras equal BCE and global-batch Dice with unit smoothing.",
+      "PyTorch main hinge plus image probability BCE and nonempty pixel hinge with full-batch denominator."
+    ],
+    "verification": [
+      "Analytic one-pixel values and derivatives.",
+      "Multipixel central differences.",
+      "Empty auxiliary gradients and denominator behavior."
+    ],
+    "limitations": [
+      "Float32 CPU runtime; exact historical Keras/TensorFlow rounding unproven.",
+      "Loss components do not establish full model training or complete CDG coverage."
+    ],
+    "sha256": {
+      "sciona/tgs_losses.py": "7281488166ba6501b61fad2e807bb32c34dc6c1712a3357c37fe53df7adca305",
+      "tests/test_tgs_losses.py": "038488397cb2c118a14adf4490cbb289c7cbb1429f53d9d0d2f89c5872ef4dfd",
+      "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f"
+    }
+  },
+  "torch_architecture_progress": {
+    "component": "sciona/tgs_torch_models.py",
+    "tests": "tests/test_tgs_torch_models.py",
+    "tests_passed": 3,
+    "synthetic_only": true,
+    "parameter_counts": {
+      "4": 35409412,
+      "3": 35516165,
+      "5": 35253376
+    },
+    "variants": {
+      "4": "256px segmentation with five decoder scales",
+      "3": "256px segmentation, pixel auxiliary and image auxiliary heads",
+      "5": "128px custom stem and four decoder scales"
+    },
+    "verified": [
+      "Full source-size forward and backward for each variant.",
+      "Finite gradients for every instantiated parameter.",
+      "Exactly repeatable evaluation for every output."
+    ],
+    "source_topology": [
+      "ResNet34 residual blocks with encoder scSE reduction4, decoder scSE reduction16.",
+      "Two-scale feature-pyramid attention, transposed-convolution skip decoders, hypercolumn prediction."
+    ],
+    "runtime_corrections": [
+      "Variant5 dropout obeys evaluation mode.",
+      "Unused backbone classifier parameters are not retained."
+    ],
+    "limitations": [
+      "Random initialization used for tests; pretrained initialization and checkpoint provenance not yet qualified.",
+      "Keras ResNeXt branch not yet implemented.",
+      "Full training lifecycle, source reference comparison and complete CDG execution remain required."
+    ],
+    "sha256": {
+      "sciona/tgs_torch_models.py": "4adbdec76b6c2ddeb8eac0fc9a5746f8bc6e22c258bc9764375378c2e047ce5e",
+      "tests/test_tgs_torch_models.py": "b013651a4697ef2ca4cebffdafa74e73c35bf9c73e28c5c6cbaccbc28415fe44"
+    }
+  },
+  "keras_branch_progress": {
+    "component": "sciona/tgs_keras_layers.py",
+    "tests": "tests/test_tgs_keras_layers.py",
+    "tests_passed": 4,
+    "synthetic_only": true,
+    "source_findings": [
+      "ResNeXt50 uses repetitions3,4,6,3 and initial grouped width128, with32groups.",
+      "Input normalization has beta but no trainable gamma; encoder epsilon2e-5, decoder default epsilon1e-3, retention.99.",
+      "Skips are internal first-block activations at stages4,3,2 and stem relu, not standard stage outputs.",
+      "Decoder widths128,64,32,16,8 use transpose4x4 and conv3x3 with batch normalization.",
+      "Decoder attention uses channel-wise spatial gates and channel reduction2; encoder attention calls are commented out.",
+      "Decoder hypercolumn list is collected but not consumed by model wrapper. Final decoder output alone receives dropout.2 and prediction convolution."
+    ],
+    "verified": [
+      "Population-variance normalization mathematics and retention updates.",
+      "No-scale singleton normalization.",
+      "Channel-wise attention neutral-gate oracle.",
+      "Decoder shape and gradients through both inputs."
+    ],
+    "limitations": [
+      "Population-variance moving update is explicit reconstruction policy; historical TensorFlow fused-kernel variance convention is not yet established.",
+      "Full ResNeXt encoder and source-state conversion remain unimplemented.",
+      "Pretraining source and dependency qualification remain required."
+    ],
+    "sha256": {
+      "sciona/tgs_keras_layers.py": "7e26ed8540b441b6f00e6cc35c8266d3152f1f6e6b7c6485b8b5715ef4c78ad0",
+      "tests/test_tgs_keras_layers.py": "15dc7374033364544595f596f4ee52ac2d6eb8dcccbb9be8be879f809e685f8c"
+    }
+  },
+  "resnext_architecture_progress": {
+    "component": "sciona/tgs_resnext.py",
+    "tests": "tests/test_tgs_resnext.py",
+    "tests_passed": 1,
+    "synthetic_only": true,
+    "input_size": 224,
+    "parameters": 29147480,
+    "verified": [
+      "Full source-size training forward/backward with both BCE/Dice and ELU Lovasz loss.",
+      "Finite gradients for all trainable parameters under ELU Lovasz.",
+      "Internal skips1024x14x14,512x28x28,256x56x56,64x112x112.",
+      "Deterministic probability evaluation."
+    ],
+    "runtime_choices": [
+      "Explicit native32group convolution with per-group Glorot initialization; no late-bound Lambda index.",
+      "Source asymmetric skip topology retained instead of torchvision stage-output skips.",
+      "PyTorch runtime with explicit Keras-style population-normalization policy."
+    ],
+    "limitations": [
+      "Synthetic random initialization only; pretrained state import not implemented.",
+      "Historical Keras Lambda/fused-normalization execution parity not established.",
+      "Full phase training and checkpoint lifecycle not yet executed."
+    ],
+    "sha256": {
+      "sciona/tgs_resnext.py": "1060e934d6b4adfbc76835fd3d669ba28d94aef4b9528c3639bcbb47eee92b4b",
+      "tests/test_tgs_resnext.py": "60f38c215b5e0a4e3974da40886618badf1e0b9cf9c6ef87c60e1be53869b803",
+      "sciona/tgs_keras_layers.py": "7e26ed8540b441b6f00e6cc35c8266d3152f1f6e6b7c6485b8b5715ef4c78ad0"
+    }
+  },
+  "training_state_progress": {
+    "component": "sciona/tgs_training_state.py",
+    "tests": "tests/test_tgs_training_state.py",
+    "tests_passed": 4,
+    "synthetic_only": true,
+    "verified": [
+      "Two-step scalar RMSprop recurrence.",
+      "Cosine epoch-start restart and final-epoch values.",
+      "Snapshot independence from later parameter updates.",
+      "Exact continuation after restoring model, optimizer and CPU RNG for both branch optimizers."
+    ],
+    "optimizer_reference": "https://raw.githubusercontent.com/keras-team/keras/2.2.4/keras/optimizers.py",
+    "limits": [
+      "Reference version confirms formula, not winner installed version.",
+      "Early-stopping and plateau callback integration remains pending.",
+      "Pretrained state loading and full model training schedules remain unexecuted."
+    ],
+    "sha256": {
+      "sciona/tgs_training_state.py": "ea13ece44d22cd9f2147e56531782a51d4976f59e50f45fda0b20bb0da890f3e",
+      "tests/test_tgs_training_state.py": "39ea193ffc428e2f4f511489dce86f53c8fcaa9dd295137c74f26a3541716fb6"
+    }
+  },
+  "callback_progress": {
+    "component": "sciona/tgs_callbacks.py",
+    "tests": "tests/test_tgs_callbacks.py",
+    "tests_passed": 3,
+    "synthetic_only": true,
+    "reference_sequences_passed": 3,
+    "reference_report": "docs/reviews/competition_tgs_callback_reference.json",
+    "verified": [
+      "Separate early-stop and plateau improvement thresholds.",
+      "Learning-rate reduction still runs on the stopping epoch.",
+      "Best-checkpoint decisions follow strict validation improvement.",
+      "Nonfinite metrics rejected before state mutation."
+    ],
+    "limitations": [
+      "Keras2.2.4 reference callback classes executed with scalar backend storage, not full TensorFlow training.",
+      "Metrics and model snapshot handling must still be wired into full phase loops."
+    ],
+    "sha256": {
+      "sciona/tgs_callbacks.py": "9a25799d8e7e37b0042031103bccd494ace4f9fe383e041e2812fca7f69ac480",
+      "tests/test_tgs_callbacks.py": "c65bcb8a6612f9ed687a4bd06f15b15fe0be432a14dccd980ece093d549f4654",
+      "docs/reviews/competition_tgs_callback_reference.json": "e1c9dbbb08d8167f8fd66d904a7a4f8666df37cddb8be0071b1b7007297ac712",
+      "scripts/validate_tgs_callback_reference.py": "3b0d655162c32a6810b7abb2b78d4e5c489f66ce2fcae67711fbde30996184b0"
+    },
+    "limits": [
+      "Pinned Keras2.2.0 reference classes execute with scalar backend storage, not full historical TensorFlow.",
+      "Full phase schedule still unexecuted."
+    ]
+  },
+  "preprocessing_progress": {
+    "component": "sciona/tgs_preprocessing.py",
+    "tests": "tests/test_tgs_preprocessing.py",
+    "tests_passed": 2,
+    "synthetic_only": true,
+    "verified": [
+      "Position ramp and image-times-position channels.",
+      "Training masks padded; validation masks unpadded after resize and rebinarization.",
+      "Empty-image label is1; nonempty is0, computed before resizing.",
+      "Inference flip occurs before asymmetric edge padding."
+    ],
+    "runtime": "opencv-python overlay qualified previously for Flavours; separate TGS dependency qualification remains pending.",
+    "limitations": [
+      "Training augmentation not implemented here.",
+      "Keras preprocessing and fractional resized mask support remain unresolved."
+    ],
+    "sha256": {
+      "sciona/tgs_preprocessing.py": "d549e1f942a20082b662d6ec468e941b2dadcb61a62399d4ca06056240f1d571",
+      "tests/test_tgs_preprocessing.py": "e87967109638dc583b7a75e774bc6ce9539d274f26295d895441c1d28a406a13"
+    }
+  },
+  "training_integration_findings": [
+    "Keras steps_per_epoch is twice floor(selected_training_count/batch_size), not one ordinary pass. Counts below batch size would yield zero steps and require explicit rejection.",
+    "Keras validation metric clips union to128 squared despite224-pixel inputs; requires explicit corrected/source policy before integration.",
+    "PyTorch validation crops logits to resized unpadded target dimensions; singleton squeeze in source must be corrected to retain population axis.",
+    "Fractional target loss and explicit capped/uncapped validation metric are now implemented and tested; Keras image/mask resize path and full loop remain required."
+  ],
+  "fractional_metric_progress": {
+    "component": "sciona/tgs_metrics.py",
+    "tests": "tests/test_tgs_fractional_metrics.py",
+    "tests_passed": 4,
+    "related_loss_and_model_tests_passed": 7,
+    "synthetic_only": true,
+    "verified": [
+      "Fractional Keras loss value and gradient without relaxing PyTorch binary targets.",
+      "Strict prediction/IoU thresholds and retained singleton population axis.",
+      "Source128-squared union cap can produce IoU above1 and inflate validation score.",
+      "Uncapped metric supplied separately as diagnostic."
+    ],
+    "policy": "Source cap remains an explicit required choice for source-comparable callback decisions; report uncapped diagnostic alongside it. No silent replacement of source semantics.",
+    "limits": [
+      "Fractional Lovasz arithmetic follows source computation, not a proof of binary-loss theory for soft targets.",
+      "Full training loop and Keras preprocessing remain pending."
+    ],
+    "sha256": {
+      "sciona/tgs_metrics.py": "220f12a3615bef3f3808ee3c3168cda2ed7a68cbd426d42fc9204bc3841c3f63",
+      "sciona/tgs_losses.py": "7281488166ba6501b61fad2e807bb32c34dc6c1712a3357c37fe53df7adca305",
+      "tests/test_tgs_fractional_metrics.py": "fffeebb12e7110a855ab0c5d3a58d6a5613493f1202826396dbad80d42a2ecd4"
+    }
+  },
+  "keras_preprocessing_progress": {
+    "component": "sciona/tgs_keras_preprocessing.py",
+    "tests": "tests/test_tgs_keras_preprocessing.py",
+    "tests_passed": 3,
+    "related_metric_tests_passed": 4,
+    "synthetic_only": true,
+    "verified": [
+      "Identity BGR0..255 dispatch, with float32 images.",
+      "101to192 linear resize and16-pixel reflect101 padding to224.",
+      "Uint8 mask interpolation before division by255.",
+      "Fractional targets flow through both differentiable Keras branch losses."
+    ],
+    "limitations": [
+      "Source training augmentation must precede this stage and remains unimplemented.",
+      "Separate TGS OpenCV/dependency qualification remains pending."
+    ],
+    "sha256": {
+      "sciona/tgs_keras_preprocessing.py": "f2c7616661e46fb5b092a56f97c741fda06f8135dc2415f16eae409eccdcadbe",
+      "tests/test_tgs_keras_preprocessing.py": "370a25bc71718059ac2f9d2621db2860e4ddb73f7e209e3bf30de0fd0844ef4e"
+    }
+  },
+  "torch_augmentation_progress": {
+    "component": "sciona/tgs_augmentation.py",
+    "tests": "tests/test_tgs_augmentation.py",
+    "tests_passed": 5,
+    "related_preprocessing_tests_passed": 2,
+    "synthetic_only": true,
+    "verified": [
+      "Identity oracles for crop, shear and rotation.",
+      "Horizontal flip aligns image and mask; brightness changes image only.",
+      "Seeded multi-step replay and binary mask preservation."
+    ],
+    "source_recipe": [
+      "Flip probability.5.",
+      "Geometry probability.5 then uniform choice of independent boundary crop, horizontal shear[-.07,.07], rotation[0,15].",
+      "Brightness probability.5 then uniform choice of additive[-.1,.1] or multiplicative[.92,1.08].",
+      "Crop interpolation is linear then threshold; shear/rotation masks use nearest neighbor then threshold."
+    ],
+    "limits": [
+      "Explicit Generator replaces global NumPy random state; historical draw stream parity unproven.",
+      "Full training checkpoint must additionally capture augmentation Generator state.",
+      "Keras augmentation recipe remains to implement and qualify."
+    ],
+    "sha256": {
+      "sciona/tgs_augmentation.py": "a2776869efd72a38992007419ab06f0dbea3392164ac42e6e1a5c93c4efcfaa1",
+      "tests/test_tgs_augmentation.py": "da121e346d30aa8a6b8c273cac73d191d321b2f743acb51d70b44288c45d8f06"
+    }
+  },
+  "historical_runtime_pins": {
+    "docker_source": "docker/Dockerfile",
+    "tensorflow": "1.9.0-gpu-py3",
+    "keras": "2.2.0",
+    "albumentations": "0.1.2",
+    "augmentation_sdist_url": "https://files.pythonhosted.org/packages/4f/1e/56252641a3d04bca1f823832492382530c47bba2c403e2f93797b5950a30/albumentations-0.1.2.tar.gz",
+    "augmentation_sdist_sha256": "83e942729d12449bdfa49c9d408daef7698f563a8802ed358959c2e158bad854",
+    "augmentation_source_sha256": {
+      "transforms.py": "6167ab512fe92a9dad24c42fca65559fe410ecc08143a5dd1785344e3b1f059f",
+      "functional.py": "89ea31b45537179c0c79ad0e0a6d052a6a97496c58e3883c3ea3bffe0f7039f2"
+    },
+    "prior_comparison_limit": "Callback decisions now compared against exactKeras2.2.0. Optimizer and fused-normalization historical behavior still require exact-version qualification."
+  },
+  "keras_augmentation_progress": {
+    "component": "sciona/tgs_keras_augmentation.py",
+    "tests": "tests/test_tgs_keras_augmentation.py",
+    "tests_passed": 3,
+    "synthetic_only": true,
+    "reference_version": "Albumentations0.1.2 authenticated PyPI source distribution, as pinned by winning Dockerfile.",
+    "verified": [
+      "Photometric transforms clip float32 to[0,1] despite0..255 input convention.",
+      "Contrast includes source3*(1-alpha)*grayscale_mean arithmetic.",
+      "Seed replay with image/mask geometric alignment and nearest-neighbor binary-mask preservation."
+    ],
+    "recipe": [
+      "Compose enabled with source default probability1.",
+      "Flip.5, brightness.2, contrast.1, affine shift/scale.7 in that order.",
+      "Shift fractions[-.1625,.1625], scale[.4,1.6], zero rotation, reflect101 borders."
+    ],
+    "limits": [
+      "Modern explicit NumPy Generator changes historical Python random draw stream.",
+      "Historical OpenCV rounding equivalence and complete training execution remain unproven."
+    ],
+    "sha256": {
+      "sciona/tgs_keras_augmentation.py": "98ba500b40b329567f8d5929e1e8e17449fb43c4003439c6141a52b54125e6bb",
+      "tests/test_tgs_keras_augmentation.py": "77f6cb5033fa7daf704d8e36fd8561e43df75491d529b3392a072173d200b457"
+    }
+  },
+  "keras_phase_progress": {
+    "component": "sciona/tgs_keras_phase.py",
+    "tests": "tests/test_tgs_keras_phase.py",
+    "tests_passed": 1,
+    "synthetic_only": true,
+    "diagnostic_epochs": 2,
+    "diagnostic_optimizer_updates": 4,
+    "full_source_schedule_executed": false,
+    "verified": [
+      "Real ResNeXt model with actual augmentation, preprocessing, loss, optimizer and validation.",
+      "Sampling with replacement and2*floor(N/batch_size) steps.",
+      "Source-capped callback metric and uncapped diagnostic recorded separately.",
+      "Isolated best and periodic model states; periodic state loads into real model."
+    ],
+    "limits": [
+      "Diagnostic budget only; full source schedule, fold orchestration and pretrained-state provenance remain required.",
+      "No real competition data, pretrained weights or catalog mutation used."
+    ],
+    "sha256": {
+      "sciona/tgs_keras_phase.py": "441580259a4d4febc54cd536dfb8027f16f465f024afedf498f032599bd9715c",
+      "tests/test_tgs_keras_phase.py": "8aafee9891f134bd410a552b76e05dd37b9e30ad8b4f05b1274e51e2e4bd13f9"
+    }
+  },
+  "torch_phase_progress": {
+    "component": "sciona/tgs_torch_phase.py",
+    "tests": "tests/test_tgs_torch_phase.py",
+    "tests_passed": 3,
+    "synthetic_only": true,
+    "full_source_schedule_executed": false,
+    "diagnostic_variants": [
+      5,
+      3
+    ],
+    "diagnostic_epochs_per_variant": 2,
+    "diagnostic_updates_per_variant": 2,
+    "verified": [
+      "Real single-head and auxiliary-head model training with augmentation and source preprocessing.",
+      "Validation crops preserve singleton population axis and use source epsilon-aware binary metric.",
+      "SGD restart at each cosine-cycle boundary.",
+      "Cycle-best snapshots independent of subsequent live parameter mutation and loadable into models.",
+      "Explicit cycle-end policy preserves pseudo-only phase handoff separately from cycle-best fold states."
+    ],
+    "corrections": [
+      "First finite cycle score qualifies even if zero, avoiding stale/uninitialized checkpoint.",
+      "Cycle-best tensor states are cloned rather than aliased."
+    ],
+    "limits": [
+      "Full source schedules, fold orchestration, pretrained initialization and phase handoffs remain unexecuted.",
+      "Whole-workflow publication requirements remain outstanding."
+    ],
+    "sha256": {
+      "sciona/tgs_torch_phase.py": "f6f373eb9653c54aa8ebf54b98b41ff3817067853d977e711d4c628415aa4778",
+      "tests/test_tgs_torch_phase.py": "27e861574e6841b6d0650f49c2c5baa584dbc80a2f78b6cb17af54af64a86695",
+      "sciona/tgs_metrics.py": "220f12a3615bef3f3808ee3c3168cda2ed7a68cbd426d42fc9204bc3841c3f63"
+    }
+  },
+  "torch_inference_progress": {
+    "component": "sciona/tgs_torch_inference.py",
+    "tests": "tests/test_tgs_torch_inference.py",
+    "tests_passed": 2,
+    "synthetic_only": true,
+    "verified": [
+      "Analytic crop/flip geometry and averaging of sigmoid probabilities across two states.",
+      "Real variant5 checkpoint reload and exactly repeatable two-image inference."
+    ],
+    "source_order": [
+      "Input horizontal flip precedes asymmetric padding.",
+      "Sigmoid logits then crop, then reverse horizontal flip.",
+      "Float32 TTA pair averaging, float64 snapshot accumulation, then divide by snapshot count.",
+      "Resize averaged202-resolution probabilities to101 only after TTA/snapshot aggregation."
+    ],
+    "limits": [
+      "Variant3/4 inference integration at202resolution still requires direct test.",
+      "Full trained snapshot/fold ensemble and catalog graph remain unexecuted."
+    ],
+    "sha256": {
+      "sciona/tgs_torch_inference.py": "fa3285bb8d19e54d982e07dddac98a8f87a18f56493ba09513b6025df9e9cd20",
+      "tests/test_tgs_torch_inference.py": "794e46cb7b6a922e9cb4f31763f6432bb236a8949ac05a877c33beeca28d9368"
+    }
+  },
+  "keras_inference_progress": {
+    "component": "sciona/tgs_keras_inference.py",
+    "tests": "tests/test_tgs_keras_inference.py",
+    "tests_passed": 2,
+    "synthetic_only": true,
+    "verified": [
+      "Per-checkpoint uint8 truncation before ensemble averaging.",
+      "Real ResNeXt state load, interleaved horizontal TTA and exactly repeatable inference."
+    ],
+    "source_order": [
+      "Use sigmoid-mode head with learned logit-mode checkpoint parameters.",
+      "Flip image before preprocessing; infer both views.",
+      "Crop192 region and resize each view to101 before undoing flip and averaging.",
+      "Multiply by255 and cast uint8, then divide by255 for downstream branch ensemble."
+    ],
+    "limits": [
+      "Full trained state handoffs, fold selection and source-sized schedules remain pending.",
+      "PNG serialization avoided while retaining uint8 numerical boundary; no image files emitted."
+    ],
+    "sha256": {
+      "sciona/tgs_keras_inference.py": "5932972738e4851d90edf0382422676f09d568b6f6b3cada5deced8fd9404bce",
+      "tests/test_tgs_keras_inference.py": "6ca093accd074cc9af354d8459da63f5415ff3050b431951d39ce111f64a79d2"
+    }
+  },
+  "pseudo_selection_progress": {
+    "component": "sciona/tgs_pseudo_selection.py",
+    "tests": "tests/test_tgs_pseudo_selection.py",
+    "tests_passed": 4,
+    "synthetic_only": true,
+    "verified": [
+      "Confidence and area boundaries including excluded1..19 pixels and masks at least90percent full.",
+      "Empty-mask every-other selection after metadata shuffle.",
+      "Source uneven bucket slice sizes preserved, including260-entry third slice.",
+      "Global RNG not mutated."
+    ],
+    "source_contract": [
+      "Separate seed123 shuffles of full metadata and Keras confident subset.",
+      "Keras confidence>=.9 and nonconstant input.",
+      "PyTorch confidence>=.97 with>=.99 for20..500pixel masks.",
+      "Constant-image exclusion in PyTorch applies explicitly to empty-mask bucket."
+    ],
+    "limits": [
+      "Full fold lifecycle and model-generated pseudo-label rounds remain unexecuted.",
+      "Caller must supply aligned area/confidence statistics from source ensemble and full query population."
+    ],
+    "sha256": {
+      "sciona/tgs_pseudo_selection.py": "001d88b75ff42702444ceed44daf5d91d9c4fc0265d28bcfb73375dce8a5b510",
+      "tests/test_tgs_pseudo_selection.py": "fc687894ab3913eba80bdd36892d5b6692ab2d4712b2c59c4a0df208c871dd69"
+    }
+  },
+  "training_plan": "docs/reviews/competition_tgs_training_plan.json",
+  "checkpoint_handoff_findings": [
+    "Keras first-round phases chain same-fold validation-best weights.",
+    "Keras pseudo-only warmup initializes independently, then a second pseudo phase follows; all labeled folds initialize from its shared fold0 best state.",
+    "PyTorch pseudo-only phase passes final cycle-end state to all later variant5 folds, not validation-best state.",
+    "Reviewed fit plan expands63phase fits and6530epoch ceiling; still unapproved and unexecuted."
+  ],
+  "pretrained_initialization_progress": {
+    "report": "docs/reviews/competition_tgs_initialization.json",
+    "tests": "tests/test_tgs_initialization.py",
+    "tests_passed": 4,
+    "verified": [
+      "Full SHA256 authentication of both public encoder references; ResNeXt also matches winner-pinned MD5.",
+      "All three ResNet34 variant mappings with nonencoder preservation and finite synthetic forward execution.",
+      "All764 ResNeXt source tensors consumed; independent NHWC convolution confirms numerical group ordering and kernel transpose.",
+      "Restricted legacy archive reader: no filesystem extraction, imported pickle globals, or unrestricted torch.load."
+    ],
+    "limits": [
+      "Initialization proof only; no complete trained fold lifecycle or promotion.",
+      "Historical runtime equivalence and pretrained reuse qualification remain pending."
+    ],
+    "catalog_mutations": 0,
+    "regression": {
+      "command": "PYTHONPATH=<qualified-opencv-overlay>:. .venv/bin/python -m pytest -q tests/test_tgs_*.py",
+      "passed": 80,
+      "warnings": 1,
+      "warning_scope": "Existing conftest event-loop deprecation",
+      "synthetic_only": true
+    },
+    "report_sha256": "fcc0fff98d79de809e82152a789babda51d249d0d00880f9558a1a9bf3d15914"
+  },
+  "checkpoint_selection_progress": {
+    "report": "docs/reviews/competition_tgs_checkpoint_selection.json",
+    "tests_passed": 3,
+    "verified": [
+      "All15 PyTorch fold selections compared to authenticated shell commands; inclusive snapshot endpoint confirmed.",
+      "Final PyTorch folds retain equal weights despite4/4/4/3/3 snapshot counts.",
+      "Keras rounds use validation-best checkpoints in reverse phase order; final round reuses second-round Keras checkpoints.",
+      "Fit plan links both pseudo-label barriers and final mosaic requirement."
+    ],
+    "population_findings": [
+      "Keras pseudo-only warmup validates on nonconstant labeled fold0 and reshuffles selected pseudo rows with seed13.",
+      "PyTorch pseudo-only warmup trains on every second-round query pseudo-mask, including low-confidence and constant inputs; it does not use the confident subset.",
+      "PyTorch pseudo-only validation uses a separate caller-supplied labeled index set.",
+      "PyTorch second-round labeled folds append only the matching pseudo bucket; original fold validation stays labeled-only."
+    ],
+    "sha256": {
+      "sciona/tgs_checkpoint_selection.py": "a0c480e4a9fcfde91e9c2dd64f8fe38ceef5668a845180db948d9c2b8f0c4ea1",
+      "tests/test_tgs_checkpoint_selection.py": "09d14e3fba540f242bab3ab27d4847d8417db24dc8149ebd94d1be4defcc4295",
+      "scripts/prepare_tgs_training_plan.py": "21e7fc82afe08b8609ff406ed1584ffd679c776a93793197f453913073af220d",
+      "docs/reviews/competition_tgs_training_plan.json": "377c93c42ea1b68ab82d0a1cca429cb92c0322e09115a545717e9779157d5c5b"
+    },
+    "catalog_mutations": 0,
+    "full_training_executed": false
+  },
+  "population_implementation_progress": {
+    "component": "sciona/tgs_population.py",
+    "tests": "tests/test_tgs_population.py",
+    "tests_passed": 12,
+    "related_pseudo_selection_tests_passed": 4,
+    "all_fit_probe": "docs/reviews/competition_tgs_population.json",
+    "all_fit_probe_passed": 63,
+    "verified": [
+      "Keras constant exclusion applies to training and validation; pseudo-only uses the confident subset and seed13 reshuffle.",
+      "PyTorch pseudo-only includes every query position and requires explicit labeled validation positions.",
+      "PyTorch stage2 appends the same-index pseudo bucket and retains labeled-only fold validation.",
+      "All63 fit selections have disjoint labeled training and validation positions.",
+      "Unknown fits, duplicate/out-of-range/missing pseudo validation indices and empty populations fail."
+    ],
+    "limits": [
+      "Full source-budget training, checkpoint handoffs and publication remain pending.",
+      "Positional ordering replaces identifier sorting/filesystem enumeration; historical RNG stream identity is not claimed."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/tgs_population.py": "e41fba7f0f280a120c19ceea7f5730942375bb4dfd8f462a403aa64faece29b3",
+      "tests/test_tgs_population.py": "32af842e6d331bb3b84b8e6600f360c456409c24633d7e40e593e0251d4f7224",
+      "docs/reviews/competition_tgs_population.json": "2b287cf2842b23f1830b0cab752f859791c663f8332ef61ecaad50723df02c34"
+    }
+  },
+  "checkpoint_store_progress": {
+    "component": "sciona/tgs_checkpoint_store.py",
+    "tests": "tests/test_tgs_checkpoint_store.py",
+    "tests_passed": 4,
+    "report": "docs/reviews/competition_tgs_checkpoint_store.json",
+    "report_sha256": "8660ea53e93de94eb69c348feb7bab660a35716c5506352b03832e5342526ccc",
+    "verified": [
+      "Digest and length verified before tensor-only checkpoint deserialization.",
+      "Loaded weights isolated from subsequent source and loaded-state mutations.",
+      "Best-validation and periodic/cycle-end checkpoint identities remain distinct.",
+      "Both actual model architectures trained for one diagnostic update, persisted, loaded into fresh models and produced bit-identical predictions."
+    ],
+    "limits": [
+      "Caller must still connect persistent receipts to the complete63-fit lifecycle.",
+      "Phase handoffs contain model weights only and intentionally restart optimizers; no interrupted-fit resume claim.",
+      "Complete source-budget training remains unexecuted."
+    ],
+    "catalog_mutations": 0
+  },
+  "round_inference_progress": {
+    "component": "sciona/tgs_round_inference.py",
+    "tests": "tests/test_tgs_round_inference.py",
+    "tests_passed": 3,
+    "report": "docs/reviews/competition_tgs_round_inference.json",
+    "report_sha256": "7f045c563b565835eb8ab7b547428ca48ff7802120b3ac8e7d0ea9fb5ceeaea6",
+    "verified": [
+      "Exact source cycle boundaries required before zero-based snapshot selection; missing unselected cycles cannot shift selected identities.",
+      "All three rounds resolve20 Keras checkpoints and25/20/18 PyTorch checkpoints.",
+      "Analytic full-round test verifies persisted checkpoint loading, TTA, quantization and final blend.",
+      "Actual architectures completed all38 final-round checkpoint selections on synthetic input."
+    ],
+    "limits": [
+      "Real-architecture diagnostic reuses untrained branch states; no trained fit or ensemble claim.",
+      "Full source-budget training, final mosaic integration and publication remain outstanding."
+    ],
+    "catalog_mutations": 0,
+    "regression": {
+      "passed": 102,
+      "warnings": 1,
+      "scope": "All tests/test_tgs_*.py with qualified OpenCV overlay; synthetic inputs only."
+    }
+  },
+  "round_output_progress": {
+    "component": "sciona/tgs_round_outputs.py",
+    "tests_passed": 8,
+    "test_scope": [
+      "tests/test_tgs_round_outputs.py",
+      "tests/test_tgs_postprocessing.py"
+    ],
+    "verified": [
+      "Complete query masks retained regardless of confidence or constant-image status.",
+      "Both branch pseudo-selection outputs derived from the exact strict score thresholds.",
+      "Final round requires and executes joint mosaic assembly and mask propagation.",
+      "Known synthetic scene propagated all12 query tiles through the final-round boundary without numerical mocks."
+    ],
+    "limits": [
+      "Full63-fit training and qualification/publication remain pending."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/tgs_round_outputs.py": "9df0b49ffb07dcedd4e244d64b688a1ac58001efcb9bd777fb533f01109a6661",
+      "tests/test_tgs_round_outputs.py": "f67ea82518d05ca259cccd55090b8ebeb1014f1e5b1da5aff545e1530bf172af",
+      "tests/test_tgs_postprocessing.py": "638cb0406fb523a881781432d00a39660ab062af685727b606223de7b0c6a9d0"
+    }
+  },
+  "fit_execution_progress": {
+    "component": "sciona/tgs_fit_execution.py",
+    "tests": "tests/test_tgs_fit_execution.py",
+    "tests_passed": 3,
+    "verified": [
+      "Missing predecessor fits fail before training.",
+      "Keras uses predecessor validation-best state; final PyTorch folds require all three pseudo-only cycles and select epoch150.",
+      "Pseudo round identity and mask alignment checked; Keras binary pseudo masks converted to uint8 coverage before resize."
+    ],
+    "source_budget_probe": {
+      "fit": "keras.r1.p0.f0",
+      "status": "completed_verified",
+      "epoch_ceiling": 125,
+      "batch_size": 24,
+      "synthetic_only": true,
+      "report": "docs/reviews/competition_tgs_first_source_fit.json"
+    },
+    "limits": [
+      "First source-budget fit launched; no completion or promotion claim.",
+      "Full63-fit lifecycle and source/runtime reuse qualification remain outstanding."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/tgs_fit_execution.py": "79ac5cf07e62fc8bdfca83cc6ce05dd66446943fb00d469a6accf9d410df49c8",
+      "tests/test_tgs_fit_execution.py": "e67af08f01074651504d6cf9096f78a1fdd88b8b6acd968b2c7ba20128fd71de"
+    }
+  },
+  "optimizer_runtime_qualification": {
+    "report": "docs/reviews/competition_tgs_optimizer_reference.json",
+    "report_sha256": "9ced1da4eda911c5b2c953a58ba5516c8e919e346e39de44d2d7d5e6b9fce1a7",
+    "exact_source_version": "Keras2.2.0",
+    "passed": true,
+    "source_sha256": "3d26c69b2b8d088fe5bd8b6f5d4daf04dd56d481f0ad376964e3b10c50747589",
+    "verified": "Configured dense RMSprop parameters and accumulator sequence match actual extracted update expressions within declared float32 tolerances; parameter max error0.",
+    "limits": [
+      "Batch-normalization moving variance and other historical TensorFlow runtime differences remain separately unqualified.",
+      "No complete63-fit or promotion claim."
+    ],
+    "catalog_mutations": 0
+  },
+  "batchnorm_runtime_correction": {
+    "report": "docs/reviews/competition_tgs_batchnorm_reference.json",
+    "verified": true,
+    "affected_tests_passed": 8,
+    "correction": "Training normalization retains population variance; moving variance applies TensorFlow1.9 fused Bessel correction followed by the additional Keras2.2.0 factor.",
+    "prior_source_budget_probe": "Intentionally interrupted; process terminal KeyboardInterrupt; no accepted completed fit.",
+    "replacement_source_budget_probe": "Started with corrected normalization; completion not yet verified.",
+    "evidence_scope": "Earlier Keras training evidence used population-only moving variance and is superseded for runtime fidelity. Current eight affected tests and eight numerical reference cases pass. Full runtime equivalence remains unclaimed.",
+    "sha256": {
+      "sciona/tgs_keras_layers.py": "58ca70dc9ba9ef894c8a80a7012d1e8b7f7b77062990d75bfb704b6d294c1d4a",
+      "tests/test_tgs_keras_layers.py": "74e782c8f0e2b9a7eb3ea280e9db13146f0a10d806fc076a73ae84950b24a441",
+      "docs/reviews/competition_tgs_batchnorm_reference.json": "ae58ad8b47cea43aa291af65dcdf5fda46103b8e3717f3187f30f7326822638c"
+    },
+    "catalog_mutations": 0
+  },
+  "workflow_orchestration_progress": {
+    "components": [
+      "sciona/tgs_schedule.py",
+      "sciona/tgs_workflow.py"
+    ],
+    "verified": [
+      "Scheduler traverses all63 fits and three ensemble barriers.",
+      "Completion records without completed dependencies fail.",
+      "Workflow calls training, persisted-checkpoint inference and pseudo/final outputs; records every completed action.",
+      "Persistence callback failure stops before a dependent action."
+    ],
+    "validation_scope": "Scheduler and mocked control-flow tests only; actual full66-action execution remains unverified.",
+    "limits": [
+      "Corrected first source-budget fit remains running; no completed fit accepted yet.",
+      "Private runtime state persistence callback still needed for a launched full workflow.",
+      "Runtime/reference qualification and publication remain outstanding."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/tgs_schedule.py": "41ea72e6fc62590256de58372ff25f0fd439e0b4033a0f292f6f99f9a2ff6d05",
+      "sciona/tgs_workflow.py": "3a42a45db68728ed889e54768fade153dbf57457fd31d66fb3efc8979103ac77",
+      "tests/test_tgs_schedule.py": "31d53ddf467695ff0ba04733a81956eb43ac4353803a54bcaf247d3fec0ba471",
+      "tests/test_tgs_workflow.py": "38584de7bff956a16fb970083b82d5feb01cab4e73c7269eb1c69f14d2b8efaf"
+    }
+  },
+  "workflow_state_progress": {
+    "component": "sciona/tgs_workflow_state.py",
+    "tests": "tests/test_tgs_workflow_state.py",
+    "tests_passed": 3,
+    "verified": [
+      "Atomic manifest replacement; rejected new state leaves prior committed manifest readable.",
+      "Numeric non-pickle array files checked by length and SHA256 before loading.",
+      "Caller-qualified runtime context digest prevents accidental resume across contexts.",
+      "Integer round keys, boolean masks, integer areas and NumPy RNG state round-trip."
+    ],
+    "limits": [
+      "Runtime state can contain private query arrays and must remain outside source control.",
+      "Full workflow launcher still must qualify its complete context and supply this persistence callback.",
+      "Corrected first source-budget fit remains running, not accepted complete."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/tgs_workflow_state.py": "5d13c2e9e6671460fe77fb62a67c8ac5371d5ef103d79ac28870c75e9ba6d08c",
+      "tests/test_tgs_workflow_state.py": "48d78eac14c2e97c23eac4f18e5707d165393f642ea470b2924cfc805c3adb1b"
+    }
+  },
+  "full_workflow_launcher": {
+    "script": "scripts/run_tgs_synthetic_workflow.py",
+    "sha256": "be3146c4b9634ad0a42c1ed8a8f8c3e7465c1a4ef79cf25d842dacacf6b20acc",
+    "prepare_check_passed": true,
+    "training_started_by_launcher": true,
+    "fit_count": 63,
+    "epoch_ceiling": 6530,
+    "synthetic_only": true,
+    "verified": [
+      "Both pretrained file hashes checked before preparation.",
+      "Private resume context binds code, plan, versions, seed and thread count.",
+      "Runtime directory must be outside source repository; exclusive process lock prevents simultaneous launch in the same directory.",
+      "Synthetic labeled population supports source batch sizes24 and28; no schedule changes."
+    ],
+    "limits": [
+      "Full workflow launched after verified standalone fit completion; no complete workflow claim.",
+      "Future pseudo-label confidence sufficiency and all66 actual actions remain unverified.",
+      "No competition-performance, completed training or publication claim."
+    ],
+    "catalog_mutations": 0,
+    "last_verified_progress": {
+      "completed_fits": 1,
+      "completed_rounds": 0,
+      "optimizer_updates": 42
+    }
+  },
+  "dependency_qualification_progress": {
+    "environment_report": "docs/reviews/competition_tgs_environment_audit.json",
+    "notice_report": "docs/reviews/competition_tgs_dependency_notices.json",
+    "observed_packages": 20,
+    "version_constraint_failures": 0,
+    "retained_notice_files": 61,
+    "missing_notice_packages": [],
+    "reference_scope": "Caller supplies entitled-to-use external pretrained artifacts; none are bundled. Checksums establish identity, not usage rights.",
+    "limits": [
+      "Publisher artifact authentication and installed native-library provenance remain pending.",
+      "Full synthetic workflow continues; no complete training or promotion claim."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "docs/licenses/TGS-reference-NOTICE.txt": "78af3d64be1d996062e8c1020c2d3796437868756f42ad13795889ae57556ada",
+      "docs/licenses/TGS-dependency-NOTICES.txt": "e67e5a2b15fa45597d85b7ba969ff1de9feae2850303c287f3004ba02ed59248",
+      "requirements/tgs-reference.txt": "e8d64d3a62f6f9719eec817c844f3504f56fb7e40df7e6d09b9fe57a77858e64",
+      "scripts/audit_tgs_environment.py": "319650801bc5184a0cb59b7a652c11a3b7b32f24b77247f2df116c67f4bbad18"
+    }
+  },
+  "publisher_payload_qualification": {
+    "report": "docs/reviews/competition_tgs_publisher_payload_validation.json",
+    "packages": 20,
+    "matched_files": 18300,
+    "differences": 0,
+    "unresolved_install_scheme_files": 0,
+    "verified": "Installed distributions match SHA256-authenticated publisher wheels; prior publisher-index evidence reused for19 exact versions, torchvision0.26.0 additionally acquired and authenticated.",
+    "limits": [
+      "Runtime loaded native-library origins and final publication gate remain separate.",
+      "Full synthetic training is ongoing."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "scripts/verify_tgs_publisher_wheels.py": "3257f5839f62c0911fcefa83cc9eb1b29740cbb31ebb435fa542a9858c144cb8",
+      "requirements/tgs-reference-macos-arm64.lock": "36cc964d8b932cddac1ca03f1c9607a923de81e7e88d59922b95e148f19286b4",
+      "docs/reviews/competition_tgs_publisher_payload_validation.json": "8c176f793713d7027c818f617e2c017fd17bdd392b19a1c6b48c312619cfc202"
+    }
+  },
+  "loaded_native_qualification": {
+    "report": "docs/reviews/competition_tgs_loaded_native.json",
+    "non_system_images": 249,
+    "wheel_payload_matches": 199,
+    "platform_interpreter_images": 50,
+    "system_images": 443,
+    "unresolved": 0,
+    "limits": [
+      "Synthetic model, OpenCV, cKDTree and HDF5 warmup only; optional lazy/native branches may load more images.",
+      "Platform system/interpreter binaries are explicitly separate from publisher-wheel authentication."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "scripts/audit_tgs_loaded_native.py": "2fd5879092c48dc2f02fe5e391469076fc1da94f6a8291422ef436912d5e985c",
+      "docs/reviews/competition_tgs_loaded_native.json": "f30635329485d3c800caa64346d983d19a0177e6a740b4a3d981a90bce79ee9d"
+    }
+  },
+  "draft_execution_graph": {
+    "builder": "scripts/build_tgs_execution_graph.py",
+    "serialized_report": "docs/reviews/competition_tgs_execution_graph_draft.json",
+    "status": "structural_draft_only",
+    "catalog_mutations": 0,
+    "source_intake_hash_preserved": true,
+    "full_training_scope_preserved": true,
+    "required_before_promotion": [
+      "Register and qualify exact provider callable.",
+      "Verify full63-fit execution and selected checkpoint lineage.",
+      "Bind transitive source/dependency evidence and run rejection/rollback/apply/served gates."
+    ],
+    "sha256": {
+      "scripts/build_tgs_execution_graph.py": "0e7c611faa1a352f33f900ecc5cf34a11ac15bfeb5d6ed24105f437752757982",
+      "docs/reviews/competition_tgs_execution_graph_draft.json": "750405d91b7fe14d91f3a15e4ecd9d5e9af73b112af6a2ed320e274592c6dfc5"
+    }
+  },
+  "recorded_training_audit": {
+    "script": "scripts/audit_tgs_training_progress.py",
+    "report": "docs/reviews/competition_tgs_training_progress.json",
+    "negative_tests_passed": 3,
+    "verified": [
+      "Completed fit has matching plan-contract digest, epoch sequence, full-batch update count and source learning-rate history.",
+      "Partial Keras epochs require actual source callback stop; consistently truncated counters do not bypass this check.",
+      "Saved checkpoint bytes and tensor-only state validated."
+    ],
+    "scope": "Partial completed-record audit only. Full workflow, tensor lineage and promotion remain unproven.",
+    "catalog_mutations": 0,
+    "sha256": {
+      "scripts/audit_tgs_training_progress.py": "f7cfc1417ec9bd37075370568af56e4e6b0d589c0df2c8eae17e9886607647b4",
+      "tests/test_tgs_training_progress_audit.py": "111f566cc42e73de6331c477225fa3e9befb5b15a4f7942f40fd33bc0b5c5418",
+      "docs/reviews/competition_tgs_training_progress.json": "cdafd8a655387db6ad3059a4a705b5b329e8c077da75b5566ac2eea7012b23af"
+    }
+  }
+}

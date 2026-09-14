@@ -1,0 +1,32 @@
+{
+  "served_distinct_cdgs": 20,
+  "retrieved_version_hash": "cca4fa851032d89ebabbca30f4069024d049d8492ca6de4598e37ded5655b8e7",
+  "trust_tier": 3,
+  "verified_leaf_coverage": 1.0,
+  "retrieved_graph_equals_validated_graph": true,
+  "nodes": 7,
+  "edges": 22,
+  "boundary_ports": [
+    {
+      "direction": "input",
+      "name": "training_segments"
+    },
+    {
+      "direction": "input",
+      "name": "prediction_segments"
+    },
+    {
+      "direction": "input",
+      "name": "segment_labels"
+    },
+    {
+      "direction": "output",
+      "name": "relative_power_segment_probabilities"
+    }
+  ],
+  "original_full_ensemble_status": {
+    "status": "draft",
+    "is_publishable": false
+  },
+  "scope": "Relative-power source model branch; complete ensemble remains draft."
+}

@@ -1,0 +1,908 @@
+{
+  "approved": false,
+  "scope": "Candidate dependency notice inventory; declarations and bundled notices still require review before publication. No dependency installation or active environment mutation performed.",
+  "packages": {
+    "annotated-doc": {
+      "version": "0.0.4",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "annotated_doc-0.0.4.dist-info/licenses/LICENSE": "fff170779a6acbf65abdb405c087f1cee1786691e4a96a4034517e4a504a0cdf"
+      }
+    },
+    "annotated-types": {
+      "version": "0.7.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "annotated_types-0.7.0.dist-info/licenses/LICENSE": "fe1049884b1a0d9342901e88e07f32925d24b3121d9972b6a6805fb9824b095d"
+      }
+    },
+    "anyio": {
+      "version": "4.12.1",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "anyio-4.12.1.dist-info/licenses/LICENSE": "5361ac9dc58f2ef5fd2e9b09c68297c17f04950909bbc8023bdb82eacf22c2b0"
+      }
+    },
+    "asttokens": {
+      "version": "2.4.1",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "asttokens-2.4.1.dist-info/LICENSE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+      }
+    },
+    "attrs": {
+      "version": "26.1.0",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "attrs-26.1.0.dist-info/licenses/LICENSE": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f"
+      }
+    },
+    "bidict": {
+      "version": "0.23.1",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
+      "license_files": {
+        "bidict-0.23.1.dist-info/LICENSE": "f3f53adcecaa48d73a66e238fa5ba906cb41876783b45d28a1346b3142eebd9a"
+      }
+    },
+    "biosppy": {
+      "version": "2.2.4",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "biosppy-2.2.4.dist-info/licenses/LICENSE": "19018eeef1ad5110d2e4b95cd7e9c6403daa1dc17ce4dfbac00434c2d24590ef"
+      }
+    },
+    "certifi": {
+      "version": "2026.2.25",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
+      "license_files": {
+        "certifi-2026.2.25.dist-info/licenses/LICENSE": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+      }
+    },
+    "charset-normalizer": {
+      "version": "3.4.5",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "charset_normalizer-3.4.5.dist-info/licenses/LICENSE": "6d0d41bfe170ac6c7dc248c9a63e254d0fb45a60d50a8257d0af92c6e249b887"
+      }
+    },
+    "click": {
+      "version": "8.3.1",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "click-8.3.1.dist-info/licenses/LICENSE.txt": "9a8ad106a394e853bfe21f42f4e72d592819a22805d991b5f3275029292b658d"
+      }
+    },
+    "contourpy": {
+      "version": "1.3.3",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "contourpy-1.3.3.dist-info/LICENSE": "34170979fc64f4f5e6dfa66ef27dec314ffffc5852000c60f4836ec1dfbf156e"
+      }
+    },
+    "cycler": {
+      "version": "0.12.1",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "cycler-0.12.1.dist-info/LICENSE": "f1218143d766da3fea66f13396b7f15df46a83303f29bf96ba6e98eb4d42f408"
+      }
+    },
+    "fastapi": {
+      "version": "0.129.0",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "fastapi-0.129.0.dist-info/licenses/LICENSE": "4ec89ffc81485b97fec584b2d4a961032eeffe834453894fd9c1274906cc744e"
+      }
+    },
+    "filelock": {
+      "version": "3.25.2",
+      "license_expression": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "filelock-3.25.2.dist-info/licenses/LICENSE": "608c89d5060ae9921adccf3236695bc654a9946e12323ef6c021dfa04e294d48"
+      }
+    },
+    "flatbuffers": {
+      "version": "25.12.19",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {}
+    },
+    "fonttools": {
+      "version": "4.62.1",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "fonttools-4.62.1.dist-info/licenses/LICENSE": "6787208f83f659ccbc2223b2fde952ffa6f7e8aca62f1a8a2bf5bc51bb1b2383",
+        "fonttools-4.62.1.dist-info/licenses/LICENSE.external": "94a83aaee0729a0f302d34acc4acecbd9d58366f262429075fe557e4a54b2e69"
+      }
+    },
+    "fsspec": {
+      "version": "2026.2.0",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "fsspec-2026.2.0.dist-info/licenses/LICENSE": "2dc35496ce53a7307915c008a844aad53e772b49b34cdd00445067691407ec94"
+      }
+    },
+    "h11": {
+      "version": "0.16.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "h11-0.16.0.dist-info/licenses/LICENSE.txt": "37db5bb85926db28a427a25867f10b1232003aea1be69ccb851138adb8e6f361"
+      }
+    },
+    "h5py": {
+      "version": "3.16.0",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "h5py-3.16.0.dist-info/licenses/LICENSE": "e574b296655cfb0ca5180ec6eee3c95d122b0906736d3ca7e3ce19e0f297f0c9",
+        "h5py-3.16.0.dist-info/licenses/licenses/license.txt": "facf43e03193cf4cf8d8bcdd67ce04fc61ef6948dd06672a4e5da579e64a3948",
+        "h5py-3.16.0.dist-info/licenses/lzf/LICENSE.txt": "a8f8c54abc00d1acd157401557b3ec6f500ac76a5efd17a0eaa644e2d32e6beb"
+      }
+    },
+    "httpcore": {
+      "version": "1.0.9",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "httpcore-1.0.9.dist-info/licenses/LICENSE.md": "fdcb59154c74cbaba16a11242f7740bea9f23d6feb5547917d8c5f94a80392a5"
+      }
+    },
+    "httpx": {
+      "version": "0.28.1",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "httpx-0.28.1.dist-info/licenses/LICENSE.md": "4ec59d544f12b5f539a3a716fd321ac58ccd8030b465221f2c880200cdf28d8d"
+      }
+    },
+    "icontract": {
+      "version": "2.7.3",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "icontract-2.7.3.dist-info/licenses/LICENSE.txt": "8505347e31d4a0d459d505ba9f928ca73176f28fbffe1e3fd5fd93476db953ce"
+      }
+    },
+    "idna": {
+      "version": "3.11",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "idna-3.11.dist-info/licenses/LICENSE.md": "b7a336abf3b04e180ec065cdd16e705d079e1cc7a14f910aa6e9187f36b9cd87"
+      }
+    },
+    "inflect": {
+      "version": "7.5.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "inflect-7.5.0.dist-info/LICENSE": "86da0f01aeae46348a3c3d465195dc1ceccde79f79e87769a64b8da04b2a4741"
+      }
+    },
+    "jax": {
+      "version": "0.9.2",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "jax-0.9.2.dist-info/licenses/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    },
+    "jaxlib": {
+      "version": "0.9.2",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "jaxlib-0.9.2.dist-info/licenses/LICENSE.txt": "e3d8688a2c75d4e33641cc88046a8a1593ee79822411fa45a7bd32e37f847d29"
+      }
+    },
+    "jinja2": {
+      "version": "3.1.6",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "jinja2-3.1.6.dist-info/licenses/LICENSE.txt": "3b49dcee4105eb37bac10faf1be260408fe85d252b8e9df2e0979fc1e094437b"
+      }
+    },
+    "joblib": {
+      "version": "1.5.3",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "joblib-1.5.3.dist-info/licenses/LICENSE.txt": "42612911c1872c5e4b43f6ae0e8ee59467cd350332241cf72ce90640264fae6a"
+      }
+    },
+    "jsonpatch": {
+      "version": "1.33",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "jsonpatch-1.33.dist-info/LICENSE": "4393eb6733fa1e367f41769b382f4f1be7bf0daeb1e243ed92b3f5d8bafd236f"
+      }
+    },
+    "jsonpointer": {
+      "version": "3.0.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "jsonpointer-3.0.0.dist-info/LICENSE.txt": "d8b24f15d472885f788a2d6e985850f264627b86012a17bb242c83f310d907e5"
+      }
+    },
+    "kiwisolver": {
+      "version": "1.5.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "kiwisolver-1.5.0.dist-info/licenses/LICENSE": "529c40e5f67f2f88904657a9f7879ae2f8dc76bc9bfef9cb10d988b48804ed61"
+      }
+    },
+    "langchain-core": {
+      "version": "1.2.19",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {}
+    },
+    "langgraph": {
+      "version": "1.1.2",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "langgraph-1.1.2.dist-info/licenses/LICENSE": "d9bb52f2e3540d60ff50d8f0f5b6ba649b7fd346948c4c3d086c8afb120763c7"
+      }
+    },
+    "langgraph-checkpoint": {
+      "version": "4.0.1",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "langgraph_checkpoint-4.0.1.dist-info/licenses/LICENSE": "d9bb52f2e3540d60ff50d8f0f5b6ba649b7fd346948c4c3d086c8afb120763c7"
+      }
+    },
+    "langgraph-prebuilt": {
+      "version": "1.0.8",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "langgraph_prebuilt-1.0.8.dist-info/licenses/LICENSE": "d9bb52f2e3540d60ff50d8f0f5b6ba649b7fd346948c4c3d086c8afb120763c7"
+      }
+    },
+    "langgraph-sdk": {
+      "version": "0.3.11",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "langgraph_sdk-0.3.11.dist-info/licenses/LICENSE": "d9bb52f2e3540d60ff50d8f0f5b6ba649b7fd346948c4c3d086c8afb120763c7"
+      }
+    },
+    "langsmith": {
+      "version": "0.7.17",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {}
+    },
+    "markdown-it-py": {
+      "version": "4.0.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "markdown_it_py-4.0.0.dist-info/licenses/LICENSE": "4a2260d6e2cd0f5a151a1e86dbfe7d3ed552b1e2beabf9941c1ba5c49cbce484",
+        "markdown_it_py-4.0.0.dist-info/licenses/LICENSE.markdown-it": "792c48c5a849a15fdf9e37e8bcf9e6d1dd13b32b46c642a748a0a46a9919d473"
+      }
+    },
+    "markupsafe": {
+      "version": "3.0.3",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "markupsafe-3.0.3.dist-info/licenses/LICENSE.txt": "489a8e1108509ed98a37bb983e11e0f7e1d31f0bd8f99a79c8448e7ff37d07ea"
+      }
+    },
+    "matplotlib": {
+      "version": "3.10.8",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Python Software Foundation License"
+      ],
+      "license_files": {
+        "matplotlib-3.10.8.dist-info/LICENSE": "dbb9ad7495a83b0f2f48c94b06e23020587d82f8d1492dcb717fb1ebc2f86c18"
+      }
+    },
+    "mdurl": {
+      "version": "0.1.2",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "mdurl-0.1.2.dist-info/LICENSE": "7c605df6e28667a9603118e98274f64a49ce3eed0d26fccce9534a345e0ef955"
+      }
+    },
+    "ml-dtypes": {
+      "version": "0.5.4",
+      "license_expression": "Apache-2.0",
+      "license_classifiers": [],
+      "license_files": {
+        "ml_dtypes-0.5.4.dist-info/licenses/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "ml_dtypes-0.5.4.dist-info/licenses/LICENSE.eigen": "3f3d9e0024b1921b067d6f7f88deb4a60cbe7a78e76c64e3f1d7fc3b779b9d04"
+      }
+    },
+    "mock": {
+      "version": "5.2.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "mock-5.2.0.dist-info/LICENSE.txt": "5831ee149d3850b28df8ff02fb7bd07cecda81e85cc8435c20827d3922202d34"
+      }
+    },
+    "more-itertools": {
+      "version": "11.0.1",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "more_itertools-11.0.1.dist-info/licenses/LICENSE": "09f1c8c9e941af3e584d59641ea9b87d83c0cb0fd007eb5ef391a7e2643c1a46"
+      }
+    },
+    "mpmath": {
+      "version": "1.3.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "mpmath-1.3.0.dist-info/LICENSE": "c26cae81da4508e5e249985777a33821f183223ebb74d7f8cfbf90fe7eef2fb7"
+      }
+    },
+    "msgpack": {
+      "version": "1.1.2",
+      "license_expression": "Apache-2.0",
+      "license_classifiers": [],
+      "license_files": {
+        "msgpack-1.1.2.dist-info/licenses/COPYING": "492dedba85da5872f78e6091bcd1fea474d660d35acb4dee964b8aab3f007427"
+      }
+    },
+    "networkx": {
+      "version": "3.6.1",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "networkx-3.6.1.dist-info/licenses/LICENSE.txt": "3cf7c3a179d817b23b8b8568211769fefdf93797d207d984b8b2fa24d0220b33"
+      }
+    },
+    "numexpr": {
+      "version": "2.14.2",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "numexpr-2.14.2.dist-info/licenses/LICENSE.txt": "03fdd8025a4e6d70caf27720e91a79ad8d9fe422ebe1820f5cec61dceae709ff"
+      }
+    },
+    "numpy": {
+      "version": "2.4.2",
+      "license_expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "license_classifiers": [],
+      "license_files": {
+        "numpy-2.4.2.dist-info/licenses/LICENSE.txt": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf",
+        "numpy-2.4.2.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+        "numpy-2.4.2.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+        "numpy-2.4.2.dist-info/licenses/numpy/_core/src/highway/LICENSE": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+        "numpy-2.4.2.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+        "numpy-2.4.2.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+        "numpy-2.4.2.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+        "numpy-2.4.2.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+        "numpy-2.4.2.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+        "numpy-2.4.2.dist-info/licenses/numpy/ma/LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/src/distributions/LICENSE.md": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/src/philox/LICENSE.md": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+        "numpy-2.4.2.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+        "numpy/ma/LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+        "numpy/random/LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f"
+      }
+    },
+    "opencv-python": {
+      "version": "4.13.0.92",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "cv2/LICENSE-3RD-PARTY.txt": "0e8fac55c2f5bff939c1e7aae1fa2799e1cece5fd0857d8e5fafeb46562aafc9",
+        "cv2/LICENSE.txt": "09d719058e782ac7bc71ba21c944e1136cde2bb957c0e888121f0218d6b5f02c",
+        "cv2/data/haarcascade_license_plate_rus_16stages.xml": "4d1c44bf7a1bc4e204fa25b046ed0acffd7f713cc13fe2958b6977125c60ddea",
+        "opencv_python-4.13.0.92.dist-info/LICENSE-3RD-PARTY.txt": "0e8fac55c2f5bff939c1e7aae1fa2799e1cece5fd0857d8e5fafeb46562aafc9",
+        "opencv_python-4.13.0.92.dist-info/LICENSE.txt": "09d719058e782ac7bc71ba21c944e1136cde2bb957c0e888121f0218d6b5f02c"
+      }
+    },
+    "opt-einsum": {
+      "version": "3.4.0",
+      "license_expression": "MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "opt_einsum-3.4.0.dist-info/licenses/LICENSE": "7b26691a7c8ee48af425a53cbaeaabc9aa3a84ea2e93fe47a1ecc550c1de76db"
+      }
+    },
+    "orjson": {
+      "version": "3.11.7",
+      "license_expression": "MPL-2.0 AND (Apache-2.0 OR MIT)",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License",
+        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+      ],
+      "license_files": {
+        "orjson-3.11.7.dist-info/licenses/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+        "orjson-3.11.7.dist-info/licenses/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+        "orjson-3.11.7.dist-info/licenses/LICENSE-MPL-2.0": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172"
+      }
+    },
+    "ormsgpack": {
+      "version": "1.12.2",
+      "license_expression": "Apache-2.0 OR MIT",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License",
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "ormsgpack-1.12.2.dist-info/licenses/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+        "ormsgpack-1.12.2.dist-info/licenses/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+      }
+    },
+    "packaging": {
+      "version": "26.0",
+      "license_expression": "Apache-2.0 OR BSD-2-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "packaging-26.0.dist-info/licenses/LICENSE": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48",
+        "packaging-26.0.dist-info/licenses/LICENSE.APACHE": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+        "packaging-26.0.dist-info/licenses/LICENSE.BSD": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5"
+      }
+    },
+    "pandas": {
+      "version": "2.3.3",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "pandas-2.3.3.dist-info/LICENSE": "1dea2e80ed1cbd0233f84cee4486b29689f133babaccf4d295e51c43051f3216"
+      }
+    },
+    "peakutils": {
+      "version": "1.3.5",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "PeakUtils-1.3.5.dist-info/LICENSE.txt": "6e15873b885999b804fa8a972fd9540f75be31c90a79d3ea4ddda22cf5222d9e"
+      }
+    },
+    "pillow": {
+      "version": "11.3.0",
+      "license_expression": "MIT-CMU",
+      "license_classifiers": [],
+      "license_files": {
+        "pillow-11.3.0.dist-info/licenses/LICENSE": "2c40a7d8894126ff7a993a752505b915694aafe7a620889ef368acbf54b87144"
+      }
+    },
+    "psutil": {
+      "version": "7.0.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "psutil-7.0.0.dist-info/LICENSE": "b89c063b3786e28e0c0a38f1931db61fed35e69dd2a2966fbecffee0f46c8d10"
+      }
+    },
+    "pyarrow": {
+      "version": "23.0.1",
+      "license_expression": "Apache-2.0",
+      "license_classifiers": [],
+      "license_files": {
+        "pyarrow-23.0.1.dist-info/licenses/LICENSE.txt": "23fc45dce1769d9ddf4aac4d6cdaf3f7f0d14fcc4d930dd0d4afbefa2ea3322a",
+        "pyarrow-23.0.1.dist-info/licenses/NOTICE.txt": "afd895d61a00101f6d5a41cf518c83865d815e8109e956f512a0ce4ea9738c06"
+      }
+    },
+    "pydantic": {
+      "version": "2.12.5",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "pydantic-2.12.5.dist-info/licenses/LICENSE": "a9e186f3ca16b5eef84318e7a701721351a00cb7b8ae3a4394b67b49e3529ef3"
+      }
+    },
+    "pydantic-core": {
+      "version": "2.41.5",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "pydantic_core-2.41.5.dist-info/licenses/LICENSE": "2afdd30d54b4d62b6f488a6bcc1546e84ec5061f13f4209c03d012348783795a"
+      }
+    },
+    "pygments": {
+      "version": "2.19.2",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "pygments-2.19.2.dist-info/licenses/LICENSE": "a9d66f1d526df02e29dce73436d34e56e8632f46c275bbdffc70569e882f9f17"
+      }
+    },
+    "pyparsing": {
+      "version": "3.3.2",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "pyparsing-3.3.2.dist-info/licenses/LICENSE": "a5425f9dc14ac74d4c5f0b679e941f2442e32cca7452a4418d5b1a49893ebe4e"
+      }
+    },
+    "python-dateutil": {
+      "version": "2.9.0.post0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "python_dateutil-2.9.0.post0.dist-info/LICENSE": "ba00f51a0d92823b5a1cde27d8b5b9d2321e67ed8da9bc163eff96d5e17e577e"
+      }
+    },
+    "python-multipart": {
+      "version": "0.0.32",
+      "license_expression": "Apache-2.0",
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "python_multipart-0.0.32.dist-info/licenses/LICENSE.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    },
+    "pytz": {
+      "version": "2026.1.post1",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "pytz-2026.1.post1.dist-info/LICENSE.txt": "be8b1a37ebe26c592a90f6c0eb33103a7f383ce2f4d7498c0af9a526990a07b8"
+      }
+    },
+    "pywavelets": {
+      "version": "1.9.0",
+      "license_expression": "MIT AND BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "pywavelets-1.9.0.dist-info/licenses/LICENSE": "0c12e8ae3b54dd61072c5b97f97cab62755b893afb91e8e58bf9b9bbe2a2ec88",
+        "pywavelets-1.9.0.dist-info/licenses/licenses_bundled/LICENSE_numpy.txt": "01fb016849aa427edb1bbbbd55f91c26ca6cadb32a5b20e7f000655dd05b0760",
+        "pywavelets-1.9.0.dist-info/licenses/licenses_bundled/LICENSE_scipy.txt": "c29fb8e5936f33237a8b15256b4c6e93037f05bbf58c3d7b5755aede4c200173"
+      }
+    },
+    "pyyaml": {
+      "version": "6.0.3",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "pyyaml-6.0.3.dist-info/licenses/LICENSE": "8d3928f9dc4490fd635707cb88eb26bd764102a7282954307d3e5167a577e8a4"
+      }
+    },
+    "requests": {
+      "version": "2.32.5",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "requests-2.32.5.dist-info/licenses/LICENSE": "09e8a9bcec8067104652c168685ab0931e7868f9c8284b66f5ae6edae5f1130b"
+      }
+    },
+    "requests-toolbelt": {
+      "version": "1.0.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "requests_toolbelt-1.0.0.dist-info/LICENSE": "1f8cf8bdacd98ed6d36d0fec0c07f7765acebd6e81205962ab5146023b3c858d"
+      }
+    },
+    "rich": {
+      "version": "14.3.3",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "rich-14.3.3.dist-info/licenses/LICENSE": "deed7c17a4318158190a3ea239cc879a5a50271cebb98ae7025f48fbe58dca15"
+      }
+    },
+    "scikit-learn": {
+      "version": "1.8.0",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "scikit_learn-1.8.0.dist-info/licenses/COPYING": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37"
+      }
+    },
+    "scipy": {
+      "version": "1.17.1",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "scipy-1.17.1.dist-info/LICENSE.txt": "60a7d05d729ed5c763852a324a1cb4223d665d4ad3f4b8a0c130ae5c60c93e49",
+        "scipy/integrate/LICENSE_DOP": "ed9bf58c6d74d3fad9d92d1d67d9bff8141d8ab60de784516b0711364fd43357"
+      }
+    },
+    "setuptools": {
+      "version": "81.0.0",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "setuptools-81.0.0.dist-info/licenses/LICENSE": "86da0f01aeae46348a3c3d465195dc1ceccde79f79e87769a64b8da04b2a4741",
+        "setuptools/_vendor/autocommand-2.2.2.dist-info/LICENSE": "ade78d04982d69972d444a8e14a94f87a2334dd3855cc80348ea8e240aa0df2d",
+        "setuptools/_vendor/backports.tarfile-1.2.0.dist-info/LICENSE": "86da0f01aeae46348a3c3d465195dc1ceccde79f79e87769a64b8da04b2a4741",
+        "setuptools/_vendor/importlib_metadata-8.7.1.dist-info/licenses/LICENSE": "458502e12d97bbf64438606a20044aa85eb05fb0a8a807bb35dbec253fd1fc04",
+        "setuptools/_vendor/jaraco.text-4.0.0.dist-info/LICENSE": "86da0f01aeae46348a3c3d465195dc1ceccde79f79e87769a64b8da04b2a4741",
+        "setuptools/_vendor/jaraco_context-6.1.0.dist-info/licenses/LICENSE": "9755a18519666e5f0f4cae3daad3d7012bcae48a600b31237d75e9fe134e6683",
+        "setuptools/_vendor/jaraco_functools-4.4.0.dist-info/licenses/LICENSE": "5a57cb4db85e2a2dd88c290628908add57e3451449e0a9a71fdfb38776fd759d",
+        "setuptools/_vendor/more_itertools-10.8.0.dist-info/licenses/LICENSE": "09f1c8c9e941af3e584d59641ea9b87d83c0cb0fd007eb5ef391a7e2643c1a46",
+        "setuptools/_vendor/packaging-26.0.dist-info/licenses/LICENSE": "cad1ef5bd340d73e074ba614d26f7deaca5c7940c3d8c34852e65c4909686c48",
+        "setuptools/_vendor/packaging-26.0.dist-info/licenses/LICENSE.APACHE": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+        "setuptools/_vendor/packaging-26.0.dist-info/licenses/LICENSE.BSD": "b70e7e9b742f1cc6f948b34c16aa39ffece94196364bc88ff0d2180f0028fac5",
+        "setuptools/_vendor/platformdirs-4.4.0.dist-info/licenses/LICENSE": "29e0fd62e929850e86eb28c3fdccf0cefdf4fa94879011cffb3d0d4bed6d4db6",
+        "setuptools/_vendor/tomli-2.4.0.dist-info/licenses/LICENSE": "b80816b0d530b8accb4c2211783790984a6e3b61922c2b5ee92f3372ab2742fe",
+        "setuptools/_vendor/wheel-0.46.3.dist-info/licenses/LICENSE.txt": "30c23618679108f3e8ea1d2a658c7ca417bdfc891c98ef1a89fa4ff0c9828654",
+        "setuptools/_vendor/zipp-3.23.0.dist-info/licenses/LICENSE": "5a57cb4db85e2a2dd88c290628908add57e3451449e0a9a71fdfb38776fd759d",
+        "setuptools/config/NOTICE": "2dddf08818297a3b89d43d95ff659d8da85741108c9136dfa3a4d856c0623bd8"
+      }
+    },
+    "shortuuid": {
+      "version": "1.0.13",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "COPYING": "10b2b061be63a6c74a96e5a2c967425b066c5fb483b7c3880703347fcd2ee0c1",
+        "shortuuid-1.0.13.dist-info/COPYING": "10b2b061be63a6c74a96e5a2c967425b066c5fb483b7c3880703347fcd2ee0c1"
+      }
+    },
+    "six": {
+      "version": "1.17.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License"
+      ],
+      "license_files": {
+        "six-1.17.0.dist-info/LICENSE": "4375ba20e2b9c6c4e7cad2940a628fd90e95cc3d50ee92aae755715d8ba1fbd0"
+      }
+    },
+    "sniffio": {
+      "version": "1.3.1",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "sniffio-1.3.1.dist-info/LICENSE": "652c878488d1456361e08c3f8607fd7ba59892a14103d15cce4ff93c85b5cc8b",
+        "sniffio-1.3.1.dist-info/LICENSE.APACHE2": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "sniffio-1.3.1.dist-info/LICENSE.MIT": "3e6dae555eb92787fc82d1d48355677f454c7f65aeb38d3f9e72bf9a3daf034b"
+      }
+    },
+    "sse-starlette": {
+      "version": "3.2.0",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "sse_starlette-3.2.0.dist-info/licenses/LICENSE": "80af6bfccbebd2c14d4aab96695cab9950e177190cc80f5ef819e99996883e8e"
+      }
+    },
+    "starlette": {
+      "version": "0.52.1",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "starlette-0.52.1.dist-info/licenses/LICENSE.md": "dcb95677a02240243187e964f941847d19b17821cf99e5afae684fab328c19bf"
+      }
+    },
+    "sympy": {
+      "version": "1.14.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "sympy-1.14.0.dist-info/licenses/LICENSE": "07a5e9819f727b4986ad2829c7a29a6320d42575f720eb24d71b7fef573a0286"
+      }
+    },
+    "tenacity": {
+      "version": "9.1.4",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: Apache Software License"
+      ],
+      "license_files": {
+        "tenacity-9.1.4.dist-info/licenses/LICENSE": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"
+      }
+    },
+    "threadpoolctl": {
+      "version": "3.6.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "threadpoolctl-3.6.0.dist-info/licenses/LICENSE": "81ac619075248b06e53660b652d10e485f4675f5d0ae0f97ea22370da1f7e23b"
+      }
+    },
+    "torch": {
+      "version": "2.11.0",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "torch-2.11.0.dist-info/licenses/LICENSE": "b24fc699faf5696eacf1ba3404c09f9a90462f41ef27b5d753e75fa9cb2f83b5",
+        "torch-2.11.0.dist-info/licenses/NOTICE": "c2cc7bf0caec7652c2b460a8a470bea1677f241e4ab8e431df34cf17f5a9fec0"
+      }
+    },
+    "tqdm": {
+      "version": "4.67.3",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "tqdm-4.67.3.dist-info/licenses/LICENCE": "fcff87c3a47ce8028a8512aa182d4fcf0ad1c90544ee75cf9b343684cac194de"
+      }
+    },
+    "typeguard": {
+      "version": "4.5.1",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "typeguard-4.5.1.dist-info/licenses/LICENSE": "6163f7987dfb38d6bc320ce2b70b2f02b862bc41126516d552ef1cd43247e758"
+      }
+    },
+    "typing-extensions": {
+      "version": "4.15.0",
+      "license_expression": "PSF-2.0",
+      "license_classifiers": [],
+      "license_files": {
+        "typing_extensions-4.15.0.dist-info/licenses/LICENSE": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+      }
+    },
+    "typing-inspection": {
+      "version": "0.4.2",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "typing_inspection-0.4.2.dist-info/licenses/LICENSE": "804b59b25f2c31bd278f9202a19ae49a3945aa2664387e2d0a128c7cacc61ec3"
+      }
+    },
+    "tzdata": {
+      "version": "2025.3",
+      "license_expression": null,
+      "license_classifiers": [],
+      "license_files": {
+        "tzdata-2025.3.dist-info/licenses/LICENSE": "33e8e5002d3512d3fcc2282b995e6bad9d334781b9c5ac31843f404900e1f3b4",
+        "tzdata-2025.3.dist-info/licenses/licenses/LICENSE_APACHE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      }
+    },
+    "urllib3": {
+      "version": "2.6.3",
+      "license_expression": "MIT",
+      "license_classifiers": [],
+      "license_files": {
+        "urllib3-2.6.3.dist-info/licenses/LICENSE.txt": "130e3a64d5fdd5d096a752694634a7d9df284469de86e5732100268041e3d686"
+      }
+    },
+    "uuid-utils": {
+      "version": "0.14.1",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "uuid_utils-0.14.1.dist-info/licenses/LICENSE.md": "0c47f52b4c484bd04c78e7c969542eea31afe644f587f3b8a8ccce86352c6046"
+      }
+    },
+    "uvicorn": {
+      "version": "0.41.0",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "uvicorn-0.41.0.dist-info/licenses/LICENSE.md": "efe1acf3e62fb99c288b0ec73e5a773b7268ef4320fe757ea994214e4b63c371"
+      }
+    },
+    "xgboost": {
+      "version": "3.4.1",
+      "license_expression": "Apache-2.0",
+      "license_classifiers": [],
+      "license_files": {
+        "xgboost-3.4.1.dist-info/licenses/LICENSE": "b96f9cead5f4ea4c0a217bd9d879427443a353598fb72694f2d8c4428b53a6af"
+      }
+    },
+    "xxhash": {
+      "version": "3.6.0",
+      "license_expression": null,
+      "license_classifiers": [
+        "License :: OSI Approved :: BSD License"
+      ],
+      "license_files": {
+        "xxhash-3.6.0.dist-info/licenses/LICENSE": "b3c620adc9a8812cc0c3c7fc09567fa9a9930d3546de955dfb955b168cf989ac"
+      }
+    },
+    "zstandard": {
+      "version": "0.25.0",
+      "license_expression": "BSD-3-Clause",
+      "license_classifiers": [],
+      "license_files": {
+        "zstandard-0.25.0.dist-info/licenses/LICENSE": "788fe85e53724a40b299051c4abc9cf74d42b27e7968325b80891c25f79adb4b"
+      }
+    }
+  },
+  "sha256": {
+    "requirements/flavours-reference.txt": "b095c4c9b6ef3571876bce4dfd8e82a495cb77fcf13bb4ffe19e55f014fbccee",
+    "docs/reviews/competition_flavours_environment_audit.json": "6c367bd65ed1f3b236093f15aa8975a2657355aec38b85bade002655306b2037",
+    "scripts/inventory_flavours_dependencies.py": "41730f923943f46e9ef7ed930956aa90110653c93020ef3058befd26c72f1593"
+  }
+}

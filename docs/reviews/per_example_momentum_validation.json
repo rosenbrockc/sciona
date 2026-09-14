@@ -1,0 +1,47 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_pins": {
+    "targeted": {
+      "repository": "https://github.com/dongyp13/Targeted-Adversarial-Attack",
+      "commit": "7da707fe568053a9e2735fcc692c8f0ad7e122a1",
+      "source_file": "target_attack.py",
+      "url": "https://raw.githubusercontent.com/dongyp13/Targeted-Adversarial-Attack/7da707fe568053a9e2735fcc692c8f0ad7e122a1/target_attack.py",
+      "sha256": "06150755ab75473774ec22a4037fc83ef73ff2f89771b969e692fae45a4136fd"
+    },
+    "untargeted": {
+      "repository": "https://github.com/dongyp13/Non-Targeted-Adversarial-Attacks",
+      "commit": "5c68162e05de7afed2e3d33115df43e2a7a1c3da",
+      "source_file": "attack_iter.py",
+      "url": "https://raw.githubusercontent.com/dongyp13/Non-Targeted-Adversarial-Attacks/5c68162e05de7afed2e3d33115df43e2a7a1c3da/attack_iter.py",
+      "sha256": "be5f6903bb0675f480d10e0551e37f9cbb1dc883fa1dcc63ad05e9fb6fb82d12"
+    }
+  },
+  "checks": [
+    {
+      "variant": "targeted",
+      "source_function": "graph_large",
+      "update_cases": 12,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "variant": "targeted",
+      "source_function": "graph_small",
+      "update_cases": 12,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "variant": "untargeted",
+      "source_function": "graph",
+      "update_cases": 12,
+      "maximum_absolute_error": 0.0
+    }
+  ],
+  "provider_sha256": "1d1c75a69f686029ce7780f602874dcca551039234535e05680bbef4b10bf821",
+  "implementation_sha256": {
+    "scripts/validate_per_example_momentum.py": "fa1a5f7c1354567b90a6b0b1c09bfd20b636db933c10cce93c056bb7efa2c0bd",
+    "tests/test_per_example_momentum.py": "e4597be89e267f612311016c4077f563ab85cce36289a1ae1cfc37debdb28521"
+  },
+  "scope": "Float64 NumPy emulation of exact pinned normalization/update ASTs. No TensorFlow runtime, autodiff gradient, trained-model or full attack-loop parity claim.",
+  "domain_extension": "Zero or nonfinite normalization denominators fail explicitly; source may produce nonfinite values there. No denominator epsilon added."
+}

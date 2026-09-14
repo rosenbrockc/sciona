@@ -1,0 +1,58 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "completed_fits": 30,
+  "completed_rounds": 1,
+  "failed_next_fit": "keras.r2.p0.f0",
+  "persisted_round_confidence_min": 0.0,
+  "persisted_round_confidence_max": 0.0,
+  "keras_pseudo_selected": 0,
+  "diagnostic_keras_fold0_two_query_images": [
+    {
+      "snapshot": 0,
+      "fold": 0,
+      "min": 0.23137255012989044,
+      "max": 0.41960784792900085,
+      "mean": 0.31492048501968384,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 1,
+      "fold": 0,
+      "min": 0.23137255012989044,
+      "max": 0.4156862795352936,
+      "mean": 0.3131619393825531,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 2,
+      "fold": 0,
+      "min": 0.23529411852359772,
+      "max": 0.4156862795352936,
+      "mean": 0.3173408806324005,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 3,
+      "fold": 0,
+      "min": 0.239215686917305,
+      "max": 0.4156862795352936,
+      "mean": 0.3187152147293091,
+      "confident_fraction": 0.0
+    }
+  ],
+  "limits": [
+    "Four selected Keras snapshots and two synthetic query images only; not a recomputation of the full ensemble.",
+    "No confidence thresholds, completed fits or persisted round results changed."
+  ],
+  "followup": {
+    "ensemble_report": "docs/reviews/competition_tgs_keras_ensemble_diagnostic.json",
+    "fit_history_report": "docs/reviews/competition_tgs_keras_fit_diagnostic.json",
+    "independent_population_pilot_script": "scripts/run_salt_population_pilot.py",
+    "pilot_labeled_count": 160,
+    "pilot_source_phase": "keras.r1.p0.f0",
+    "pilot_steps_per_epoch": 10,
+    "status": "pilot_running_no_qualification_yet"
+  }
+}

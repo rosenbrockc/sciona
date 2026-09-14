@@ -1,0 +1,13 @@
+{
+  "trust_tier": 3,
+  "version_id": "bccef63c-4379-5456-a2e1-a2e92d495ad1",
+  "graph_sha256": "d21008b254ab763cfa27396cc1ded4270af4fbfb48383b3b7e1e48c8710bd862",
+  "rollback_rows": 52,
+  "rollback_absence_verified": true,
+  "apply_rows_created": 52,
+  "reapply_rows_created": 0,
+  "served_provider_versions": 2,
+  "served_execution_cdgs": 1,
+  "semantic_rejection_cases": 10,
+  "publication_rejection_cases": 6
+}

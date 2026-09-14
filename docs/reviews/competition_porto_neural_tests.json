@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 6,
+  "sha256": {
+    "sciona/porto_neural.py": "3cbd9ff5505a4b007b1de65969921e05df58e1875c25d6d7b57c2eb1845e0d79",
+    "tests/test_porto_neural.py": "b28c5ad55a10902051ed2b1219fcf77f67d06793696cc451921ab7e0980fbae0"
+  },
+  "checks": [
+    "Actual binary loss reduction and separated class predictions",
+    "Reversed query order gives reversed predictions after identical fitting",
+    "Caller Torch RNG preserved",
+    "Explicit inverted/unscaled dropout behavior",
+    "Invalid controls rejected"
+  ],
+  "limits": [
+    "Synthetic smaller classifier widths and explicit SGD/L2/dropout choices; recovered 1000/1000 supervised configuration not yet executed.",
+    "No historical CUDA, optimizer or dropout-scaling equivalence claim.",
+    "DAE-to-classifier integration and complete five-neural/one-tree ensemble still pending."
+  ]
+}

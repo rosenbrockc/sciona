@@ -1,0 +1,128 @@
+{
+  "atoms": [
+    {
+      "artifact_id": "b0f04fe3-95d1-5e06-a454-e1e767ea17ab",
+      "version_id": "674cb9f4-f499-5bcf-9411-3f06c6eedab7",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ar_standard_errors.channel_ar_standard_errors",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ar_standard_errors.channel_ar_standard_errors",
+      "source_sha256": "299bd7b84526fb961691b36e4dc257920e8a0a70e0a758cdfa009c6e9564e674",
+      "intake_evidence_sha256": "1b22905300840568d1d7b108d6ecf718336758db6a90f8c60fa334139c22469a",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Returns intercept and lag coefficient standard errors from source OLS covariance, with residual degrees of freedom N-2p-1 after subsampling. Eight contract tests and 15 historical source-adapter parity cases pass. Rank-deficient inputs are rejected.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and adapted historical reference bodies, not a proven original environment.",
+        "Community Tier 3 only; no human certification or Tier 2 usage-threshold claim.",
+        "One combined-feature model component; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "0c68b10d-de29-51ea-bc19-b3e64ab0b881",
+      "version_id": "8e9a3ea9-7463-56eb-8c7a-97c3084f3334",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.basic_statistics.channel_basic_statistics",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.basic_statistics.channel_basic_statistics",
+      "source_sha256": "f5c0cf72d3d6a899840c7d570197d4785b891b6ede357571272ce9c88a4e8eef",
+      "intake_evidence_sha256": "e70808b69e87f12291995109c9caac2c9c4692b06d250249a683b7b2467f3e72",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Ordered mean, population standard deviation, biased Fisher kurtosis, biased skew and linear 90th/10th percentiles. Scalar-moment tests and 15 pinned-source parity cases pass; constant or nonfinite inputs are rejected.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and adapted historical reference bodies, not a proven original environment.",
+        "Community Tier 3 only; no human certification or Tier 2 usage-threshold claim.",
+        "One combined-feature model component; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "53a1718c-c358-5d2a-80e9-ca5eaf58f59d",
+      "version_id": "7d6196e5-10a3-5d6f-a25a-286bd9a5915d",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.combined_feature_inputs.combined_feature_configuration",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.combined_feature_inputs.combined_feature_configuration",
+      "source_sha256": "5ca9b3637ce466e9c81e14022620fd6d26c0164f4fe7f7a803e7c46f48bf1bb5",
+      "intake_evidence_sha256": "f90156cebce7ae98151351b00ac1bf6454b5e56a001244d026c9aa91ad0ae131",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Matches pinned source YAML: nonoverlapping 8000-sample windows at 400 Hz, FFT512, overlap .25, six frequency bands, AR order5/subsample4 and five bags of 500 trees. No runtime inputs. Three complete runner source-parity cases pass.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and adapted historical reference bodies, not a proven original environment.",
+        "Community Tier 3 only; no human certification or Tier 2 usage-threshold claim.",
+        "One combined-feature model component; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "26820fe1-c8db-5244-aa66-fc11807c47f8",
+      "version_id": "c49a5b77-23fc-5a16-ae64-aa7044c66c06",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feature_concatenation.concatenate_channel_features",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feature_concatenation.concatenate_channel_features",
+      "source_sha256": "9d0780d948edfbcdc0c53f96bd9cc43bd3983619e00fae419f7da2324dab7aeb",
+      "intake_evidence_sha256": "c9b2f03675712fa0acc859931ce75ec4b4a4c2f2fd08b95279a473c28d728715",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Concatenates relative power, AR coefficient standard errors, basic statistics and fractal features within each channel before C-order vectorization. Five contract tests check axis/order, finite inputs and independent output storage; complete runner parity checks source family ordering.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and adapted historical reference bodies, not a proven original environment.",
+        "Community Tier 3 only; no human certification or Tier 2 usage-threshold claim.",
+        "One combined-feature model component; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "27fba6af-037e-5688-9a01-e58124f4f537",
+      "version_id": "7f814971-b6fa-581d-98fe-f521abd90a10",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.fractal_features.channel_fractal_features",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.fractal_features.channel_fractal_features",
+      "source_sha256": "d681c5b2222758b2c8930049a94e4eedd48f3d5aa002a8508d240fc5423a99c1",
+      "intake_evidence_sha256": "55621342fc7f3e8801f1e5d2e511b1ca62fff53bb00e5356e81207c13e8c093b",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves source Petrosian, two-scale Higuchi and expanding-sample-standard-deviation Hurst conventions, including the source Higuchi normalization. Six contract tests and 15 source-adapter parity cases pass; inputs are not mutated.",
+      "review_limitations": [
+        "Synthetic source numerical parity and finite-domain contract validation; no clinical or predictive-performance claim.",
+        "Current numerical libraries and adapted historical reference bodies, not a proven original environment.",
+        "Community Tier 3 only; no human certification or Tier 2 usage-threshold claim.",
+        "One combined-feature model component; full eleven-model ensemble remains incomplete."
+      ]
+    }
+  ],
+  "tests_passed": 27,
+  "test_source_hashes": {
+    "test_channel_basic_statistics.py": "06fabac6edd49604b944cfec8ce89d16e1ef9acf07e2133837d8a8294d69b2db",
+    "test_channel_ar_standard_errors.py": "e515f8652824d5eeae563cc47658ca455c00dda7f26ea2c7494a22d82ba458d6",
+    "test_channel_fractal_features.py": "9454b4742cf5077a76eb188c4e8039556a6dd74410ac5c94bd8da0f4bdbd89f7",
+    "test_channel_feature_concatenation.py": "d01aace29cbeb930db0bebf0b4a72650c832b737ef8cf52b7d01552ab88bfec2"
+  },
+  "execution_evidence": "combined-feature-execution-intake.v1",
+  "scope": "Five exact provider versions supporting the combined-feature source branch; full ensemble remains incomplete."
+}

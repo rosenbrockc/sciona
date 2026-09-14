@@ -1,0 +1,28 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "artifact": {
+    "url": "https://www.kaggle.com/api/v1/datasets/download/jannish/cassava-leaf-disease-efficientnetb4/efficientnetb4_noisystudent_notop.h5%2Fefficientnetb4_noisystudent_notop.h5?datasetVersionNumber=1",
+    "sha256": "70a1e4ced485039fddc1c488b55f0ff98242eb5afb806c4c00bc7a7a02734d97",
+    "bytes": 65386919,
+    "model_sha256": "c7408d12f971edf7bf66d55f1de2161b278be7bc45ad9903c954c85600de5d6e",
+    "model_bytes": 71703432,
+    "publisher_license": "Unknown"
+  },
+  "strict_weight_load": true,
+  "full_resolution_training_steps": 1,
+  "backbone_and_head_updated": true,
+  "frozen_batchnorm_layers_unchanged": 96,
+  "finite_gradients": true,
+  "post_update_probabilities_valid": true,
+  "scope": "Private compatibility inspection of exact notebook-referenced artifact. Publisher license is Unknown; redistribution is not approved. Population adaptation, complete pretrained lifecycle and ensemble remain separate gates.",
+  "sha256": {
+    "sciona/cassava_efficientnet_initialization.py": "f84f617b4ab2be7ddcdb89d457ce367c07a7c4845356f0e8074bab8c3c05abbb",
+    "sciona/cassava_efficientnet_upstream.py": "0417ac3859c47303e5c289dcef1ac7a9ad1c1b51744a9ec65da5db5467f71fef",
+    "sciona/cassava_efficientnet_weights.py": "15145907da545ab8501f2c0fef025b7957f12d815260888fa78047fc610b4091",
+    "scripts/validate_cassava_efficientnet_pretrained.py": "6d9c4f51c866725243b6fc1118f69db0af9c8ca3bbd59bed4926a86df6a37401",
+    "sciona/cassava_efficientnet_model.py": "56ba01b91cfb069ee7e8165a6a2494eafe1a2e757a22af2eabb3504d2de97ae6",
+    "sciona/cassava_efficientnet_training.py": "297bb4d488d9223a322f217a865e4a29f5a492865872c7e1eb57b92c21838e3c"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_attribution_status": "conditional_pass",
+  "publication_scope": "Reconstruction source, provider contracts and CDG metadata only; external model files and dependency wheels are not bundled.",
+  "dependency_packages": 70,
+  "bundled_notice_files": 111,
+  "supplemental_notice_packages": [
+    "pretrainedmodels",
+    "langchain-core",
+    "langsmith"
+  ],
+  "model_redistribution_approved": false,
+  "conditions": [
+    "Retain pooling, upstream, dependency and supplemental notices with the reconstruction.",
+    "Caller supplies model artifacts they are entitled to use; integrity and source correspondence checks do not establish usage rights.",
+    "Smp-hub cards declare license other; no independent model-weight grant or redistribution permission is inferred.",
+    "Review future distribution of external model artifacts or dependency wheels separately.",
+    "Pinned maintainer mirror identity is established; exact winner artifact/runtime identity and competitive accuracy remain unproven."
+  ],
+  "sha256": {
+    "docs/licenses/APTOS-dependency-NOTICES.txt": "06d27f622c7f9fbee88c2f0ca9a50319ef2ffe90b6f8fd07369ee6b313a14e5a",
+    "docs/licenses/APTOS-langchain-core-MIT.txt": "4ec67e4ca6e6721dba849b2ca82261597c86a61ee214bbf21416006b7b2d0478",
+    "docs/licenses/APTOS-langsmith-MIT.txt": "34e0b9842c7a31d34e53bc7eb224e81e07a34996106e029bbc72dea2d449f496",
+    "docs/licenses/APTOS-pooling-MIT.txt": "c31c66c3945689e8876c9bbdb360228d13e4a15d84a77452dbe2db0ab67558e7",
+    "docs/licenses/APTOS-pretrainedmodels-BSD-3-Clause.txt": "d2e55e943a5b0ae82161e09cfcbe2d11f67013be50af957944314679184cc5fc",
+    "docs/licenses/APTOS-reference-NOTICE.txt": "b76d12686c13cc7603602ef430cf8b00fde821cf388b7d027180a4491fe9748a",
+    "docs/reviews/competition_aptos_dependency_notice_inventory.json": "043ebde944255278ae22f4f4147a5f9516986903a71075c50909b01867750879",
+    "docs/reviews/competition_aptos_pretrained_mirror_pins.json": "6cc1fbea809c017040be7cd7c637dec87a9d8f99dd06c2dd7600df05987b9012",
+    "docs/reviews/competition_aptos_pretrainedmodels_license_attribution.json": "346ee0d4ad1a06a8852f85b284c7b20aeb8ae5cde12118a60071c04664939193",
+    "docs/reviews/competition_aptos_pretrainedmodels_source_origin.json": "c7e407080e6698c72c215bb12b1d7c5f2f173db8d595eb0bdd14f69298713ab8",
+    "docs/reviews/competition_aptos_publisher_payload_validation.json": "b0871ae38826082bf76a269010604b418f3ac6bafe157b456b5b339f3a5d9353",
+    "docs/reviews/competition_aptos_shared_dependency_notices.json": "1da7a7939a0a394c28d57f991d835fdb8dd891ffae1f2d948160b771a3495077"
+  }
+}

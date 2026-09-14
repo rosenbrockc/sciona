@@ -1,0 +1,5 @@
+{
+  "url": "https://raw.githubusercontent.com/tensorflow/tensorflow/v1.10.0/tensorflow/contrib/cudnn_rnn/python/layers/cudnn_rnn.py",
+  "sha256": "dce683903468bdf392d4de354d579e4b50c798f4fe6880fc352bab340b9111ef",
+  "approved": false
+}

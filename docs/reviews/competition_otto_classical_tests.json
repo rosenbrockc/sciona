@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Three documented log1p classifier families",
+    "Five OOF fits plus full-training query refit",
+    "Nine aligned normalized class probabilities",
+    "Heldout-label and query-population isolation",
+    "Independent multinomial Bayes log-likelihood oracle",
+    "Overlapping identities rejected before model construction"
+  ],
+  "sha256": {
+    "sciona/otto_classical_models.py": "d75f98a0aa375542c22cba0d5527f90b368a223396e1f78563e3800c38643e72",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "tests/test_otto_classical_models.py": "fce54ed593d2232aead31b5f4187a12cfce7f5bc792cc9cb48c6b39b18fbcf6c"
+  },
+  "limitations": [
+    "Explicit independent controls; historical regularization, tree parameters and logistic solver/objective unresolved.",
+    "No learned preprocessing used in these branches beyond fixed log1p.",
+    "Models 2,3,7 family components only; remaining full stack and source fidelity review pending."
+  ],
+  "catalog_mutations": 0
+}

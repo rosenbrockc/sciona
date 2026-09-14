@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "source_url": "https://raw.githubusercontent.com/keras-team/keras/2.2.0/keras/optimizers.py",
+  "source_sha256": "3d26c69b2b8d088fe5bd8b6f5d4daf04dd56d481f0ad376964e3b10c50747589",
+  "steps": 16,
+  "parameter_max_error": 0.0,
+  "catalog_mutations": 0,
+  "verified": [
+    "Actual pinned Keras2.2.0 RMSprop update expressions evaluated with numeric backend.",
+    "Zero, tiny, large and alternating gradients plus learning-rate transition.",
+    "Parameters and running-square accumulators compared to implemented optimizer."
+  ],
+  "limits": [
+    "Dense unconstrained float32 RMSprop configuration only; not full historical TensorFlow runtime equivalence."
+  ],
+  "validator_sha256": "c605bcd8752630c2d7f71f48cb44c3c5fe85e02187c07cf84d69921d7084aa9c"
+}

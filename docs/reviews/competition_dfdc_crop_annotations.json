@@ -1,0 +1,28 @@
+{
+  "format": "dfdc-crop-annotation-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "combined_source_writer_cases": 2,
+    "independent_frame_actor_caps": true,
+    "independent_ties_to_even_rounding": true,
+    "actual_landmark_detector_executed": true,
+    "current_object_array_source_failure_reproduced": true,
+    "numeric_conversion_adaptation_verified": true
+  },
+  "adaptations": [
+    "CurrentMTCNN numeric object arrays converted to float64 before source rounding/int16cast; original source fails and omits annotations without this conversion.",
+    "Explicit sparse positional maps replace source media files; no original identities or logs."
+  ],
+  "limits": "Synthetic crops and constructed detector states only. Source writer comparison uses modernSSIM compatibility and previouslyvalidated difference-mask math. No pretrained landmark quality, full paired lifecycle, groupedfold or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_crop_annotations.py": "366a3251cc6c80919f680685fda36c4d725d4a4c519a24e5dafce8bd76b96b80",
+    "sciona/dfdc_difference_mask.py": "12dcbb23b1be1eaca4e0f67b1f2300c3a29da3d75d9659ad9799f51194d76781",
+    "sciona/dfdc_training_crops.py": "ab190178ec5f5f8e20b097e6bba00aaee132fc26b525e77c3d5f0893124765f2",
+    "sciona/dfdc_detector.py": "b44391c23d79d6c6724360e49e34450a9d073facba491075879f9bba0d2336a6",
+    "sciona/dfdc_mtcnn_networks.py": "f1f3c5d22e9aaddc753016b315281c1e38924e9f58528fbfc35d0935c7d417ec",
+    "sciona/dfdc_mtcnn_cascade.py": "056419d1f931902495d2778cb2e7b214c0a73599eedcdf917e48bbb78bf379a1",
+    "scripts/validate_dfdc_crop_annotations.py": "65718bc0412bc00d1a885156cca222362cd64defaac007da5d49c7ee67d1b37d",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

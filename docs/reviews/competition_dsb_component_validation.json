@@ -1,0 +1,36 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "volume_parity_cases": 12,
+  "sampling_parity_cases": 45,
+  "oversampling_source_loop_parity": true,
+  "exact_array_parity": true,
+  "preprocessing_parity_cases": 12,
+  "composed_preprocessing_parity_cases": 6,
+  "segmentation_parity_cases": 6,
+  "anchor_assignment_parity_cases": 36,
+  "proposal_decode_parity_cases": 12,
+  "proposal_nms_parity_cases": 36,
+  "detector_coordinate_tile_parity_cases": 6,
+  "classifier_crop_parity_cases": 36,
+  "classifier_batch_parity_cases": 3,
+  "source_adaptations": [
+    "Two integer augmented divisions use floor division.",
+    "Python 2 mutable range becomes list(range).",
+    "Reference reconstruction uses explicit grid metadata.",
+    "Eight segmentation size halves preserve Python 2 floor division; np.in1d becomes np.isin.",
+    "Segmentation file readers are replaced with synthetic array passthrough stubs.",
+    "Anchor grid uses integer division; random.sample reference uses a seeded local Python RNG.",
+    "Seed parity is under current Python, not historical Python 2 sampling behavior.",
+    "Classifier crop preserves four Python 2 integer quotients.",
+    "Defensive scale-output trim uses target size; nominal source floor(N/s)*s cannot overshoot N."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_components.py": "0fd1509064a803e71c479821065946799c1485a8aaff0cd304797afb21d3e89c",
+    "sciona/dsb_segmentation.py": "39794cf24f370fe1e62dfcfdd814b4436d3f24a795d30e7ffadcea715c59e8f9",
+    "sciona/dsb_anchor_mapping.py": "0ad06f4f883ba1e841544099b41129eb1ed12ca8dacc4e537d8448670cbf936b",
+    "scripts/validate_dsb_components.py": "a20f20ae044d7280b336cdd47d3627583df9382f64df63279f72eb9d125d9ab7",
+    "tests/test_dsb_components.py": "f83a95e836e8766d40fa7a599cc496c1fb30a5ed3d921ec5c84234197947ce10"
+  }
+}

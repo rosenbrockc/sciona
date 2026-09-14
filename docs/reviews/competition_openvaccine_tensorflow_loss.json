@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "tensorflow_version": "2.20.0",
+  "legacy_keras": true,
+  "loss_gradient_cases": 9,
+  "masked_gradients_zero": true,
+  "normalization": "All sequence positions, including masked positions",
+  "all_masked_loss": 1e-06,
+  "omitted_sample_weights_error": "ValueError",
+  "scope": "Exact source custom loss and gradients only; no full model or training lifecycle claim.",
+  "validator_sha256": "798f6e6be4fbe8ace7f04873cfc22c1ae931b560cf61ac7a6d40a18f35fd92bb"
+}

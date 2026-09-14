@@ -1,0 +1,144 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "dependency_constraints_satisfied": true,
+  "roots": [
+    "charset-normalizer",
+    "h5py",
+    "mpmath",
+    "numpy",
+    "opencv-python",
+    "opt-einsum",
+    "packaging",
+    "pillow",
+    "scipy",
+    "setuptools",
+    "sympy",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "typing-extensions"
+  ],
+  "local_source_packages": [
+    "sciona-atoms",
+    "sciona-atoms-bio",
+    "sciona-atoms-cs",
+    "sciona-atoms-dl",
+    "sciona-atoms-fintech",
+    "sciona-atoms-ml",
+    "sciona-atoms-physics",
+    "sciona-atoms-robotics",
+    "sciona-atoms-signal"
+  ],
+  "packages": {
+    "charset-normalizer": {
+      "version": "3.4.5",
+      "active_requirements": []
+    },
+    "filelock": {
+      "version": "3.25.2",
+      "active_requirements": []
+    },
+    "fsspec": {
+      "version": "2026.2.0",
+      "active_requirements": []
+    },
+    "h5py": {
+      "version": "3.16.0",
+      "active_requirements": [
+        "numpy>=1.21.2"
+      ]
+    },
+    "jinja2": {
+      "version": "3.1.6",
+      "active_requirements": [
+        "MarkupSafe>=2.0"
+      ]
+    },
+    "markupsafe": {
+      "version": "3.0.3",
+      "active_requirements": []
+    },
+    "mpmath": {
+      "version": "1.3.0",
+      "active_requirements": []
+    },
+    "networkx": {
+      "version": "3.6.1",
+      "active_requirements": []
+    },
+    "numpy": {
+      "version": "2.4.2",
+      "active_requirements": []
+    },
+    "opencv-python": {
+      "version": "4.13.0.92",
+      "active_requirements": [
+        "numpy>=2; python_version >= \"3.9\""
+      ]
+    },
+    "opt-einsum": {
+      "version": "3.4.0",
+      "active_requirements": []
+    },
+    "packaging": {
+      "version": "26.0",
+      "active_requirements": []
+    },
+    "pillow": {
+      "version": "11.3.0",
+      "active_requirements": []
+    },
+    "scipy": {
+      "version": "1.17.1",
+      "active_requirements": [
+        "numpy<2.7,>=1.26.4"
+      ]
+    },
+    "setuptools": {
+      "version": "81.0.0",
+      "active_requirements": []
+    },
+    "sympy": {
+      "version": "1.14.0",
+      "active_requirements": [
+        "mpmath<1.4,>=1.1.0"
+      ]
+    },
+    "torch": {
+      "version": "2.11.0",
+      "active_requirements": [
+        "filelock",
+        "typing-extensions>=4.10.0",
+        "setuptools<82",
+        "sympy>=1.13.3",
+        "networkx>=2.5.1",
+        "jinja2",
+        "fsspec>=0.8.5"
+      ]
+    },
+    "torchvision": {
+      "version": "0.26.0",
+      "active_requirements": [
+        "numpy",
+        "torch (==2.11.0)",
+        "pillow (!=8.3.*,>=5.3.0)"
+      ]
+    },
+    "tqdm": {
+      "version": "4.67.3",
+      "active_requirements": []
+    },
+    "typing-extensions": {
+      "version": "4.15.0",
+      "active_requirements": []
+    }
+  },
+  "python_version": "3.13.11",
+  "failures": [],
+  "limits": [
+    "Observed workflow imports and optimizer initialization only; optional lazy branches may require additional dependencies.",
+    "Publisher authentication, installed file provenance, licenses and native-library qualification remain separate gates."
+  ],
+  "script_sha256": "319650801bc5184a0cb59b7a652c11a3b7b32f24b77247f2df116c67f4bbad18"
+}

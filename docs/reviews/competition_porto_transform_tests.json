@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 8,
+  "sha256": {
+    "sciona/porto_transforms.py": "17c18948efca3d0872697496d8176942e4b0bf7de7fbbdd51611964dc11e0d0c",
+    "tests/test_porto_transforms.py": "3d97f89502870d236dcf099bc604ce76d78178c824a326bb417b0d4837d4042f"
+  },
+  "checks": [
+    "Scalar RankGauss inverse-erf oracle",
+    "Binary passthrough and constant centering",
+    "Tie equality and permutation equivariance",
+    "Scalar swap draw oracle and same-column support",
+    "Zero-noise copy and generator-state preservation",
+    "Invalid/nonfinite inputs rejected"
+  ],
+  "limits": [
+    "Explicit midpoint ranks and average ties are independent finite endpoint choices.",
+    "Whole declared population transformation; no inductive query transform.",
+    "Transforms only; no autoencoder or final ensemble trained yet."
+  ]
+}

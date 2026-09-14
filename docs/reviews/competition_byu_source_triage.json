@@ -1,0 +1,71 @@
+{
+  "intake_version_id": "8ff133f1-108a-525f-937b-d44b53cecc53",
+  "intake_content_hash": "0aa884dafec8aa1627325e2fe3f0928e86c8a80e6f69ad508becf1e8982d6304",
+  "status": "deferred_full_classification_source_and_license_unresolved",
+  "target_tier": 3,
+  "primary_writeup": "https://www.kaggle.com/competitions/byu-locating-bacterial-flagellar-motors-2025/writeups/daddies-4th-place-simple-resnet18-classification",
+  "classification_findings": [
+    "Author describes a 76-class 3D ResNet18: 75 spatial locations plus absence, trained with cross entropy.",
+    "Sliding-window inference uses 0.5 overlap and quantile thresholding.",
+    "Classification and detection are ensemble branches, not a classifier-filtered detection cascade.",
+    "Author says BYU classification code is not being published separately, referring to earlier CryoET code. Complete BYU classification training/inference is not established."
+  ],
+  "detector_findings": [
+    "Primary author repository explicitly identifies fourth-place detection and blending.",
+    "Final detector uses hybrid 3D stem, 2D MaxViT encoder, 3D decoder, logits and offsets; four folds.",
+    "Final blending is rank-based winner takes all with double Otsu negative suppression, not coordinate/confidence averaging.",
+    "README discusses JIT or TensorRT acceleration; intake claim of TensorRT via TorchScript is not established as the sole path."
+  ],
+  "license_findings": [
+    "Both repository API license fields were null. Complete non-truncated trees had no license-named file.",
+    "Detector pyproject contains tool settings only; no license grant. License remains unresolved; public availability alone is not a grant."
+  ],
+  "source_scope": [
+    "Five public software/documentation files fetched, Git blob hashes verified.",
+    "Related CryoET segmentation README describes a different solution; cannot substitute it for full BYU classification.",
+    "No task data, images, weights, notebook outputs or archives fetched; source launchers not executed."
+  ],
+  "pins": [
+    {
+      "repository": "BloodAxe/Kaggle-2025-BYU",
+      "commit": "33cfa53dc4d26ab31a537db0d5857e948b9cc93b",
+      "software_path": "README.md",
+      "git_blob_sha1": "5fdabe403ed0e6270a5f55578d08a0b7947adc7b",
+      "sha256": "178e28b049fbdd7a7f622e79a83b07b936fc4025758bbe8e4f81779b2403fc95"
+    },
+    {
+      "repository": "BloodAxe/Kaggle-2025-BYU",
+      "commit": "33cfa53dc4d26ab31a537db0d5857e948b9cc93b",
+      "software_path": "pyproject.toml",
+      "git_blob_sha1": "165c12bc8a475965704c0fddb9697b5d5be9b2b2",
+      "sha256": "9f90cee443f5070dac6c4de7e817cb4fb59c4b56b8c7a3916ee3e2b705701bef"
+    },
+    {
+      "repository": "BloodAxe/Kaggle-2025-BYU",
+      "commit": "33cfa53dc4d26ab31a537db0d5857e948b9cc93b",
+      "software_path": "cryodet/blending.py",
+      "git_blob_sha1": "c2604af150bff96120482a76d6d195f8a9540028",
+      "sha256": "f3fb2abb8266c1e74f758f48e8c784cd31fc6de06e2bcd399433d8ae4361834e"
+    },
+    {
+      "repository": "BloodAxe/Kaggle-2025-BYU",
+      "commit": "33cfa53dc4d26ab31a537db0d5857e948b9cc93b",
+      "software_path": "cryodet/ensembling.py",
+      "git_blob_sha1": "2597272936cf426c9f1a40daffaaa304a11b1ba9",
+      "sha256": "03a2e6260f1144bbdf83b55845a2ec9a25d1491b34517d75416c1207afa910cd"
+    },
+    {
+      "repository": "ChristofHenkel/kaggle-cryoet-1st-place-segmentation",
+      "commit": "394a10a019741edee16fd691c5ca74c2d1129322",
+      "software_path": "README.md",
+      "git_blob_sha1": "1f794a53be203c8127020981f36eac978d74acbc",
+      "sha256": "ad2b9cd8636bc4d85c00eaca2107facda3608b35de515bf159ed599eba90307f"
+    }
+  ],
+  "next_steps": [
+    "Resolve explicit reuse license for detection software and classification snippet/source.",
+    "Establish complete classification lifecycle and final branch blending before claiming full intake coverage.",
+    "Validate any resulting implementation synthetically and publish only under its supported scope."
+  ],
+  "catalog_mutations": 0
+}

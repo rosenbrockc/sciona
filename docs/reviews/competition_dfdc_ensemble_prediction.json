@@ -1,0 +1,18 @@
+{
+  "format": "dfdc-ensemble-prediction-validation.v1",
+  "result": "passed",
+  "checks": {
+    "seven_model_order_precision_cases": 2,
+    "load_once_for_two_clips": true,
+    "independent_mean_sigmoid_oracle": true,
+    "half_conversion_overflow_rejected": true,
+    "invalid_metadata_before_model_load": 4
+  },
+  "limits": "Synthetic constant-logit models isolate state-loading and order/precision boundary. Full trained B7 ensemble integration is separate; no checkpoint identity or pretrained quality claim.",
+  "sha256": {
+    "sciona/dfdc_ensemble_prediction.py": "f5a4100c9c65d0f65e1e0b952e1204622be28794754ecaeaee0396389647a268",
+    "sciona/dfdc_selection.py": "c7accd53093451760b2371cbbab3d58e204a0ef8d41833e500bf47ddc161501a",
+    "sciona/dfdc_prediction.py": "cc5e6f6e4592d5fb493e7ef37174b3c3977341bb4d3e6da947764aabe21251c8",
+    "scripts/validate_dfdc_ensemble_prediction.py": "0c654f1457c5c68ca0ca46cad06633a669d5ea280181ef46cfa1b9754e909e3f"
+  }
+}

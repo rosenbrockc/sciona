@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 31,
+  "serialized_boundary_tests": 11,
+  "source_version_id": "4d7b7da1-6568-56b0-aa5e-7e2e7a275556",
+  "source_content_hash": "41907e416953f825b93f7b409d3fb36f16fce58303147e7540566f90bdcc622f",
+  "stage_mapping": {
+    "image_feature_extraction": "31 handcrafted RGB moments/histograms/gradients/aspect features",
+    "tabular_feature_preparation": "Fold-local numeric median imputation and categorical one-hot encoding",
+    "feature_fusion": "Concatenation and fold-local standardization of visual/metadata vectors",
+    "hybrid_head_training": "CPU float64 MLP with dropout and label-smoothed BCE",
+    "fold_ensemble_calibration": "Group-consistent fold models, complete OOF scores, equal fold probability mean and separate highest-threshold F1 calibration"
+  },
+  "checks": {
+    "hand_visual_features": true,
+    "training_only_metadata": true,
+    "hand_smoothed_loss_gradient": true,
+    "dropout_train_eval": true,
+    "fold_local_preprocessing": true,
+    "heldout_feature_label_isolation": true,
+    "complete_oof_coverage": true,
+    "equal_fold_ensemble": true,
+    "calibration_labels_do_not_change_scores": true,
+    "query_batch_independence": true,
+    "independent_f1_search": true,
+    "group_disjointness": true,
+    "strict_json_boundary": true,
+    "mutated_intermediate_rejected_before_fit": true
+  },
+  "sha256": {
+    "sciona/image_tabular_contract.py": "cbce3eca663b81da270c56744e01934d193194ff57916930943b88434f2e9991",
+    "sciona/image_tabular_features.py": "5a7b74054d4d8bd0dfb5335a81bad6408b9935a9d874357599b099024dcd763c",
+    "sciona/image_tabular_graph.py": "e4c13c18af7c4666c5cb96220764b359d0aaca52a38a44cdc6a0652a7e71d870",
+    "sciona/image_tabular_network.py": "32fb579e5d6f2ac0c42079e89e31fdcb9c2fb2336b2a26714359decf6732b09f",
+    "sciona/image_tabular_training.py": "3d0a1797390fdfb19d162f26816aa83f1fbd70d015520a2ce033415a4fa26567",
+    "tests/test_image_tabular_contract.py": "c58860a59edf2c97d0fdd346020638579320211ace596896de36f26cbace1138",
+    "tests/test_image_tabular_features.py": "fdf9b33e86c09a538167ed45fc718e0d46ea1df663d8455f4af4530ef5f38e77",
+    "tests/test_image_tabular_network.py": "aaface5169b5d5ed6edbac53fc630cbdc4f96f4da0026aa00f7e94b845490a9b",
+    "tests/test_image_tabular_training.py": "480443707982d3b6bd8bd9bf48f110c9fddc655faf06b678ee47431f8c5f59ba",
+    "scripts/image_tabular_synthetic.py": "e5a474369d91bfacaef8df2951a78e40183dd8cad998b601493dfdcf55b358ff"
+  },
+  "scope": "Synthetic image/metadata lifecycle only; no historical or empirical accuracy claim. Tier3 review pending."
+}

@@ -1,0 +1,35 @@
+{
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_commit": "cd7809db4d7eb92860b178d8f5a53ab16f03ad91",
+  "evidence_sha256": {
+    "competition_plasticc_observations.json": "90788df3ba1c044730d6b7c19bec31377dc20130b60cddf2558423373aa7f17c",
+    "competition_plasticc_features.json": "c1576e584ce85ef9c85707fbc7570c521f26e1a90de906192286e039e4416fcf",
+    "competition_plasticc_augmentation.json": "9b846ccf41246636b064f67db6446e9558c75afbd267d01042fb52abc77ed163",
+    "competition_plasticc_weighting.json": "5972b492d7360c0295abb3397dbced2f6a0f660e011c9e488344459c0efd9d77",
+    "competition_plasticc_training.json": "a2b2f98246607d0ceaae05893232a22e767e1d426ab031c64e582c2f66ff79f5",
+    "competition_plasticc_predictions.json": "3ed0745200ecfadfb978eef0896f400865bd3314b190308b8e0d1fdedf876956",
+    "competition_plasticc_population.json": "4fcac0f28bdee9866fc6073e35883c1d8494692c35d35f1eadcb5af58e706928",
+    "competition_plasticc_runtime.json": "384a934b2e0e0893a542015bf4a17056f0edecdb426ee77328649c355a902df7",
+    "competition_plasticc_graph.json": "9f78a6e0eeeacf8204620491032e412e84e08425c9b5890541a00513b4cc9bda",
+    "competition_plasticc_defaults.json": "dcdcc1edc985978c41a2fc104c94bbc990a17dc94a490a7e0537ec2f3c102064",
+    "competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235"
+  },
+  "findings": [
+    "Original intake tsfresh/cesium, MLP and Platt labels are unsupported by inspected implementation; separate derived graph uses actual Avocado source.",
+    "Complete normal path: supplied empirical reference, redshift/time/wavelength augmentation, GP/noise/detection, custom230raw/41selected features, grouped stratified folds, flat/redshift weights, LightGBM and source unknown-class formula.",
+    "Astropy/george/scipy used directly. Independent covariance/gradient, bin weights/loss and postprocessing oracles supplement source AST comparisons.",
+    "LightGBM current callbacks replace removed fit kwargs; source and native API actual fitting agree, no historical binary replay claim.",
+    "Numerical source defaults pinned by Git blob/SHA256; IO configuration omitted. Explicit instance augmentation RNG and fold/model seeds declared.",
+    "Required classes, fold counts, finite input, positive errors, nonzero signal, disjoint populations and output probability mass checked; sparse source sampling failures propagate without numerical substitution.",
+    "Source NaNs in undefined features retained for LightGBM missing-value handling; final nonfinite probabilities reject. Source failed GP returns attempted parameters while using guessed predictor, preserved.",
+    "Optional bias simulation is an experimental branch, not required by default train script. File codecs and historical accuracy excluded explicitly.",
+    "Tier3 Community requires no human certification. Tier2 community use and Tier1 human expert review are not established."
+  ],
+  "limitations": [
+    "Synthetic configured workloads, no competition performance claim",
+    "CPU/current numerical dependency versions",
+    "No bundled observations, empirical catalogs or pretrained models"
+  ]
+}

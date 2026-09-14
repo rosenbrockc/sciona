@@ -1,0 +1,12 @@
+{
+  "approved": false,
+  "reference": "https://www.kaggle.com/api/v1/models/google/cropnet/tensorFlow2/classifier-cassava-disease-v1/1/download",
+  "license": "Apache-2.0",
+  "archive_sha256": "a1b42fb0e005bd992788172b9db49c69f0e2850a285ddda0350d70fd99a3c19a",
+  "files": {
+    "saved_model.pb": "aac5d946061721786ff2cd3e8e49515d1cf660f9982a10266b519cd679410992",
+    "variables/variables.data-00000-of-00001": "dd6919af91cf984853e8c57a30a8bd08adbad99d424fda57474e871904a7a1e0",
+    "variables/variables.index": "54749e7c840c85fb08409ec1911128675e743498735e08f12f50ee8d27bd9199"
+  },
+  "scope": "Official public classifier artifact; equivalence with winning notebook cached copy remains unverified."
+}

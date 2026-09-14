@@ -1,0 +1,25 @@
+{
+  "format": "connectomics-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source_commit",
+    "unknown_license",
+    "missing_historical_pca_check",
+    "reduced_grid",
+    "ignored_thresholds",
+    "reference_mismatch",
+    "missing_mode",
+    "wrong_directivity",
+    "altered_provider",
+    "wrong_dependency"
+  ],
+  "sha256": {
+    "scripts/review_connectomics_execution.py": "2d6b7028d641b31770711d2e2e14b6ca8ccb040c0716fa133b05fdfabe644a93",
+    "scripts/validate_connectomics_review_gates.py": "39e1ac730c7645e7edb6bd404a08904ea38511a6d103df54f7e283798944759d"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

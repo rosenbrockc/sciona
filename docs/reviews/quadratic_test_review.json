@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_quadratic_corrected_proof.py": "892720dcc28ace7fe5751ee14acef0ea5ad34ada580065b681189af2446ae0ce",
+    "tests/physics_ingest/test_real_quadratic_roots.py": "0c7173bc54b513a3d9d6a510bd2054117f643490f00a891fbde0d7b3f86696a4"
+  },
+  "provider_sha256": "e9b5b8ed3fc5e3f4d2314e6b4e87620c2cab8675061bf7128905c8119aaa47d7",
+  "junit_sha256": "a77b7c81d3616e92e751b2e36548e523d7c8ca8ff44f802de050de658095e2e7"
+}

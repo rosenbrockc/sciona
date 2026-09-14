@@ -1,0 +1,69 @@
+{
+  "format": "march-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "26d177bb-7d6d-5ee1-b881-2bafe69064cd",
+  "source_hash": "a32fed30707dd363c95f39462a6bd6db505102f4449f3dccf24fb62d71af34ee",
+  "source_scope": "Generic five-stage benchmark topology; intake supplies only the Kaggle homepage, no historical solution or source implementation.",
+  "serialized_graph_sha256": "6e821a2dc2ca4abdd54bdb29046e2a0953cac7ebbfab837f284e90f81be19619",
+  "provider_sha256": "29da0e7e4100209f846fe5db614225335f3a929a0b9e1d11f44cb56eeb846693",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": [
+    {
+      "intake": "season_aggregation",
+      "realization": "Explicit box-score efficiency/turnover aggregation"
+    },
+    {
+      "intake": "graph_centralities",
+      "realization": "Weighted loser-to-winner PageRank"
+    },
+    {
+      "intake": "elo_ratings",
+      "realization": "Ordered neutral-court per-season Elo"
+    },
+    {
+      "intake": "pairwise_concatenation",
+      "realization": "Both team vectors and their difference"
+    },
+    {
+      "intake": "logistic_regression",
+      "realization": "Training-only scaler/logistic fit, held-out sigmoid calibration and orientation projection"
+    }
+  ],
+  "dependencies": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "threadpoolctl": "3.6.0",
+    "networkx": "3.6.1"
+  },
+  "limitations": [
+    "Automated Tier 3 Community generic implementation. No Tier 1 human certification or Tier 2 usage qualification. Original intake remains draft with mandatory provenance.",
+    "The intake supplies only a generic five-stage benchmark and a Kaggle homepage reference. There is no identified historical winning source or performance to certify. This is an explicit new realization of the logistic-regression branch, not XGBoost or historical winner parity.",
+    "Caller supplies private nonnegative integer box totals, team slots, season identifiers and unique within-season game order. Completed games must have unequal points and positive estimated possessions. No source file parsing, resampling, missing-value imputation or official box-score provenance validation is included.",
+    "Estimated possessions equal field-goal attempts plus explicit free-throw coefficient times free-throw attempts minus offensive rebounds plus turnovers. Offensive/defensive efficiency and turnover rates use ratios of summed totals.",
+    "PageRank transfers rank from loser to winner, one weighted edge unit per game. Explicit damping, tolerance and iteration limit; uniform default personalization/dangling behavior. This graph feature is not a certified true strength-of-schedule measure.",
+    "Elo resets each season with explicit initial value, K and scale. Games are processed in explicit order, with neutral-court win/loss updates. Margin and home advantage are excluded; no historical rating-parameter equivalence is claimed.",
+    "Features concatenate Team A, Team B and their difference. StandardScaler and lbfgs logistic regression fit only training seasons. Mirrored matchups augment fitting and calibration, with reversed outcomes.",
+    "Training, calibration and prediction use strictly disjoint ordered seasons; all supplied regular-season games must precede each target matchup in that season. This supports postseason predictions, not rolling in-season estimation. Caller remains responsible for genuine temporal/source provenance.",
+    "A FrozenEstimator preserves the fitted base; sigmoid calibration uses one explicit held-out population and does not refit the base. Final forward/reverse probability projection enforces orientation symmetry. It is not an empirical calibration guarantee.",
+    "Synthetic checks cover direct efficiency/Elo calculation, Elo conservation, independent PageRank linear-system agreement, chronology and identity guards, future-season independence, calibration isolation and actual serialized graph execution. No real-world generalization or competition accuracy claim.",
+    "Qualified on the provisioned Python 3.13 macOS arm64 worker with pinned sklearn/NumPy/SciPy/NetworkX dependencies and retained notices. Clean installation, other platforms, resource limits, saved-model interchange and process resume are not qualified.",
+    "Private input records and probabilities remain runtime values. Evidence uses generated numeric games only; no competition records, team identities, labels or historical outputs are embedded."
+  ],
+  "evidence_sha256": {
+    "competition_march_source_triage.json": "c1df8827ad591674c9a96e46e1ad4de0cc5938ff9432e6361682644f141e5316",
+    "competition_march_runtime_tests.json": "c3ea6ecaa08c99a8b96dff09e3756f9d818074370b5bd8a798f1069495eca0f5",
+    "competition_march_graph_execution.json": "c6ac7aaa49a0b602a076f7b9c4db04ecbd5eb8ab8b6527ed65365a16c61bb0d8",
+    "competition_march_environment.json": "04bcd3112390c27cb892ab5b0a050741f1e619c7e1c2a64db789d16897388eb4"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_march_execution.py": "42526181edb1088bed6d99aeb7bf4e076f4ce87f53e3b2a763a05f5a7da0728a",
+    "requirements/march-execution.txt": "1430da4e7d4a18b27f18def74a1551688fdf5c4a15d1990d5099d03dacb69e34",
+    "docs/licenses/March-sklearn-BSD.txt": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "docs/licenses/March-NetworkX-BSD.txt": "3cf7c3a179d817b23b8b8568211769fefdf93797d207d984b8b2fa24d0220b33"
+  },
+  "catalog_mutations": 0
+}

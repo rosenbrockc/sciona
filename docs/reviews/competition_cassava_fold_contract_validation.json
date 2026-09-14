@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "tests_passed": 16,
+  "all_five_disjoint_complements_verified": true,
+  "heldout_coverage_once": true,
+  "prediction_identity_alignment_verified": true,
+  "vit_dispatch_membership_verified": true,
+  "scope": "Membership, dispatch argument selection and probability alignment only; full multi-fold models have not been executed together.",
+  "remaining": "Physical-image identity aliases must be resolved by ingestion; keys alone cannot detect aliases.",
+  "sha256": {
+    "sciona/cassava_fold_contract.py": "4761d25e2787a0ffc04170af5e1868ef15b29c9b0967f6d6528638d69fe61a40",
+    "sciona/cassava_fold_dispatch.py": "ae1f7fde1ab5b02669ac16e610c6cec4d8f4a44e346c9ace891010c2d526a05f",
+    "tests/test_cassava_fold_contract.py": "ea95a014a55bbec16b3b4558c544b7ca1c318b5a7bb0727561e827fd549cf950"
+  }
+}

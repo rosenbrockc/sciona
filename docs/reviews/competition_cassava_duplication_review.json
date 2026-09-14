@@ -1,0 +1,94 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "duplication_check_passed": true,
+  "catalog_atoms_scanned": 3579,
+  "candidate_pattern": "cassava|cropnet|resnext|resnet|efficientnet|fold.plan|fold.contract|five.fold|fold.ensemble|stratified.kfold|image.classif|vision.transformer|cross.validation|ensemble_execute|fold_members|fold_assignment",
+  "exact_content_or_fingerprint_duplicates": 0,
+  "reviewed_candidates": [
+    {
+      "fqdn": "sciona.atoms.dl.architectures.efficientnet_backbone",
+      "signature": "(images: 'NDArray[np.float32]', variant: 'str' = 'b0', pretrained_weights: 'str' = 'imagenet') -> 'NDArray[np.float32]'",
+      "function_source_sha256": "f00099246803908c0ccdd2cebf706b497c9c31c457f85fae1641f4ac553aef3e",
+      "decision": "different_behavior",
+      "reason": "Zero-valued feature-shape contract; no pretrained fitting, folds, refit or four-family inference."
+    },
+    {
+      "fqdn": "sciona.atoms.dl.architectures.resnet_family_backbone",
+      "signature": "(images: 'NDArray[np.float32]', variant: 'str' = 'resnet50', pretrained_weights: 'str' = 'imagenet') -> 'NDArray[np.float32]'",
+      "function_source_sha256": "b0037cd9d53a380df3055d8fcadec7e7d127d1c4852b73357f86aec0a349aeb3",
+      "decision": "different_behavior",
+      "reason": "Zero-valued pooled feature contract; no classification head, pretrained fitting or four-family lifecycle."
+    },
+    {
+      "fqdn": "sciona.atoms.dl.image_augmentation.fold_ensemble_average",
+      "signature": "(predictions_matrix: 'NDArray[np.float64]', method: 'str') -> 'NDArray[np.float64]'",
+      "function_source_sha256": "55de18f72bdd284b8cad4c9f3ae2c04e6c02c6b008f695cba18d1598033d4894",
+      "decision": "different_behavior",
+      "reason": "Reduces supplied matrices using arithmetic/geometric/rank averaging; no identity plan or model fitting. Float64 coercion differs from retained per-family precision."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.model_selection.grid_search_cross_validation.fit_cv_candidate",
+      "signature": "(estimator: 'Any', features: 'NDArray[np.float64]', targets: 'NDArray[Any]', params: 'str', train_indices: 'NDArray[np.int64]', val_indices: 'NDArray[np.int64]') -> 'float'",
+      "function_source_sha256": "aedb71b4c1aa1923ec4dc214cceeb16146086f71a696e30cde6ae1e961789943",
+      "decision": "different_behavior",
+      "reason": "Fits and scores one estimator candidate; no family-specific losses, checkpoints, final B4 refit or frozen CropNet."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.model_selection.grid_search_cross_validation.generate_cartesian_grid",
+      "signature": "(param_grid: 'str') -> 'str'",
+      "function_source_sha256": "54b03a8c800359884e6505f835392c319d712a6d73a8a32750e8b471c847ad3f",
+      "decision": "different_behavior",
+      "reason": "Enumerates parameter combinations; no fold-plan validation or training orchestration."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.model_selection.grouped_cross_validation.partition_groups_to_folds",
+      "signature": "(groups: 'NDArray[Any]', n_splits: 'int') -> 'NDArray[np.int64]'",
+      "function_source_sha256": "2ae37cd5f91edfa5c859f9b848f6be0adda90233aaff53d524897f79496594b6",
+      "decision": "different_behavior",
+      "reason": "Generates group-balanced assignments; does not preserve and validate the supplied common fold plan."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.model_selection.randomized_search_cross_validation.sample_parameter_distributions",
+      "signature": "(distributions: 'str', n_iter: 'int', random_state: 'int' = None) -> 'str'",
+      "function_source_sha256": "534b3151a784f22b8ebc7ee03bfaaf1a9e0ff2174c56a4502c697127fc28d8cf",
+      "decision": "different_behavior",
+      "reason": "Samples search parameters; no fold-plan validation or training orchestration."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.model_selection.stratified_kfold_cross_validation.compute_stratified_kfold_indices",
+      "signature": "(targets: 'NDArray[Any]', n_splits: 'int', shuffle: 'bool', random_state: 'int' = None) -> 'list[tuple[NDArray[np.int64], NDArray[np.int64]]]'",
+      "function_source_sha256": "3970ffe33c7c5faf3a2adcc8ed8b41d0bbaf75fe79dc33248a6ff05997c0cac1",
+      "decision": "different_behavior",
+      "reason": "Generates splits from targets; does not validate caller-supplied identities, classes and five held-out assignments."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.tabular_ensemble_execution.tabular_ensemble_execute",
+      "signature": "(prepared: object) -> dict",
+      "function_source_sha256": "7f2b97eac4ec0c615cfbc4903e161611301f16879e9141e202b77f9ea6fe8314",
+      "decision": "different_behavior",
+      "reason": "Tabular fold-local models, OOF stacker and sigmoid calibration; different inputs, models and output arithmetic."
+    },
+    {
+      "fqdn": "sciona.atoms.signal_processing.biosppy.svm_proc.cross_validation",
+      "signature": "(labels: 'Union[list, np.ndarray]', n_iter: 'int' = 10, test_size: 'Union[float, int]' = 0.1, train_size: 'Union[float, int, None]' = None, random_state: 'Union[int, None]' = None) -> 'Iterator[tuple[np.ndarray, np.ndarray]]'",
+      "function_source_sha256": "b2e91fdedbd1326f5c5d40e9d59af1df0be3e5570f20de60c3bf6c5198eb9be9",
+      "decision": "different_behavior",
+      "reason": "BioSPPy stratified randomized split iterator; does not validate the prescribed five-fold image population."
+    }
+  ],
+  "scope": "All catalog atom versions checked for exact identity; named/description candidates reviewed for semantic overlap. This is a catalog snapshot, not a universal semantic-equivalence proof.",
+  "proposed": {
+    "sciona.atoms.ml.cassava_execution.cassava_fold_plan": {
+      "content_hash": "aa5eac1f03b78ae3e6bd8b02cea39a4fbe4b7085ec320849174a008cc046e63e",
+      "fingerprint": "3b3fbe10ac20fdf68f4d51ddd3bba12ff5aae1656b17feceaf0825f58677486e"
+    },
+    "sciona.atoms.ml.cassava_execution.cassava_train_ensemble": {
+      "content_hash": "e16788187b2183ef2e79a00fa4ca695cb91e03f053c01d582471446874b1df6f",
+      "fingerprint": "4f910bfea8bc8079026bcdafe8945b87b5643ee7fd20fffaf7d8e1c9580dc5c2"
+    }
+  },
+  "sha256": {
+    "scripts/audit_cassava_duplication.py": "50ae7b0144cf1bd30c3959a6ff75212f66fb6daa84684efc871bfaea38145baa"
+  }
+}

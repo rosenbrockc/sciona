@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "tests_passed": 51,
+    "synthetic_only": true,
+    "hierarchy_levels": 12,
+    "pandas_aggregation_oracle": true,
+    "base_only_normalization": true,
+    "downstream_roles_preserved": true
+  },
+  "sha256": {
+    "sciona/m5u_calendar.py": "3ee1863b3b9c17cef229135287a71cfa3dc9524ecc67f4bc118410939d407b5f",
+    "sciona/m5u_cleaning.py": "bbeac0608e2f326b59c026673f99a60cbfb88c577a1ca2ddab3d2f9677f171ff",
+    "sciona/m5u_exponential.py": "8742f3a02a084a96dd6bf6a1d702a2b723fb0522259f63f8c74908304135428d",
+    "sciona/m5u_hierarchy.py": "e748f65d33ed75c877a5e4fc9db73c1eb889045ffbf56e19b72a181952dad4d6",
+    "sciona/m5u_loss.py": "838923d8f2bda7f7e0b7856412199afbf51d6e4e36232c60c8ffab0e20d2115f",
+    "sciona/m5u_rolling.py": "b876de2e229f310e4cda03c846ce99fb7a0b2ba04e924def12742361ca3b3e82",
+    "sciona/m5u_sampling.py": "e908ff4711669c5e418318066ff4a5ba0692b1edc23706a1e0f6eadbaf545ff3",
+    "sciona/m5u_scaling.py": "68bae53e9c23c50ffc68fa2b8ae7f47b157ab81d121376da8692599a9c76635c",
+    "tests/test_m5u_calendar.py": "dd3c7315ddad9fb7eb3ba92988f73fefbafb974ad733044b6aca25c1b8f8bab9",
+    "tests/test_m5u_cleaning.py": "21dc5f34e7475d1fc1be9c2abf2a451baee0646aa407566df48ca8506db8a73f",
+    "tests/test_m5u_exponential.py": "59bb4b44ac476aae6e86f76f730ac25f82f9631f1c28d1314571be4daaa21e79",
+    "tests/test_m5u_hierarchy.py": "28698042335253e027084a76d4728f9b763f2a44bb6ba74ab3b4b0d618db6a56",
+    "tests/test_m5u_loss.py": "a82b4974aa5fddd09cc40f752d8027762a2020bb1b69e9f8b13f1eb2afd8e97e",
+    "tests/test_m5u_rolling.py": "74bd241abd14f0bb35222339e908abbeaa8f29f81e1fe7be613a310ef91b48b0",
+    "tests/test_m5u_sampling.py": "6a1d5568274a5ece7cec228bba662114b7c89d4cdfc6c7ee679b36453add35b1",
+    "tests/test_m5u_scaling.py": "bc34b1605256c67d80cf3366cc07164165cda9794f1fa3744d91f254ecab6e37"
+  },
+  "scope": "Hierarchy aggregation and outlet normalization only. Level-specific application, static features, training and forecasts remain incomplete."
+}

@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_projectile_motion_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_projectile_motion_proof.py": "880010aaa29c04ff13f59d0041dabb92918d7de216c6ae6bb58af41d2f60474c",
+    "sciona/physics_ingest/projectile_motion_proof.py": "504cc6550dbff388c8b91a9ca37b5dae39770e7d9ad4e62926d73c7dac9b5bdb",
+    "scripts/validate_projectile_motion_source.py": "79eadd058be6a3b5745d35b8231f7d0c81fa0bc7bc7bc36ccde00610a152a3fe"
+  }
+}

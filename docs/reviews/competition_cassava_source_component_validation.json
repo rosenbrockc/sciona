@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "scope": "Pinned numerical components only",
+  "synthetic_only": true,
+  "notebook_top_level_executed": false,
+  "loss_comparisons": 120,
+  "gradient_coordinates": 600,
+  "cropnet_mapping_comparisons": 100,
+  "passed": true,
+  "sha256": {
+    "sciona/cassava_loss.py": "794fa22a473ecfe0f3fcbbc992aebfdc7b8abb51318998740272120f07421ab7",
+    "sciona/cassava_ensemble.py": "38e0f28336248aff6d6934ce59355d2803c6bf7ae7477a985c74861fe839aa0d",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

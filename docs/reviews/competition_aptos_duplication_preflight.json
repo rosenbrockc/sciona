@@ -1,0 +1,220 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "catalog_atoms_scanned": 3581,
+  "exact_identity_matches": [],
+  "candidate_pattern": "aptos|inception|seresnext|se.resnext|generalized.mean|gem.pool|smooth.l1|pseudo.label|label.refin|group.mean|fold.ensemble|population|cassava",
+  "semantic_review_status": "Completed bounded catalog source/API review; see competition_aptos_duplication_review.json. Generic arithmetic reduction overlaps as a suboperation, not a provider replacement.",
+  "semantic_candidates": [
+    {
+      "fqdn": "sciona.atoms.dl.contrails_execution.contrails_prepare",
+      "import_module": "sciona.atoms.dl.contrails_execution",
+      "source_symbol": "contrails_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.dl.image_augmentation.fold_ensemble_average",
+      "import_module": "sciona.atoms.dl.image_augmentation.atoms",
+      "source_symbol": "fold_ensemble_average"
+    },
+    {
+      "fqdn": "sciona.atoms.dl.segmentation.hubmap_execution.hubmap_pseudo_labels",
+      "import_module": "sciona.atoms.dl.segmentation.hubmap_execution",
+      "source_symbol": "hubmap_pseudo_labels"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.amex_execution.amex_prepare",
+      "import_module": "sciona.atoms.ml.amex_execution",
+      "source_symbol": "amex_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.biosignal_sequence_execution.biosignal_sequence_prepare",
+      "import_module": "sciona.atoms.ml.biosignal_sequence_execution",
+      "source_symbol": "biosignal_sequence_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_fold_plan",
+      "import_module": "sciona.atoms.ml.cassava_execution",
+      "source_symbol": "cassava_fold_plan"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_train_ensemble",
+      "import_module": "sciona.atoms.ml.cassava_execution",
+      "source_symbol": "cassava_train_ensemble"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.cornell_execution.cornell_prepare",
+      "import_module": "sciona.atoms.ml.cornell_execution",
+      "source_symbol": "cornell_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.future_sales_execution.future_sales_prepare",
+      "import_module": "sciona.atoms.ml.future_sales_execution",
+      "source_symbol": "future_sales_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities",
+      "import_module": "sciona.atoms.ml.glmnet.andriy_r_glm",
+      "source_symbol": "andriy_r_glm_segment_probabilities"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.image_tabular_execution.image_tabular_prepare",
+      "import_module": "sciona.atoms.ml.image_tabular_execution",
+      "source_symbol": "image_tabular_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities",
+      "import_module": "sciona.atoms.ml.liblinear.andriy_r_svm",
+      "source_symbol": "andriy_r_svm_segment_probabilities"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.march_execution.march_prepare",
+      "import_module": "sciona.atoms.ml.march_execution",
+      "source_symbol": "march_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.openvaccine_execution.openvaccine_prepare",
+      "import_module": "sciona.atoms.ml.openvaccine_execution",
+      "source_symbol": "openvaccine_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.otto_execution.otto_prepare",
+      "import_module": "sciona.atoms.ml.otto_execution",
+      "source_symbol": "otto_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.physical_operator_execution.physical_operator_prepare",
+      "import_module": "sciona.atoms.ml.physical_operator_execution",
+      "source_symbol": "physical_operator_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.porto_execution.porto_prepare",
+      "import_module": "sciona.atoms.ml.porto_execution",
+      "source_symbol": "porto_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.santa_execution.santa_prepare",
+      "import_module": "sciona.atoms.ml.santa_execution",
+      "source_symbol": "santa_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.santander_execution.santander_execute",
+      "import_module": "sciona.atoms.ml.santander_execution",
+      "source_symbol": "santander_execute"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.santander_execution.santander_prepare",
+      "import_module": "sciona.atoms.ml.santander_execution",
+      "source_symbol": "santander_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.sklearn.semi_supervised.self_training_select_pseudo_labels",
+      "import_module": "sciona.atoms.ml.sklearn.semi_supervised.atoms",
+      "source_symbol": "self_training_select_pseudo_labels"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.tabular_ensemble_execution.tabular_ensemble_prepare",
+      "import_module": "sciona.atoms.ml.tabular_ensemble_execution",
+      "source_symbol": "tabular_ensemble_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.tabular.gradient_boosting.extract_pseudo_labels",
+      "import_module": "sciona.atoms.ml.tabular.gradient_boosting.atoms",
+      "source_symbol": "extract_pseudo_labels"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.text_pair_execution.text_pair_prepare",
+      "import_module": "sciona.atoms.ml.text_pair_execution",
+      "source_symbol": "text_pair_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.video_multilabel_execution.video_multilabel_prepare",
+      "import_module": "sciona.atoms.ml.video_multilabel_execution",
+      "source_symbol": "video_multilabel_prepare"
+    },
+    {
+      "fqdn": "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities",
+      "import_module": "sciona.atoms.ml.xgboost.andriy_r_xgb",
+      "source_symbol": "andriy_r_xgb_segment_probabilities"
+    },
+    {
+      "fqdn": "sciona.atoms.physics.weighted_population_variance.weighted_population_variance",
+      "import_module": "sciona.atoms.physics.weighted_population_variance",
+      "source_symbol": "weighted_population_variance"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_distribution_features.andriy_distribution_features",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.andriy_distribution_features",
+      "source_symbol": "andriy_distribution_features"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population.andriy_documented_population",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.andriy_population",
+      "source_symbol": "andriy_documented_population"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population_inputs.andriy_population_inputs",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.andriy_population_inputs",
+      "source_symbol": "andriy_population_inputs"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_populations.andriy_documented_populations",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.andriy_populations",
+      "source_symbol": "andriy_documented_populations"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_time_features.andriy_time_features",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.andriy_time_features",
+      "source_symbol": "andriy_time_features"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.basic_statistics.channel_basic_statistics",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.basic_statistics",
+      "source_symbol": "channel_basic_statistics"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.collect_population_scores",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions",
+      "source_symbol": "collect_population_scores"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ensemble_population_indices",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions",
+      "source_symbol": "ensemble_population_indices"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ordered_prediction_ids",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions",
+      "source_symbol": "ordered_prediction_ids"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.select_ensemble_population",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions",
+      "source_symbol": "select_ensemble_population"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.ensemble_family_inputs",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring",
+      "source_symbol": "ensemble_family_inputs"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.pack_eleven_predictions",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring",
+      "source_symbol": "pack_eleven_predictions"
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_fft.feng_fft_features",
+      "import_module": "sciona.atoms.riemannian_bci.signal_processing.feng_fft",
+      "source_symbol": "feng_fft_features"
+    }
+  ],
+  "proposed": {
+    "sciona.atoms.ml.aptos_execution.aptos_population": {
+      "content_hash": "1d3e9e2aaf6b04a253d66036a4c26bb58147a7f2fd0387fb12325e3582d38cf6",
+      "fingerprint": "39c8f00a8ce9154453c81a8e6729ba3a15e3abe67ac9557de379480d340d62a3"
+    },
+    "sciona.atoms.ml.aptos_execution.aptos_train_ensemble": {
+      "content_hash": "565a1b3041b9ed0f42df0fd75a5311aa9eabfae3e3e371dca701246cfc3d5b44",
+      "fingerprint": "35ec136609e3eaf82a47b07aefef9204f6e28021d9e38bc8628bd04ca2f9f13f"
+    }
+  }
+}

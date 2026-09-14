@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "approved": false,
+  "source_version_id": "9f3c8c4f-ce85-5e9d-b169-8b055562ce65",
+  "source_content_hash": "3cc5a5fdfab302b5c1a37abe86916ac996f577d11b733cba0bbf7b7d4438b2cd",
+  "tests_passed": 11,
+  "scope": "Generic classical tabular ensemble preprocessing: fold-fitted mixed-table cleaning and encoding.",
+  "implemented_stages": [
+    "table_audit_cleaning",
+    "split_aware_feature_engineering"
+  ],
+  "remaining_stages": [
+    "tabular_model_zoo",
+    "ensemble_stacking_blending",
+    "metric_calibration"
+  ],
+  "sha256": {
+    "sciona/tabular_ensemble_features.py": "a21c9a05d159cea22cb6d46cd19ce7822ae260e33f081a8784a275a342864e95",
+    "tests/test_tabular_ensemble_features.py": "284ae8ca51039dbb6fe92280e349f765c4ef9e003986c2ad408596e46abc65a9"
+  },
+  "checks": [
+    "Hand imputation/clipping and constant/duplicate removal",
+    "Missing category distinct from all literal strings",
+    "Unseen category/frequency zero",
+    "Query population cannot alter fitted statistics",
+    "Training-fold median differs from leaked full-population median",
+    "Invalid tables and all-constant numeric rejection"
+  ],
+  "limits": [
+    "Explicit caller numeric/string columns, no automatic source-schema inference",
+    "Dense one-hot/frequency features; high-cardinality resource costs unqualified",
+    "All-null numeric columns use zero and drop as constants",
+    "No target encoding or label input",
+    "Full ensemble/calibration and publication pending"
+  ],
+  "catalog_mutations": 0
+}

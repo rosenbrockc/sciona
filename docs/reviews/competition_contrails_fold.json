@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "full_single_fold": true,
+  "validation_observations": 1,
+  "optimizer_updates": 1,
+  "terminal_checkpoint_matches_model": true,
+  "diagnostic_threshold_count": 50,
+  "elapsed_seconds": 19.816559250000864,
+  "scope": "One shortened synthetic fold at full resolution; batch1/workers0 and one-epoch schedule explicit validation overrides. Distinct synthetic train/validation/scoring subsets; not complete competition schedule."
+}

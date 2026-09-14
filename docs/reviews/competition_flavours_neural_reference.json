@@ -1,0 +1,33 @@
+{
+  "pins": [
+    {
+      "repository": "dnouri/nolearn",
+      "commit": "2f69d2266ecf6b1d8824ce8c07155795c846b25e",
+      "software_path": "nolearn/lasagne/base.py",
+      "sha256": "6ce178a452420f546690e4b8c7583f8931b5a9905c5d17ad80860d3249dd3139"
+    },
+    {
+      "repository": "Lasagne/Lasagne",
+      "commit": "e4577811fa6b6935073a9ee82c507c5092796204",
+      "software_path": "lasagne/updates.py",
+      "sha256": "4cef6a372ece97b5ee12ac06d283d12ac8c0726ac3fa41214ad3391b5ecd9f8f"
+    },
+    {
+      "repository": "Lasagne/Lasagne",
+      "commit": "e4577811fa6b6935073a9ee82c507c5092796204",
+      "software_path": "lasagne/layers/dense.py",
+      "sha256": "a2e1672ef57173a906bccf46ff0ecd485765742333500f1dbc49f8149c6907be"
+    }
+  ],
+  "selection": "Latest repository commits at or before2015-10-17; source-era evidence, not proof of exact winner-installed library revisions.",
+  "findings": [
+    "Nolearn batch iterator defaults to128rows without shuffling.",
+    "Validation uses first stratified fold with fold count round(1/eval_size).",
+    "Lasagne AdaGrad epsilon1e-6 lies inside square root.",
+    "Independent NumPy float64 implementation uses modern split allocation and explicit training budgets."
+  ],
+  "remaining": [
+    "Exact legacy initialization and splitter numerical parity not claimed.",
+    "Full dependency/license and execution graph review pending."
+  ]
+}

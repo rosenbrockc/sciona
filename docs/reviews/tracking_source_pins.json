@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/edwinst/trackml_solution",
+  "commit": "f1a6e63969167159ef72c4ba32897e5aef7c3888",
+  "source_files": {
+    "LICENSE": "00404581925abc4b8435bb7813eee07ac1df8b834326a33ee969d8315e9471fe",
+    "main.py": "51a78fd99b15f8c4268fb393a7236b9c01935fb414fae5d2c39ab9a9a2709674",
+    "run-hyperopt.py": "20ecffd4a99a9a766a28229ef3982c45f3ffb7bca8def26d7d26cd042d15e778",
+    "trackml_solution/algorithm.py": "227b2250abda4601ed4ef113aebae9ad5292d2a2f67345d2b0f23694a90a469a",
+    "trackml_solution/candidates.py": "d74daba0b006d2c5f2a515820c0e096b2bf3206527ad69ef856a6610fa0d6a23",
+    "trackml_solution/cells.py": "1526ee9e31817769e065f8e4ad6edc2f5b76d1b6659c5481d2c8d32ad5a58063",
+    "trackml_solution/corrections.py": "2832433043f000b1230c6196369797ab98bcfa78e8d6dbc2041a82eb50619b08",
+    "trackml_solution/data.py": "83736d6b5495ebb36a74c1052be628010987e80072ab53348f295a9a6d37ad7c",
+    "trackml_solution/geometry.py": "e20657812744e5b86d8211bece1f2afbc55d791077c5273a7bfd76fd8d90d338",
+    "trackml_solution/logging.py": "9e634917fcf68ef2d0818622cd30bbb5c7f3d5ab461e70e9478117edf4c4d59e",
+    "trackml_solution/neighbors.py": "4be5f71928c2cc9b1203b84e77a6c84cb393c612492f56887baf8172d27038a6",
+    "trackml_solution/supervised.py": "d613e55d1bfaecbfaee40701443a5f6e4625335fbd7a0d4790ecec8f20720938"
+  },
+  "scope": "Public implementation source only; no input records or detector data downloaded."
+}

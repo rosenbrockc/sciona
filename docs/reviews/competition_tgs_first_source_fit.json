@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "fit": "keras.r1.p0.f0",
+  "fit_contract_sha256": "922fbed666a67ef0fbeeb864fb8cbb1f925da6dc3d40da8780cd84db5d82cf2f",
+  "actual_epochs": 21,
+  "optimizer_updates": 42,
+  "elapsed_seconds": 426.8929820000194,
+  "checkpoint_tensors": 351,
+  "epoch_ceiling": 125,
+  "batch_size": 24,
+  "termination": "source early stopping after21 epochs",
+  "limits": [
+    "One standalone fit only; not full63-fit completion.",
+    "Full workflow uses a larger synthetic population to support later batch-size28 phases; this checkpoint is not reused across the changed input context."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "actual_registered_witnesses": true,
+  "nodes_simulated": 155,
+  "packed_model_vectors": 11,
+  "model_vector_shape": [
+    6
+  ],
+  "final_shape": [
+    6
+  ],
+  "tests_passed": 1,
+  "test_sha256": "cec2e04eb5d5790bcc3f7187f54088bc25f17e4563f1f0f51c6042caf99aa08e",
+  "numerical_execution_claim": false
+}

@@ -1,0 +1,17 @@
+{
+  "format": "m5-publication-transaction.v1",
+  "scope": "Configured local catalog only",
+  "trust_tier": 3,
+  "rollback_rows": 40,
+  "rollback_absence_verified": true,
+  "apply_rows_created": 40,
+  "reapply_rows_created": 0,
+  "source_version_id": "f64bac1a-ca7f-5f29-a645-ec7b2b42ca4b",
+  "version_id": "4b93fb32-e474-59ab-91b3-03571d1b7348",
+  "graph_sha256": "8bd369e42be8b641f9c43031c767daaca61e31e799122e4f78cc36d8500a508b",
+  "served_cdgs": 102,
+  "competition_intakes": 142,
+  "covered_intakes": 35,
+  "remaining_intakes": 107,
+  "original_intake_status": "draft"
+}

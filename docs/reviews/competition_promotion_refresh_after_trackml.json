@@ -1,0 +1,8 @@
+{
+  "competition_intakes": 142,
+  "intakes_with_served_derivative": 5,
+  "served_cdgs": 72,
+  "intakes_without_served_derivative": 137,
+  "read_only": true,
+  "scope": "Configured local Supabase; canonical served derivative links."
+}

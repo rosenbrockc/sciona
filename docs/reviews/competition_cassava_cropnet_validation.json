@@ -1,0 +1,19 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "official_pretrained_artifact_used": true,
+  "images_executed": 2,
+  "model_variables_unchanged": 266,
+  "repeat_predictions_identical": true,
+  "unknown_mapping_scalar_match": true,
+  "tampered_manifest_rejected": true,
+  "scope": "Official licensed CropNet reference artifact; identity with winner cached copy and full ensemble remain unverified.",
+  "sha256": {
+    "sciona/cassava_cropnet.py": "b7170d35b10d25502cede3735c9d4919a0bd39121aba44a279302f480b9c1512",
+    "sciona/cassava_image_views.py": "03013bc06c041c76cab4a4b0bd08421dccb59d0e215bb9ad9c59b000b35c8874",
+    "sciona/cassava_ensemble.py": "38e0f28336248aff6d6934ce59355d2803c6bf7ae7477a985c74861fe839aa0d",
+    "scripts/validate_cassava_cropnet.py": "1b8bd1f69479dae798ca96b4511316b5de9eaacaeab8761a7d74f1b9d082cea9",
+    "docs/reviews/competition_cassava_cropnet_artifact.json": "f5ff31672c1cea8bfdfb24b8a79da062f51efd339a7a3ceaca8d9688cf46599b"
+  }
+}

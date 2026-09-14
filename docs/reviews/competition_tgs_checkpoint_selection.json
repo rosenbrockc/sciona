@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "catalog_mutations": 0,
+  "source_commit": "2f81d4dd8d50a01579e5f7650259dde92c5c3b8d",
+  "torch_source_command_checks": [
+    {
+      "stage": 1,
+      "source_script": "phalanx/stage1.sh",
+      "sha256": "9a2dacf78199a5451fd95dffcbc92f7f738fd04cf5197888661f7d2d2cd3b200",
+      "fold_commands_verified": 5
+    },
+    {
+      "stage": 2,
+      "source_script": "phalanx/stage2.sh",
+      "sha256": "4b6449763b2e8fbc27244a2508c7612fcbb6563a7046061bbb3f14660d257994",
+      "fold_commands_verified": 5
+    },
+    {
+      "stage": 3,
+      "source_script": "phalanx/stage3_predict.sh",
+      "sha256": "3d770220a4da99f3cd3eeec34f530bc66d44b0ac733f63ffa218b328e02278db",
+      "fold_commands_verified": 5
+    }
+  ],
+  "precision_source_sha256": "db29c09dcbc9e5009e5570118775ebf39ba78a8e8141da1883ed883c1cf035c8",
+  "keras_selection_review": "Source prediction commands select fold validation-best files; rounds1/2 use phases4,3,2,1 and5,4,3,2 in zero-based fit indexing. Round3 reuses round2 Keras states.",
+  "full_training_executed": false
+}

@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "8224574f23ae68f559e7f9a5a33bbb9e207dfd5ed76f6145db16dfb38c02c84c",
+  "publisher_artifact_sha256": {
+    "albumentations": "77bda58c5cfa5ec8dccd360bf75be52449d6bd7a25dce087192e3c78dd2a439a",
+    "imgaug": "82a5052d2daabc1b8de04b5fade44d59f3376c429880dd78e759028c67f3c8f3"
+  },
+  "exact_policy_cases": 128,
+  "detector_sizes": [
+    512,
+    640,
+    768,
+    1024
+  ],
+  "pixels_boxes_and_python_numpy_imgaug_rng_exact": true,
+  "implementation_sha256": {
+    "sciona/wheat_augmentation.py": "04e9176c3a4b921242e1ca297ff704ab80735e3294d51d39d11ff88e8d827edc",
+    "sciona/wheat_augmentation_compat.py": "c94c2d2e7d6972c8aeba94d3d059a1b826546a9e01e3adcefe370008f1a66a9b",
+    "scripts/validate_wheat_augmentation_policy.py": "981e42c40e51dcbd2e8424d2191753e5d7349a5ac814bccd09cc6e81c4ce5883"
+  },
+  "limits": [
+    "Policy comparison uses pinned historical Python packages on installed native dependencies; historical native numerical equivalence is not claimed.",
+    "Complete dataset sampling/retry loop and full source training remain pending."
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 13,
+  "source_version_id": "9bb6428c-0529-56c8-b51d-96e1b4d6990c",
+  "source_content_hash": "b22878a5b3fa77fcf721b4343515a4284b9dd7777758bd9e86b1ed56e5c6790e",
+  "scope": "Generic five-stage geospatial/spatiotemporal fusion; independent causal planar-coordinate regression realization planned.",
+  "implemented": [
+    "Latest available context per spatial site and nearest-site mean within radius/lookback",
+    "Strict-past target lags, distances, age, seasonal phase and missingness indicators",
+    "Expanding forward time validation blocks with explicit gap and warmup",
+    "Nonnegative clipping plus simultaneous-time geographic neighbor smoothing"
+  ],
+  "checks": [
+    "Hand joins and feature calculations",
+    "Future context/target mutation invariance",
+    "Spatial radius and context expiration",
+    "Permutation and feature query-population independence",
+    "Forward gap, ordered block and warmup semantics",
+    "Hand geographic smoothing and time isolation"
+  ],
+  "pending": [
+    "Fold-local tree model fitting and forward validation evidence",
+    "Full training refit and future-query boundary",
+    "Serialized graph and Tier3 review/publication"
+  ],
+  "sha256": {
+    "sciona/geotemporal_features.py": "56c192e429b985ec6bfaa82c4a9fbdf1a7d060ff315560ee1bbf4179681e5348",
+    "sciona/geotemporal_validation.py": "82256afe9d38ad5570acbb77c0e91d630e2730fd7500e35d7fcbca551fdfa208",
+    "sciona/geotemporal_postprocess.py": "99f4e1aae492346823477a6d7161ac11b7503cb2347cde7e653b7d31b0049855",
+    "tests/test_geotemporal_features.py": "6e46b2a4779e98578f102061bf72f84e1ee657808d36bfefce660012479c0ca1",
+    "tests/test_geotemporal_validation.py": "5d51e6ec7107b028182351efaa3c389daa8a56d700b147d94b704c1089f0a114"
+  },
+  "limitations": [
+    "Caller must declare common planar metric coordinate reference and shared seconds clock",
+    "Temporal validation allows recurring sites; no unseen-location guarantee",
+    "Geographic smoothing intentionally depends on co-timed query neighbors",
+    "Naive joins and in-memory populations; no large-scale qualification"
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,26 @@
+{
+  "format": "santander-review-negative-gates.v1",
+  "result": "passed",
+  "catalog_mutations": 0,
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_detector",
+    "missing_boundaries",
+    "missing_tests",
+    "reduced_pseudo_counts",
+    "missing_models",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_santander_execution.py": "c92a166a34ba33d36614de8d91da0ad7652aa1b07ca2eb538b01029a6077abe2",
+    "scripts/validate_santander_review_gates.py": "f7712e93eac26201c9b5b5944e2cecaa930b08048d65a1327b71ade612e419f5"
+  },
+  "limits": "In-memory read-only review injections; no publication approval."
+}

@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 11,
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "checks": [
+    "Ten float32 features and separate prior expectations",
+    "Shared-action pre-round likelihood and two decay increments",
+    "Opponent selections never supply reward observations",
+    "Sorted-count statistic matches pairwise-minimum oracle",
+    "Detached feature output",
+    "Normalized sigmoid endpoints and monotonicity",
+    "Independent blend and shared selection decay",
+    "Seeded randomized ties and nonpositive-score fallback",
+    "Invalid updates leave state unchanged"
+  ],
+  "sha256": {
+    "sciona/santa_agent_features.py": "b6cd7831b2dfe7b72024f24273092f5bf62ed297c19d30453cfcf04963b2a127",
+    "sciona/santa_threshold_posterior.py": "17228b0cf24f76d530df7858df037fdef80ef2b5d8df5cb0fec010cb2d7b1b7f",
+    "tests/test_santa_agent_features.py": "328761abc9bbcae5a8f9b2b120123a069254609cea0ae157f5bfbc285350e126"
+  },
+  "limitations": [
+    "Independent implementation with mathematical/source inspection; no original code execution parity or winner performance claim.",
+    "Explicit seeded tie order replaces wall-clock RNG seeding.",
+    "Fixed 100 arms and 2000-round horizon; complete history inference is bounded but not throughput qualified.",
+    "Two LightGBM models and full replay training/execution boundary remain pending."
+  ],
+  "catalog_mutations": 0
+}

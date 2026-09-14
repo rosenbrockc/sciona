@@ -1,0 +1,221 @@
+{
+  "read_only": true,
+  "catalog_mutations": 0,
+  "served_cdgs": 106,
+  "competition_intakes": 142,
+  "intakes_with_direct_served_provenance": 39,
+  "intakes_without_direct_served_provenance": 103,
+  "source_reviews": [
+    {
+      "review": "docs/reviews/competition_alaska2_source_triage.json",
+      "source_version_id": "e718080e-26cb-5e48-8488-f36c6f4b075e",
+      "recorded_status": "source_contract_correction_required",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_aptos_source_triage.json",
+      "source_version_id": "94df8d52-0272-5d0b-b84f-1f150d8e11f0",
+      "recorded_status": "source_contract_correction_required",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_avito_source_triage.json",
+      "source_version_id": "a28670d9-abdf-5940-b154-e82f4cbe19ba",
+      "recorded_status": "primary_source_recovered_intake_reference_correction_required",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_bengali_grapheme_source_triage.json",
+      "source_version_id": "0c0997e0-c5f7-509c-9068-dcf00a167f56",
+      "recorded_status": "primary_cyclegan_code_pinned_full_pipeline_resolution_pending",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_bengali_speech_source_triage.json",
+      "source_version_id": "37e4ea7f-aab7-5849-b241-ea0f34be7ac5",
+      "recorded_status": "deferred_complete_training_source_and_notebook_license_unresolved",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_biosignal_sequence_source_triage.json",
+      "source_version_id": "1587d081-d47c-5595-8bed-d3d3aa6465af",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_bms_source_triage.json",
+      "source_version_id": "fd624850-a2a8-5993-ab38-6ed0b8c73a6c",
+      "recorded_status": "deferred_source_closure_unresolved",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_byu_source_triage.json",
+      "source_version_id": "8ff133f1-108a-525f-937b-d44b53cecc53",
+      "recorded_status": "deferred_full_classification_source_and_license_unresolved",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_cafa5_source_triage.json",
+      "source_version_id": "f20e2af6-479d-59cb-8ac4-801e0e22b9b6",
+      "recorded_status": "deferred_complete_cafa5_source_unresolved",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_cassava_source_triage.json",
+      "source_version_id": "735c71d1-6f8a-565b-a5c3-f1bcf3a89285",
+      "recorded_status": "deferred_notebook_urls_and_license_unresolved",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_cdiscount_source_triage.json",
+      "source_version_id": "05034555-4e75-5240-8333-747cfcb96895",
+      "recorded_status": "deferred_complete_source_and_license_unresolved",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_chaii_source_triage.json",
+      "source_version_id": "93a2518a-7446-5bef-af23-87f8e39085f7",
+      "recorded_status": "deferred_explicit_reuse_license_unresolved",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_champs_source_triage.json",
+      "source_version_id": "af2888ee-499c-5db7-8576-f4096e1f8804",
+      "recorded_status": "published_tier3_and_served_execution_verified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_commonlit_source_triage.json",
+      "source_version_id": "ff162d6b-3461-5b16-9cfb-37b1fe10c32e",
+      "recorded_status": "teacher_source_recovered_license_and_method_resolution_pending",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_connectomics_source_triage.json",
+      "source_version_id": "e9f83a4e-4cb1-5297-8c04-8fd65c6e7d33",
+      "recorded_status": "published_corrected_execution_tier_3",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_cornell_source_triage.json",
+      "source_version_id": "5326bafb-d26f-5202-85c9-6f903df0fc77",
+      "recorded_status": "published_corrected_execution_tier_3",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_decimeter_source_triage.json",
+      "source_version_id": "171ea899-008e-5a42-aeb7-455be3c7f3e5",
+      "recorded_status": "source_recovery_pending",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_flavours_source_triage.json",
+      "source_version_id": "6256d5b1-d742-53b1-9ff4-c2c7265ce981",
+      "recorded_status": "material_intake_correction_required_independent_implementation_started",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_future_sales_source_triage.json",
+      "source_version_id": "e6803752-90ef-5cab-8b30-5ebeec716c15",
+      "recorded_status": "implementation_in_progress",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_geotemporal_source_triage.json",
+      "source_version_id": "9bb6428c-0529-56c8-b51d-96e1b4d6990c",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_image_tabular_source_triage.json",
+      "source_version_id": "4d7b7da1-6568-56b0-aa5e-7e2e7a275556",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_march_source_triage.json",
+      "source_version_id": "26d177bb-7d6d-5ee1-b881-2bafe69064cd",
+      "recorded_status": "implementation_in_progress",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_nab_source_triage.json",
+      "source_version_id": "e78e1ac4-49ad-5fe2-9a58-c82862d11ec7",
+      "recorded_status": "implementation_pending",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_otto_source_triage.json",
+      "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_physical_operator_source_triage.json",
+      "source_version_id": "49c645b7-3659-5cfa-a386-78f7a51f7358",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_porto_source_triage.json",
+      "source_version_id": "ad3239bf-5a38-565a-81da-3d3cba9a02b0",
+      "recorded_status": "source_reconstruction_pending",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_resource_route_source_triage.json",
+      "source_version_id": "65947cba-17e3-5a60-ac2b-7a3545885a39",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_santa2020_source_triage.json",
+      "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_santa_source_triage.json",
+      "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_santander_source_triage.json",
+      "source_version_id": "743c3225-058e-5a7e-ab18-ae5dd1c2b7d4",
+      "recorded_status": "pending_source_reconstruction",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_tabular_ensemble_source_triage.json",
+      "source_version_id": "9f3c8c4f-ce85-5e9d-b169-8b055562ce65",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_temporal_sparse_source_triage.json",
+      "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_text_pair_source_triage.json",
+      "source_version_id": "1169253d-76d3-5b76-885f-07b58bed795c",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    },
+    {
+      "review": "docs/reviews/competition_tgs_source_triage.json",
+      "source_version_id": "1796103a-eea9-5b66-9dff-ecdea34a459d",
+      "recorded_status": "corrected_full_workflow_reconstruction_started",
+      "direct_served_realizations": 0
+    },
+    {
+      "review": "docs/reviews/competition_video_multilabel_source_triage.json",
+      "source_version_id": "13b48adf-8fb5-5ea2-a26c-44344bb8907e",
+      "recorded_status": "unspecified",
+      "direct_served_realizations": 1
+    }
+  ],
+  "scope": "Live direct source-provenance coverage; source-review statuses may predate later publication. Linked realizations may be partial; original-template completion is not established."
+}

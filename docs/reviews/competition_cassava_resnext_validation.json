@@ -1,0 +1,24 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "pretrained_weights_used": false,
+  "parameters": 22990149,
+  "training_batches": 2,
+  "validation_examples": 3,
+  "source_weights_and_adam_state_match": true,
+  "source_validation_match": true,
+  "runtime": {
+    "torch": "2.11.0",
+    "timm": "0.9.2",
+    "numpy": "2.4.2"
+  },
+  "scope": "Full-resolution architecture and one-epoch diagnostic; historical timm, pretrained weights, preprocessing and full lifecycle remain unverified.",
+  "sha256": {
+    "sciona/cassava_pretrained.py": "f36039d9cfe94c0bd1d656e42e2430b63a017e5b06cf55fc9e0ae5a375f5140c",
+    "sciona/cassava_resnext.py": "345001e95bfd0ddfb47524c4dfaca65c04ed9758040f66746a8656e567718f05",
+    "scripts/validate_cassava_resnext.py": "4fa8801173c13aa28a02b63ef2d88fe08079043cbece5a4d6cda605bf477e1de",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

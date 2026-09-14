@@ -1,0 +1,34 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "families": {
+    "resnext": {
+      "pretrained_sha256": "3f95526f236e9f14fbd84561989ccf00eb0190532dc30b4e4c36eae5e47111ec",
+      "full_resolution_microbatches": 2,
+      "optimizer_steps": 2,
+      "backbone_and_five_class_head_updated": true,
+      "all_state_finite": true,
+      "post_update_five_class_probabilities_valid": true
+    },
+    "vit": {
+      "pretrained_sha256": "0e964f9d962c84e526ac0697761e4e36066d2bca39fed8bd8de8c38cdb908811",
+      "full_resolution_microbatches": 2,
+      "optimizer_steps": 1,
+      "backbone_and_five_class_head_updated": true,
+      "all_state_finite": true,
+      "post_update_five_class_probabilities_valid": true
+    }
+  },
+  "scope": "Pretrained reconstruction initialization and individual source-mechanics updates; full pretrained folds, original execution environment and ensemble remain unqualified.",
+  "sha256": {
+    "sciona/cassava_pretrained.py": "f36039d9cfe94c0bd1d656e42e2430b63a017e5b06cf55fc9e0ae5a375f5140c",
+    "sciona/cassava_resnext.py": "345001e95bfd0ddfb47524c4dfaca65c04ed9758040f66746a8656e567718f05",
+    "sciona/cassava_vit_model.py": "e5e7e91263d5a853f819fc409c9b8d5a38a6d1854867f7f96df593213f340c51",
+    "sciona/cassava_vit_epoch.py": "8ea44466f5d7ed633b4e939177246b3ccc2982517f05b1a9983157847e0e68e1",
+    "sciona/cassava_vit_ordered_loss.py": "c779eb220dab0c1f6a0dabda14b20ddd2f227932da2c0b32f2795e8eebf5787f",
+    "sciona/cassava_loss.py": "794fa22a473ecfe0f3fcbbc992aebfdc7b8abb51318998740272120f07421ab7",
+    "scripts/validate_cassava_pretrained_training.py": "1829e8097be6169728ccc7af8fdfa6cdf4a645fe5bfcfe9a8c783a07089d92ac",
+    "docs/reviews/competition_cassava_timm_pretrained_validation.json": "c2d4249892a063f46d51b28b99951bdca079aefa602fa16a7a41b9ce5d10465f"
+  }
+}

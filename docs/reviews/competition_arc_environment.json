@@ -1,0 +1,14 @@
+{
+  "format": "arc-environment.v1",
+  "status": "passed",
+  "tests_passed": 50,
+  "direct_runtime_versions": {
+    "psutil": "7.0.0"
+  },
+  "code_sha256": {
+    "tests/test_arc_contract.py": "8887a643b973ab52c2344981254bbc7b3ca20c61e263d429b4a994b499c78307",
+    "tests/test_arc_schedule.py": "9169cac587d72941e16b4d6bd0f5a15b2cd831edad7d9c2225edf5429990cca2",
+    "tests/test_arc_runtime.py": "31cb942075701bf22b91725c81afc673c3776423f49643b693229c9f01e44768"
+  },
+  "limits": "Installed matcher environment; no clean-environment installation claim. All test fixtures synthetic."
+}

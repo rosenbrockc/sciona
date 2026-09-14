@@ -1,0 +1,40 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "graph_digest": "7917615a7813e0d2f3f4d8cd0bc1df3372eef4b5d1dce9765f8a11e645ef8e50",
+  "full_runner_cases": 3,
+  "recovered_helices_per_case": 8,
+  "exact_membership": true,
+  "provider_closure_sha256": {
+    "__init__.py": "00bca6b9e2d359a90c7f83c3d5a6534af6d193b19aba524bb2369acb85a17f72",
+    "atoms.py": "6a32f9327cb1c649dc36ca4c46c61a46b2fb4b76acb6b3880ae7f899244f08d6",
+    "library_LICENSE.source": "03a56802f793e909a12051a6360fdd6eec92d90a208806e30b94bf6c19fbe0b0",
+    "library_trackml_dataset.py.source": "638dd5d0547c452a8cf8485a07594cf66b308b100f3819a54b56515bfb7bee2f",
+    "library_trackml_score.py.source": "83ca2c30215ba02081dde8ef4b7b3c6dbc89f9c527f2ced63b990fc6e5988ab5",
+    "loader.py": "151de7007179ed342c36da4b8858712e1463414d56a7563d423b7613c192c2d1",
+    "solution_LICENSE.source": "00404581925abc4b8435bb7813eee07ac1df8b834326a33ee969d8315e9471fe",
+    "solution_trackml_solution_algorithm.py.source": "227b2250abda4601ed4ef113aebae9ad5292d2a2f67345d2b0f23694a90a469a",
+    "solution_trackml_solution_candidates.py.source": "d74daba0b006d2c5f2a515820c0e096b2bf3206527ad69ef856a6610fa0d6a23",
+    "solution_trackml_solution_cells.py.source": "1526ee9e31817769e065f8e4ad6edc2f5b76d1b6659c5481d2c8d32ad5a58063",
+    "solution_trackml_solution_corrections.py.source": "2832433043f000b1230c6196369797ab98bcfa78e8d6dbc2041a82eb50619b08",
+    "solution_trackml_solution_data.py.source": "83736d6b5495ebb36a74c1052be628010987e80072ab53348f295a9a6d37ad7c",
+    "solution_trackml_solution_geometry.py.source": "e20657812744e5b86d8211bece1f2afbc55d791077c5273a7bfd76fd8d90d338",
+    "solution_trackml_solution_logging.py.source": "9e634917fcf68ef2d0818622cd30bbb5c7f3d5ab461e70e9478117edf4c4d59e",
+    "solution_trackml_solution_neighbors.py.source": "4be5f71928c2cc9b1203b84e77a6c84cb393c612492f56887baf8172d27038a6",
+    "source_manifest.json": "20d17bc273ede033c6b146e7c0fda52a5cd9de1e72e4050d919b5abe822a6203"
+  },
+  "implementation_sha256": {
+    "sciona/tracking_source_execution.py": "0afbe9ac162a3cd5f662750509c2996fc435714cb3fb02477b031e622af86e97",
+    "scripts/validate_tracking_source_execution.py": "0513851dabc6d29bd5a582941c37edbc2070bcc4deff0b3c94c6b16a5bfa0648",
+    "tests/test_source_tracking.py": "4a22708ed881beef5db24a579e32e8166a32b4c7d1347bc5a166f7d29c7a4789",
+    "sciona/competition_dataframe_compat.py": "6e124f20ad25599937e38e6700d2f7e283477b86d476f0413a2159f4f4e55d80",
+    "scripts/validate_tracking_detector_geometry.py": "abd5963fc4f432034a41ef575d8b54a8c7dbe7f05ca0f76df363ee8adc89dc71",
+    "sciona/services/execution_graph_codec.py": "1ad42332f8e28adf4ee3f8d53184a4af8351f66304efa1703c63ed32989082a6",
+    "sciona/visualizer/runner.py": "ff289eda92093a164f1691e2453622579cd6357e6292267833f5873a97ad6aa3"
+  },
+  "limitations": [
+    "Analytical observation-only execution; optional cell/calibrated/scoring paths excluded.",
+    "Synthetic geometric correctness only; no actual-event accuracy claim.",
+    "Source-compatible seven-ring, three-gap cap geometry and occupied neighbor layers required."
+  ]
+}

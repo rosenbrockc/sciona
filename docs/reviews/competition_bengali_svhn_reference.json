@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_url": "https://github.com/DeepVoltaire/AutoAugment/blob/17d718251f25c0d9413bf30f91b523907924f33a/autoaugment.py",
+  "source_commit": "17d718251f25c0d9413bf30f91b523907924f33a",
+  "source_sha256": "41099a6a0157d1e1cb6b509f94d3ba88297fd61283a461a610b5e24d1926aae8",
+  "source_license": "MIT",
+  "exhaustive_subpolicy_cases": 400,
+  "seeded_sequence_cases": 128,
+  "maximum_pixel_difference": 0,
+  "random_draws_and_state_exact": true,
+  "versions": {
+    "pillow": "11.3.0",
+    "numpy": "2.4.2"
+  },
+  "implementation_sha256": {
+    "sciona/svhn_autoaugment.py": "9c2b4e5280102c0e0cfd03639c9c4c07a236e353cf9600aba6191175dcb7f28f",
+    "scripts/validate_bengali_svhn_reference.py": "c49ae4c9ec54a02c8bdb636fa6912722691198b59935f82f62868ea4bc90e3ce",
+    "docs/licenses/deepvoltaire-autoaugment-LICENSE.txt": "891360b3b770d32beec4ea6467ef99f5ddf2fe70736a316c90cd548282497c4e"
+  },
+  "limits": [
+    "Revision predates the winner writeup; the winner did not pin an exact revision.",
+    "Reference and reconstruction share installed Pillow; historical raster-library equivalence remains unqualified.",
+    "Only SVHN augmentation is qualified here, not B7 training, normalization, warmup or complete pipeline publication."
+  ]
+}

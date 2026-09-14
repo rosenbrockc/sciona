@@ -845,7 +845,9 @@ def _parse_latex(raw_formula: str) -> Any | None:
     try:
         from sympy.parsing.latex import parse_latex
 
-        return parse_latex(raw_formula)
+        # The default parser accepts a valid prefix of an incomplete formula.
+        # Publication evidence requires consumption of the entire source.
+        return parse_latex(raw_formula, strict=True)
     except Exception:  # noqa: BLE001 - optional parser dependencies vary locally
         return None
 

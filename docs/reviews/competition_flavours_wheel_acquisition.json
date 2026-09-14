@@ -1,0 +1,482 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "all_wheels_acquired": true,
+  "packages": {
+    "annotated-doc": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320"
+    },
+    "annotated-types": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"
+    },
+    "anyio": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c"
+    },
+    "asttokens": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "051ed49c3dcae8913ea7cd08e46a606dba30b79993209636c4875bc1d637bc24"
+    },
+    "attrs": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+    },
+    "bidict": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "5dae8d4d79b552a71cbabc7deb25dfe8ce710b17ff41711e13010ead2abfc3e5"
+    },
+    "biosppy": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "3612ac67bbe6e42556a2f53ecb3595441f44fe1e888d0b3dd9b21eb91b732ca0"
+    },
+    "certifi": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "027692e4402ad994f1c42e52a4997a9763c646b73e4096e4d5d6db8af1d6f0fa"
+    },
+    "charset-normalizer": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "ac59c15e3f1465f722607800c68713f9fbc2f672b9eb649fe831da4019ae9b23"
+    },
+    "click": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6"
+    },
+    "contourpy": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "d002b6f00d73d69333dac9d0b8d5e84d9724ff9ef044fd63c5986e62b7c9e1b1"
+    },
+    "cycler": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30"
+    },
+    "fastapi": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "b4946880e48f462692b31c083be0432275cbfb6e2274566b1be91479cc1a84ec"
+    },
+    "filelock": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "ca8afb0da15f229774c9ad1b455ed96e85a81373065fb10446672f64444ddf70"
+    },
+    "flatbuffers": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"
+    },
+    "fonttools": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "c22b1014017111c401469e3acc5433e6acf6ebcc6aa9efb538a533c800971c79"
+    },
+    "fsspec": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "98de475b5cb3bd66bedd5c4679e87b4fdfe1a3bf4d707b151b3c07e58c9a2437"
+    },
+    "h11": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+    },
+    "h5py": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "42108e93326c50c2810025aade9eac9d6827524cdccc7d4b75a546e5ab308edb"
+    },
+    "httpcore": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
+    },
+    "httpx": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+    },
+    "icontract": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "8fb0f93f71211416f214f37c01b8017fdc8c079d70159f49f0ddcc10918c14d0"
+    },
+    "idna": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea"
+    },
+    "inflect": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "2aea70e5e70c35d8350b8097396ec155ffd68def678c7ff97f51aa69c1d92344"
+    },
+    "jax": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "822a8ae155ab42e7bc59f2ae7a28705bcfccb01a7e76abfc8ae996190cdc5598"
+    },
+    "jaxlib": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "52a0032508f8cf5791c7a7bee142531ee706c3c05518117fb0b6ee8d5e17fde7"
+    },
+    "jinja2": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"
+    },
+    "joblib": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713"
+    },
+    "jsonpatch": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "0ae28c0cd062bbd8b8ecc26d7d164fbbea9652a1a3693f3b956c1eae5145dade"
+    },
+    "jsonpointer": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942"
+    },
+    "kiwisolver": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "dda366d548e89a90d88a86c692377d18d8bd64b39c1fb2b92cb31370e2896bbd"
+    },
+    "langchain-core": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "6e74cb0fb443a8046ee298c05c99b67abe54cc57fcbc6d1cd3b0f2485ee47574"
+    },
+    "langgraph": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "5fd43c839ec2b5af564e9ae2d2d4f22ce0a006a0b58e800cc4e8de4dd9cbb643"
+    },
+    "langgraph-checkpoint": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "e3adcd7a0e0166f3b48b8cf508ce0ea366e7420b5a73aa81289888727769b034"
+    },
+    "langgraph-prebuilt": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "d16a731e591ba4470f3e313a319c7eee7dbc40895bcf15c821f985a3522a7ce0"
+    },
+    "langgraph-sdk": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "18905fd6248ade98b0995d859a98672d57c811fbfffc0d63d1c107a512351b26"
+    },
+    "langsmith": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "cbec10460cb6c6ecc94c18c807be88a9984838144ae6c4693c9f859f378d7d02"
+    },
+    "markdown-it-py": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147"
+    },
+    "markupsafe": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "116bb52f642a37c115f517494ea5feb03889e04df47eeff5b130b1808ce7c219"
+    },
+    "matplotlib": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "56271f3dac49a88d7fca5060f004d9d22b865f743a12a23b1e937a0be4818ee1"
+    },
+    "mdurl": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
+    },
+    "ml-dtypes": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "8c760d85a2f82e2bed75867079188c9d18dae2ee77c25a54d60e9cc79be1bc48"
+    },
+    "mock": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "7ba87f72ca0e915175596069dbbcc7c75af7b5e9b9bc107ad6349ede0819982f"
+    },
+    "more-itertools": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "eaf287826069452a8f61026c597eae2428b2d1ba2859083abbf240b46842ce6d"
+    },
+    "mpmath": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c"
+    },
+    "msgpack": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "42eefe2c3e2af97ed470eec850facbe1b5ad1d6eacdbadc42ec98e7dcf68b4b7"
+    },
+    "networkx": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762"
+    },
+    "numexpr": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "92b00c78664070e3af155c6be713a0a5d75d598647ce32a5609adb79a8f961d3"
+    },
+    "numpy": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "8e4549f8a3c6d13d55041925e912bfd834285ef1dd64d6bc7d542583355e2e98"
+    },
+    "opencv-python": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "caf60c071ec391ba51ed00a4a920f996d0b64e3e46068aac1f646b5de0326a19"
+    },
+    "opt-einsum": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "69bb92469f86a1565195ece4ac0323943e83477171b91d24c35afe028a90d7cd"
+    },
+    "orjson": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "d897e81f8d0cbd2abb82226d1860ad2e1ab3ff16d7b08c96ca00df9d45409ef4"
+    },
+    "ormsgpack": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "5ea60cb5f210b1cfbad8c002948d73447508e629ec375acb82910e3efa8ff355"
+    },
+    "packaging": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "b36f1fef9334a5588b4166f8bcd26a14e521f2b55e6b9de3aaa80d3ff7a37529"
+    },
+    "pandas": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "bdcd9d1167f4885211e401b3036c0c8d9e274eee67ea8d0758a256d60704cfe8"
+    },
+    "peakutils": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "5c54ca98ba3177b8c1ae4c5fdfd1b09d7bec947b9c25d9e4bd25334526ca98e5"
+    },
+    "pillow": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "7db51d222548ccfd274e4572fdbf3e810a5e66b00608862f947b163e613b67dd"
+    },
+    "psutil": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "39db632f6bb862eeccf56660871433e111b6ea58f2caea825571951d4b6aa3da"
+    },
+    "pyarrow": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "6b8fda694640b00e8af3c824f99f789e836720aa8c9379fb435d4c4953a756b8"
+    },
+    "pydantic": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d"
+    },
+    "pydantic-core": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "112e305c3314f40c93998e567879e887a3160bb8689ef3d2c04b6cc62c33ac34"
+    },
+    "pygments": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b"
+    },
+    "pyparsing": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d"
+    },
+    "python-dateutil": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"
+    },
+    "python-multipart": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23"
+    },
+    "pytz": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "f2fd16142fda348286a75e1a524be810bb05d444e5a081f37f7affc635035f7a"
+    },
+    "pywavelets": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "c50320fe0a4a23ddd8835b3dc9b53b09ee05c7cc6c56b81d0916f04fc1649070"
+    },
+    "pyyaml": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "2283a07e2c21a2aa78d9c4442724ec1eb15f5e42a723b99cb3d822d48f5f7ad1"
+    },
+    "requests": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6"
+    },
+    "requests-toolbelt": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "cccfdd665f0a24fcf4726e690f65639d272bb0637b9b92dfd91a5568ccf6bd06"
+    },
+    "rich": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "793431c1f8619afa7d3b52b2cdec859562b950ea0d4b6b505397612db8d5362d"
+    },
+    "scikit-learn": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "edec98c5e7c128328124a029bceb09eda2d526997780fef8d65e9a69eead963e"
+    },
+    "scipy": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "7ff200bf9d24f2e4d5dc6ee8c3ac64d739d3a89e2326ba68aaf6c4a2b838fd7d"
+    },
+    "setuptools": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6"
+    },
+    "shortuuid": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "a482a497300b49b4953e15108a7913244e1bb0d41f9d332f5e9925dba33a3c5a"
+    },
+    "six": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
+    },
+    "sniffio": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
+    },
+    "sse-starlette": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "5876954bd51920fc2cd51baee47a080eb88a37b5b784e615abb0b283f801cdbf"
+    },
+    "starlette": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "0029d43eb3d273bc4f83a08720b4912ea4b071087a3b48db01b7c839f7954d74"
+    },
+    "sympy": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5"
+    },
+    "tenacity": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55"
+    },
+    "threadpoolctl": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb"
+    },
+    "torch": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "1e6debd97ccd3205bbb37eb806a9d8219e1139d15419982c09e23ef7d4369d18"
+    },
+    "tqdm": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf"
+    },
+    "typeguard": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "44d2bf329d49a244110a090b55f5f91aa82d9a9834ebfd30bcc73651e4a8cc40"
+    },
+    "typing-extensions": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"
+    },
+    "typing-inspection": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"
+    },
+    "tzdata": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "06a47e5700f3081aab02b2e513160914ff0694bce9947d6b76ebd6bf57cfc5d1"
+    },
+    "urllib3": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"
+    },
+    "uuid-utils": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "93a3b5dc798a54a1feb693f2d1cb4cf08258c32ff05ae4929b5f0a2ca624a4f0"
+    },
+    "uvicorn": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "29e35b1d2c36a04b9e180d4007ede3bcb32a85fbdfd6c6aeb3f26839de088187"
+    },
+    "xgboost": {
+      "passed": true,
+      "source": "publisher download",
+      "sha256": "a7afd7dbace0951c93aa85ffe046e54bc40893f5b51cd3e7991eb157bf9c7c7c"
+    },
+    "xxhash": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "7d8b8aaa30fca4f16f0c84a5c8d7ddee0e25250ec2796c973775373257dde8f1"
+    },
+    "zstandard": {
+      "passed": true,
+      "source": "verified local publisher cache",
+      "sha256": "a1a4ae2dec3993a32247995bdfe367fc3266da832d82f8438c8570f989753de1"
+    }
+  },
+  "scope": "Public publisher artifacts acquired and hash checked; no installation or redistribution.",
+  "sha256": {
+    "docs/reviews/competition_flavours_published_wheel_audit.json": "76bf8d13d8c9d04cf833b668a107ebfae09a0a42f0111814ac9e72f1aab81aab",
+    "scripts/acquire_flavours_publisher_wheels.py": "26d90ea7e33ba1c3c2fbdb63f5c9d6870d24ee8323637bc0854398889fcc1ec2"
+  }
+}

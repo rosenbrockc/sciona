@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 13,
+  "sha256": {
+    "sciona/santander_pseudo_labels.py": "1ce11f01b95918de6401316d52944fb2ac6285c9f9fd990688c70aceff660ab6",
+    "tests/test_santander_pseudo_labels.py": "bb41ec4454ab9ffc42adc5e73d10766e99bc0042ddef83f83cd55ecc7309d6bc"
+  },
+  "checks": [
+    "Extreme tails and position alignment",
+    "Monotonic score invariance",
+    "Internal ties accepted, boundary ties rejected",
+    "One-sided and whole-population selection",
+    "Invalid scores/counts rejected"
+  ],
+  "limits": "Selection only. No pseudo-label refit or complete ensemble claim; boundary-tie rejection is an explicit reconstruction guard.",
+  "catalog_mutations": 0
+}

@@ -1,0 +1,276 @@
+{
+  "approved": false,
+  "repository_commit": "d50865a396c466281c1853f893da4c18005e08a3",
+  "repository_pins_sha256": "564e97f79e51f4cb670168695707147444a63474d68142ac6e5f4621718d4bd9",
+  "tasks_source_sha256": "9ecdae7ea5208b656985fe7d826673fa59c17c53a774bb4d77afc475ec825dbf",
+  "training_order": [
+    "prepare_data",
+    "run_kami_1st",
+    "run_sakami_1st",
+    "create_stacking_data",
+    "run_shimacos_2nd",
+    "run_sakami_2nd"
+  ],
+  "definition_comparison": [
+    {
+      "cell": 30,
+      "definition": "timer",
+      "ast_sha256": "fd75079f7801432e6bc4eb13ea92e1236fa859432547fc135c72a8b329fe3a5a",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "sakami/src/utils.py",
+        "shimacos/components/stacking/009.py",
+        "shimacos/components/stacking/030_truncate.py"
+      ]
+    },
+    {
+      "cell": 38,
+      "definition": "make_submission",
+      "ast_sha256": "03002fedbbb6240cf0d4b36351d5b8e5435fa1b17de00b2e46e208fd5e3622f1",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "kami/src/utils/post_process.py",
+        "sakami/exp/148_gru_scale_factor.py",
+        "sakami/exp/156_gru_transformer_residual.py",
+        "sakami/exp/163_gru_sleep_target.py",
+        "sakami/exp/179_gru_minute_embedding_sync.py",
+        "shimacos/components/stacking/main_cat.py",
+        "shimacos/components/stacking/main_lgbm.py",
+        "shimacos/components/utils.py"
+      ]
+    },
+    {
+      "cell": 38,
+      "definition": "make_chunk_data",
+      "ast_sha256": "5d19015993e7493e017e55935c707b7af72bb07c1942cd16f3df8d07b2bcbb21",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "shimacos/components/stacking/009.py",
+        "shimacos/components/stacking/030_truncate.py"
+      ]
+    },
+    {
+      "cell": 38,
+      "definition": "post_process_from_2nd",
+      "ast_sha256": "08205c30c4876b47ffc3603f36db8fe2151e68aa3e41e32f39518b7e9eee9bbe",
+      "identical_repository_definitions": [
+        "shimacos/components/utils.py"
+      ],
+      "same_name_repository_definitions": [
+        "kami/src/utils/detect_peak.py",
+        "sakami/src/detect_peak.py",
+        "shimacos/components/utils.py"
+      ]
+    },
+    {
+      "cell": 38,
+      "definition": "detect_events_for_serie",
+      "ast_sha256": "5ada04d1fade87af27164326cf1aba25fa2a555de561febe58b19bb00c93284d",
+      "identical_repository_definitions": [
+        "shimacos/components/utils.py"
+      ],
+      "same_name_repository_definitions": [
+        "kami/src/utils/detect_peak.py",
+        "sakami/src/detect_peak.py",
+        "shimacos/components/utils.py"
+      ]
+    },
+    {
+      "cell": 39,
+      "definition": "FeatureCreator",
+      "ast_sha256": "5b1e615bf1c403dd75d34da3cfd91188a16988dbecb2e9cb4e1ae4a764c1d2d5",
+      "identical_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ],
+      "same_name_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ]
+    },
+    {
+      "cell": 39,
+      "definition": "LIDFeatureCreator",
+      "ast_sha256": "8a42fa268e42048b33400e7343009fe5ea67ccda499f7ed4ce4c40bd01cfb280",
+      "identical_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ],
+      "same_name_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ]
+    },
+    {
+      "cell": 39,
+      "definition": "TimeSeriesStatsFeatureCreator",
+      "ast_sha256": "604a9dd62210691d0ec4a153a38b2f9030e90b1cd8b4b952b73c2f57b7039d3e",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ]
+    },
+    {
+      "cell": 39,
+      "definition": "TimeSeriesStatsDiffFeatureCreator",
+      "ast_sha256": "3b85ed61c41d4bdc0026037bc84aa938f199308a958086360656a5585b365b21",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ]
+    },
+    {
+      "cell": 39,
+      "definition": "TimeSeriesDiffFeatureCreator",
+      "ast_sha256": "f7b8d95fad16efe5ed5e94f8c15bc3eebd08e59b6d27e4d087270c268ee82354",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ]
+    },
+    {
+      "cell": 39,
+      "definition": "TimeFeatureCreator",
+      "ast_sha256": "3cfdac4e820247429aa6bc8f6d160a2756a69ce6abbb4da7d330836cb4347ed5",
+      "identical_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ],
+      "same_name_repository_definitions": [
+        "shimacos/components/preprocess/feature_creator.py"
+      ]
+    },
+    {
+      "cell": 40,
+      "definition": "Preprocessor",
+      "ast_sha256": "4dcf285d6bd48d1af2c74b45fcf52aa16ab830aa4b708fd4dd97dcfe20e13227",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": []
+    },
+    {
+      "cell": 44,
+      "definition": "PreprocessorV2",
+      "ast_sha256": "f0a2fca15a7b201e531ad3b1a6026beacc833da6989936604ce84124a4c61dba",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": []
+    },
+    {
+      "cell": 49,
+      "definition": "StackingDataset",
+      "ast_sha256": "f388c86483e0dcd32b99d291d3f9e477a849c41eb1f8f52e5eec64475cc07f15",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "shimacos/components/factories/dataset_factory.py"
+      ]
+    },
+    {
+      "cell": 49,
+      "definition": "SEScale",
+      "ast_sha256": "ab782c2253e8e960b82101e67aea2988da331d4420c20bf0150688f811bc6577",
+      "identical_repository_definitions": [
+        "sakami/exp/148_gru_scale_factor.py",
+        "sakami/exp/156_gru_transformer_residual.py",
+        "sakami/exp/163_gru_sleep_target.py",
+        "sakami/exp/179_gru_minute_embedding_sync.py",
+        "sakami/stacking/004_transformer_category_padding_idx.py",
+        "sakami/stacking/011_cnn_embedding_sync.py",
+        "shimacos/components/factories/model_factory.py"
+      ],
+      "same_name_repository_definitions": [
+        "sakami/exp/148_gru_scale_factor.py",
+        "sakami/exp/156_gru_transformer_residual.py",
+        "sakami/exp/163_gru_sleep_target.py",
+        "sakami/exp/179_gru_minute_embedding_sync.py",
+        "sakami/stacking/004_transformer_category_padding_idx.py",
+        "sakami/stacking/011_cnn_embedding_sync.py",
+        "shimacos/components/factories/model_factory.py"
+      ]
+    },
+    {
+      "cell": 49,
+      "definition": "ResidualGRU",
+      "ast_sha256": "f8b005cac1207191468156ab4f7f0af1a3587c3b1799adb38a8572f88bf695da",
+      "identical_repository_definitions": [
+        "sakami/exp/148_gru_scale_factor.py",
+        "sakami/exp/156_gru_transformer_residual.py",
+        "sakami/exp/163_gru_sleep_target.py",
+        "sakami/exp/179_gru_minute_embedding_sync.py",
+        "shimacos/components/factories/model_factory.py"
+      ],
+      "same_name_repository_definitions": [
+        "sakami/exp/148_gru_scale_factor.py",
+        "sakami/exp/156_gru_transformer_residual.py",
+        "sakami/exp/163_gru_sleep_target.py",
+        "sakami/exp/179_gru_minute_embedding_sync.py",
+        "shimacos/components/factories/model_factory.py"
+      ]
+    },
+    {
+      "cell": 49,
+      "definition": "ResNet",
+      "ast_sha256": "ecbb49ce7e8a0fe06e379b9ff359003e79c9300aa03459119b305516a0f1a1cf",
+      "identical_repository_definitions": [
+        "shimacos/components/factories/model_factory.py"
+      ],
+      "same_name_repository_definitions": [
+        "shimacos/components/factories/model_factory.py",
+        "shimacos/components/factories/module.py"
+      ]
+    },
+    {
+      "cell": 49,
+      "definition": "CNNRNNWoDownSample",
+      "ast_sha256": "b6abfecded0c366503ed5404ff122719db3577410a4d0d7a530664cb1a1945ee",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "shimacos/components/factories/model_factory.py"
+      ]
+    },
+    {
+      "cell": 49,
+      "definition": "sigmoid",
+      "ast_sha256": "2c3505984205a5c41aac6cb288704af293c5a0e6ae93b1a153111d4062a49aa1",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": []
+    },
+    {
+      "cell": 54,
+      "definition": "load_sakami_pred",
+      "ast_sha256": "178d57c897be01540ed2ce8b82315a1b74f6391475de50aba423c7eeca1b08f1",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": []
+    },
+    {
+      "cell": 54,
+      "definition": "load_shimacos_pred",
+      "ast_sha256": "4caf5592af142446948756ca495bfdfb7c50b0930e5c9e1ba51d3433cfb8f4da",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": []
+    },
+    {
+      "cell": 54,
+      "definition": "load_and_concat_shimacos_preds",
+      "ast_sha256": "65693d40feee88eac4958ab1337dc614759f0807ae8170614b00623ee4873b7c",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": []
+    },
+    {
+      "cell": 54,
+      "definition": "make_submission",
+      "ast_sha256": "43940143077ae0003f2dae506816f0e01f44581f003fac51cc82c79d328a9bfe",
+      "identical_repository_definitions": [],
+      "same_name_repository_definitions": [
+        "kami/src/utils/post_process.py",
+        "sakami/exp/148_gru_scale_factor.py",
+        "sakami/exp/156_gru_transformer_residual.py",
+        "sakami/exp/163_gru_sleep_target.py",
+        "sakami/exp/179_gru_minute_embedding_sync.py",
+        "shimacos/components/stacking/main_cat.py",
+        "shimacos/components/stacking/main_lgbm.py",
+        "shimacos/components/utils.py"
+      ]
+    }
+  ],
+  "checks": {
+    "pinned_python_files_verified": 90,
+    "notebook_top_level_definitions": 23,
+    "identical_repository_definitions": 8
+  },
+  "reuse_scope": "Exact AST matches identify overlap only; notebook licensing is not inferred to cover additional repository code. Six synchronization helper files state MIT; no repository-wide license detected.",
+  "next_action": "Review inherited attribution and obtain licensed coverage for non-overlapping training and model source. Do not substitute an incomplete notebook-only ensemble for the full CDG."
+}

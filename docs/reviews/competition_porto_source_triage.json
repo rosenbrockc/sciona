@@ -1,0 +1,14 @@
+{
+  "status": "source_reconstruction_pending",
+  "source_version_id": "ad3239bf-5a38-565a-81da-3d3cba9a02b0",
+  "source_content_hash": "8b42f3175fa6408c91c325e24784554cc480637a33673bd7a2128e2e657b8dd8",
+  "catalog_mutations": 0,
+  "primary_writeup": "https://www.kaggle.com/competitions/porto-seguro-safe-driver-prediction/writeups/michael-jahrer-1st-place-with-representation-learn",
+  "findings": [
+    "Primary winner describes five neural models using denoising-autoencoder activations and one LightGBM model using raw inputs, combined by equal averaging.",
+    "Intake adds XGBoost, universal raw/DAE concatenation and rank averaging that are not established by the recovered winner description. A corrected reconstruction must address these differences before promotion."
+  ],
+  "next_steps": [
+    "Recover detailed architecture/training configurations and establish usable source provenance; do not implement the inaccurate intake as historical winning parity."
+  ]
+}

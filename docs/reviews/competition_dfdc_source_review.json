@@ -1,0 +1,66 @@
+{
+  "format": "dfdc-source-review.v1",
+  "status": "implementation_in_progress_not_approved",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "source_repository": "https://github.com/selimsef/dfdc_deepfake_challenge",
+  "intake_version": "95e3414b-c0ed-5816-b944-4466d697d9fc",
+  "intake_content_hash": "66f965f75d83ba4ec2daf15afcfa7a657589938dc98c00722b9ccea7eec92679",
+  "provenance": {
+    "basis": "Exact repository URL occurs in the version-bound intake references; primary repository identifies the same author and competition solution.",
+    "intake_primary_writeup": "https://www.kaggle.com/c/deepfake-detection-challenge/discussion/145721",
+    "license": "MIT, copyright 2020 Selim Seferbekov",
+    "license_notice": "docs/licenses/DFDC-MIT.txt",
+    "retained_software_files": 36
+  },
+  "intake_corrections": [
+    {
+      "stage": "Frame extraction",
+      "finding": "Source requests 32 endpoint-inclusive uniform indices. NumPy int alias requires compatibility work. Short clips can duplicate indices and the original decoder loop can stall after the first duplicate; characterize before adapting."
+    },
+    {
+      "stage": "Face detection",
+      "finding": "Repository inference uses MTCNN thresholds [0.7,0.8,0.8] on half-size PIL images. README describes resolution-dependent scaling, which differs from this pinned entrypoint. Do not silently combine variants."
+    },
+    {
+      "stage": "Face alignment and cropping",
+      "finding": "Repository inference doubles detected coordinates, truncates to integers, expands each dimension by integer division by three and slices RGB frames. No landmark alignment. Landmarks appear in training augmentation."
+    },
+    {
+      "stage": "Deep fake classification",
+      "finding": "Active inference constructs EfficientNet-B7 noisy-student encoders with global average pooling and a scalar linear head at input size 380. Se-ResNeXt50 is not selected by this entrypoint."
+    },
+    {
+      "stage": "Temporal aggregation",
+      "finding": "Confidence aggregation runs on face predictions separately for each checkpoint; checkpoint scores are then arithmetically averaged. It is neither plain frame averaging nor averaging checkpoint probabilities before applying the heuristic."
+    }
+  ],
+  "closure_findings": [
+    "Training entrypoint launches five B7 runs; submission entrypoint requests seven checkpoint states. Checkpoint-to-epoch/seed selection still requires explicit review.",
+    "Inference takes at most 127 face crops with the default 32-frame request because its fourfold buffer uses n+1 < capacity. Empty/no-face/error paths return 0.5. A single face triggers a squeeze/index error before the same fallback; characterize explicitly.",
+    "Inference uses CUDA half precision; modern CPU adaptation must declare numerical differences and explicit initialization/checkpoint provenance.",
+    "Training includes real/fake pairing, crop/landmark/SSIM-mask preparation, augmentation, class downsampling, label smoothing, class-balanced BCE, SGD and norm clipping. Cropped-face inference alone does not close the intake training stage.",
+    "Default training is 40 epochs, at most 2500 batches per epoch, batch size 12, Nesterov SGD learning rate 0.01, momentum 0.9, weight decay 0.0001. Apex mixed precision and distributed synchronization require explicit adaptation.",
+    "PolyLR.get_lr mutates last_epoch modulo max_iter. Training logging calls get_lr before each optimizer update in addition to scheduler calls. Replacing this with a conventional polynomial scheduler would change behavior.",
+    "Training data reset seeds NumPy and shuffles each epoch; no claim that the source seed also controls Torch initialization.",
+    "The optional source validation-membership module is excluded from retained software; no real membership lists will be adapted or used. Caller-configured or synthetic populations are required."
+  ],
+  "validated_components": {
+    "report": "docs/reviews/competition_dfdc_inference_primitives.json",
+    "source_ast_equalities": 3,
+    "source_numerical_comparisons": 69,
+    "independent_tests": 16,
+    "scope": "Confidence selection and resize/centering only; no full-model or graph claim."
+  },
+  "next_steps": [
+    "Characterize frame-index and one-face edge behavior using synthetic fixtures.",
+    "Pin and review MTCNN implementation/dependency attribution without fetching pretrained states.",
+    "Implement source-shaped crop/detection/classifier boundaries and explicit checkpoint policy.",
+    "Reproduce training preparation, sampling, loss, scheduler observation order and checkpoint selection.",
+    "Validate full computational lifecycle, serialized graph and Tier3 publication/retrieval gates."
+  ],
+  "catalog_mutations": 0,
+  "evidence_sha256": {
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871",
+    "docs/reviews/competition_dfdc_inference_primitives.json": "b3764de7cd987aeca086f3d491268e2be652c71b059d051f8409bb8005f4fff6"
+  }
+}

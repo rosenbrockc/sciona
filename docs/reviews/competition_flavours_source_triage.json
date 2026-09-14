@@ -1,0 +1,174 @@
+{
+  "format": "flavours-source-triage.v1",
+  "intake_version_id": "6256d5b1-d742-53b1-9ff4-c2c7265ce981",
+  "intake_content_hash": "1f7003883cd8067a1fcaa170601336d99e2911e2024a0590eb41425757dc0539",
+  "status": "material_intake_correction_required_independent_implementation_started",
+  "target_tier": 3,
+  "repository": "aguschin/flavours-of-physics",
+  "source_commit": "e642aafa4b2ddf8baa572cbdf2926450935ed005",
+  "pins": [
+    {
+      "software_path": "README.md",
+      "sha256": "7df130b2141f0a4ea596d782db8df92eb3b8015471fed3ecdf873270c3eb49c3"
+    },
+    {
+      "software_path": "AssemblingFinalSolution4.ipynb",
+      "sha256": "549672a83eedcaf2fc2e1d0d6aaec455c2480ebdf25f07eb76afb6bc855ce9d5",
+      "code_cells": 26,
+      "code_sha256": "7c565554d89df969f80b99e9215693e87b505f3da83295a850fe660ec00b84ff"
+    },
+    {
+      "software_path": "Flavours_of_Physics_Finding_tau-3mu_First_place_solution.pdf",
+      "sha256": "4d10d40593dcf3e62633215bdff94f087b54125a7a58dd37b331ade50ceba98e"
+    }
+  ],
+  "identity": "Repository README and author PDF identify Go Polar Bears first place.",
+  "findings": [
+    "The intake safe-feature/flatness-boosting/noise-injection chain is not the winning pipeline.",
+    "Winner reconstructs mass from momentum and flight speed. The executable notebook then regresses mass directly with seven repeated five-fold partitions; this differs from the PDF description of nested mass-error regression.",
+    "Five XGBoost classification branches and a bagged one-hidden-layer eight-unit neural classifier feed a nonlinear final blend.",
+    "Notebook gives executable component routing for the final blend; the PDF second-expression labels are ambiguous when read as global model names.",
+    "KS agreement, mass correlation and truncated AUC remain validation outputs, not substitutes for the winning training lifecycle."
+  ],
+  "reuse": "No repository license grant found in the complete tree or repository API. No notebook code copied into project implementation. Independent mathematical implementation is planned with source attribution; third-party library licenses require review.",
+  "retention": "Software hashes and paraphrased method findings only; notebook outputs, metadata, task records and model states not retained.",
+  "remaining": [
+    "Implement and validate integrated physical feature construction, corrected-mass supplements and restricted-feature selection.",
+    "Integrate neural branch and add serialized trained-state replay evidence to full execution.",
+    "Implement final nonlinear blend and source evaluation metrics; preserve downstream cross-fit dependence caveat.",
+    "Validate full serialized execution with synthetic inputs.",
+    "Complete provider, dependency, license, semantic and publication gates."
+  ],
+  "catalog_mutations": 0,
+  "component_progress": {
+    "component": "sciona/flavours_kinematics.py",
+    "implementation": "Independent vectorized implementation of the published momentum/flight-speed mass proxy. Positive longitudinal branch and caller-consistent units explicitly documented.",
+    "validation": "Seven synthetic tests passed: known geometry, momentum scaling, zero/collinear boundary, shape alignment and invalid physical values.",
+    "scope": "Kinematics component only; no model-training, full-graph, source-parity or promotion claim.",
+    "sha256": {
+      "sciona/flavours_kinematics.py": "37d037cffbd758de93880e4a8b3dc5d3cf9f9e1017affe7787c3f9aab714f9cd",
+      "tests/test_flavours_kinematics.py": "d69655c6943dcc731189aa94a2e3e3eb8b2ff13cecd54aa07da83f03843d2efc"
+    }
+  },
+  "mass_correction_progress": {
+    "implementation": "sciona/flavours_mass_correction.py",
+    "source_contract": "35 regressors, 2800 rounds each; fold seeds1,2,3,4,5,6,555. Seven OOF predictions per training row; mean35 predictions for query rows.",
+    "source_discrepancy": "Direct mass target and repeated cross-fitting follow notebook cell20; not nested mass-error regression.",
+    "reference_choices": "Modern XGBoost3.4.1 CPU exact tree method, fixed base_score0.5, reg:squarederror objective. Historical XGBoost0.4 parity not claimed.",
+    "validation_report": "docs/reviews/competition_flavours_mass_correction_validation.json",
+    "validation_sha256": "7cffc19e1532c34ddce5440c663cbe00a18c915fbef1159707c3e0cf19291f53",
+    "evaluation_limit": "Own-row mass is excluded from its corrected feature, but other training rows can depend on downstream held-out mass. Downstream OOF metrics must not be described as fully nested evaluation."
+  },
+  "classifier_progress": {
+    "implementation": "sciona/flavours_classifiers.py",
+    "validation_report": "docs/reviews/competition_flavours_classifiers_validation.json",
+    "validation_sha256": "245cbea81adb43fd1c3d8e2c7cb0d7d5b6f079769ddbf31edf73ff8be9b58eae",
+    "source_contract": "Five classifiers, each five shared seed555 folds plus full-data refit. Rounds5,35,700,3,1500; query predictions use the full refit, not fold averaging.",
+    "input_routing": "Branches1and4 use base plus mass proxy; branch2 uses restricted features; branch3 uses base; branch5 uses four mass-derived supplements. This component accepts prepared views; integrated construction remains pending.",
+    "source_discrepancy": "The author PDF describes bagging for several classifiers; active notebook code uses full-data query refits and comments out fold-ensemble inference.",
+    "validation": "30 actual model fits,13458rounds, all full-refit checkpoints replayed exactly. Synthetic branch3 separator accuracy0.95; no competition metric claim."
+  },
+  "neural_progress": {
+    "implementation": "sciona/flavours_neural.py",
+    "reference_review": "docs/reviews/competition_flavours_neural_reference.json",
+    "gradient_validation": "Central finite differences passed for every parameter of a synthetic network.",
+    "runtime_validation": "Session45879 exited0; all50fits,150000epochs and600000optimizer updates passed on synthetic inputs.",
+    "scope": "Independent NumPy float64 reconstruction with source-era batch128/no-shuffle, eightReLU/two-softmax, Glorot/zero-bias and AdaGrad inside-root epsilon. Modern200fold stratified internal validation allocation; no exact historical runtime claim.",
+    "validation_report": "docs/reviews/competition_flavours_neural_validation.json",
+    "validation_sha256": "ae119495858f460e39efbb45f81f0ea17f53e6282c2506d8d4d6c4600563eede"
+  },
+  "integration_progress": {
+    "components": [
+      "sciona/flavours_features.py",
+      "sciona/flavours_blend.py",
+      "sciona/flavours_pipeline.py"
+    ],
+    "source_contract": "46caller-ordered base features with explicit excluded-column index; regression adds proxy,total momentum,speed,longitudinal momentum. Corrected classifier view adds proxy,regressed mass,difference,and epsilon-adjusted ratio.",
+    "blend_routing": "First group uses classifiers1/2; second uses3/4/5/neural. Final source score is not normalized or claimed calibrated.",
+    "validation": "Session43132 exited0:115fits,111458tree rounds,150000neural epochs and600000updates. Report competition_flavours_pipeline_validation.json.",
+    "remaining": [
+      "Neural serialized-state replay",
+      "Source evaluation metrics",
+      "Boundary validation before costly fitting",
+      "Actual serialized catalog graph and provider integration",
+      "Publication review gates"
+    ]
+  },
+  "evaluation_progress": {
+    "implementation": "sciona/flavours_evaluation.py",
+    "reuse": "Existing constrained_ml.decorrelation atoms for all three metrics; no duplicate metric implementations.",
+    "source_reference": {
+      "repository": "yandexdataschool/flavours-of-physics-start",
+      "commit": "0dc9b5ed71617f2fa65b645fb19b9485d78d3978",
+      "software_path": "evaluation.py",
+      "sha256": "82fa53103b54856f572490a0a3a91368462e9e9c08c709f24ec3be814307f50f"
+    },
+    "scope": "Validated boundary wrapper preserves200-neighbour/50-step CvM, strict quality>0.4 and strict KS<0.09/CvM<0.002 checks. Reused metrics tested against independent weighted CDF, rolling CDF and sklearn ROC oracles. Integrated runtime evaluation still pending.",
+    "integration": {
+      "implementation": "sciona/flavours_evaluated_execution.py",
+      "tests": "Four evaluation/routing tests passed, including invalid controls before training and propagation of a failed correlation diagnostic.",
+      "test_correction": "Correlation failure fixture increased from200to400synthetic samples because a single full-population window has zero CvM by definition.",
+      "runtime": "Session64622 exited0:full115fit evaluated run passed; synthetic correlation diagnostic correctly false(CvM0.0075560125),zeroKS identical-input oracle passed.",
+      "remaining": "Actual serialized graph/provider execution and publication gates."
+    }
+  },
+  "checkpoint_and_boundary_progress": {
+    "implementation": [
+      "sciona/flavours_neural.py",
+      "sciona/flavours_pipeline.py"
+    ],
+    "validation": "Six gradient/checkpoint/early-boundary tests passed. Synthetic invalid labels,mass,class population and query width fail before first mass fit.",
+    "checkpoint_scope": "Numeric NPZ parameter and scaler serialization; allow_pickle=False reload; predictions replayed from raw held-out and query inputs for every neural model.",
+    "active_validation": "Session19886 exited0; updated115fit pipeline and all50neural checkpoint replays passed.",
+    "remaining": "Wait for exact current handle; integrate evaluation metrics, serialized graph/providers and complete publication review."
+  },
+  "graph_progress": {
+    "provider": "sciona.atoms.ml.flavours_execution.flavours_execute",
+    "provider_registered": true,
+    "graph_codec_roundtrip": "passed",
+    "graph_sha256": "ff451daaf8caf75339ec49105469fa7fe2a91ccaedd416a27c8de532657c235b",
+    "validation": "Session23037 exited0:real serialized graph executed complete115fit evaluated pipeline with exact neural checkpoint replay.",
+    "next": "Complete dependency/license,semantic duplication and publication transaction review.",
+    "catalog_mutations": 0,
+    "validation_report": "docs/reviews/competition_flavours_graph_validation.json",
+    "validation_sha256": "168c19e7882088a59e693bf1e590da197b663670a4ec3703f8bb199ae61b2856"
+  },
+  "native_runtime_diagnosis": {
+    "evidence": [
+      {
+        "session": 74371,
+        "result": "Passed: initialize DMatrix before runner import and atom discovery, then create another matrix."
+      },
+      {
+        "session": 19169,
+        "result": "Exit139: atom discovery before first DMatrix; trace at xgboost/data.py277. Three OpenMP runtimes observed from sklearn,torch and systemlibomp."
+      },
+      {
+        "session": 14001,
+        "result": "Passed: atom discovery first, then DMatrix(nthread=1) and actual three-round classifier training."
+      }
+    ],
+    "inference": "First default-thread XGBoost matrix construction after broad discovery triggers the native failure in this environment. The precise internal OpenMP fault is not established.",
+    "fix": "All seven Flavours DMatrix construction sites now pass nthread=1, matching existing one-thread training configuration. No global environment workaround or frozen runner changes.",
+    "updated_graph_run": "Session69158 live; previous runtime reports bind pre-fix source hashes and do not prove the updated implementation.",
+    "followup": {
+      "session69158": "Terminal139 at checkpoint load after matrix construction/training succeeded.",
+      "session25232": "Booster nthread1 parameter alone still crashed during load_model.",
+      "session33114": "Scoped xgb.config_context(nthread=1) passed matrix/train/save/load/exact prediction replay after full atom discovery.",
+      "fix": "Retained explicit DMatrix threads and added scoped XGBoost single-thread context around checkpoint deserialization/replay.",
+      "active_graph_run": "Session23037 completed successfully; no graph training live."
+    }
+  },
+  "dependency_progress": {
+    "import_origins": "77observed distribution owners;0unmatched files after runner discovery and XGBoost warmup.",
+    "constraint_closure": "94installed distributions,0missing or conflicting active requirements.",
+    "pins": "requirements/flavours-reference.txt",
+    "limits": "Installed closure only. File integrity,publisher provenance,license notices and native library closure remain pending; not fresh-install evidence.",
+    "file_integrity": "Isolated exact OpenCV overlay resolves effective dependency mismatch; all26650recorded hashes match across94selected distributions. Shared installation remains unchanged.",
+    "notices": "147bundled+3version-matched supplemental notices preserved in Flavours-dependency-NOTICES.txt; provenance/reuse review remains conditional and incomplete.",
+    "runtime_qualification": "Session24245 full graph passed under isolated OpenCV overlay. Qualification report binds runtime,dependency and integrity evidence.",
+    "publisher_payloads": "All94compatible non-yanked publisher wheels SHAverified;26519installed payload files matched,0differences and0unresolved installation schemes.",
+    "native_publisher": "Authenticated Homebrew bottle differs only by exact install-name relocation and corresponding signed-page0hash. All176SHA256signed pages verified in both binaries; codesign strict check passed. Reproducible verifier retained."
+  },
+  "duplication_progress": "14targeted semantic candidates reviewed,three metric atoms reused,no exact provider duplicate. Three generic candidate library-call failures reproduced with synthetic inputs; no changes to those unrelated atoms."
+}

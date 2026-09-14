@@ -1,0 +1,33 @@
+{
+  "full_graph_hash": "9d5ff3e24a795a261fb683c82208b116af79536f8c2194b662edd18fa086b6a9",
+  "full_nodes": 4,
+  "full_edges": 12,
+  "executed_model_graph_hash": "16a81769285a0f8f431721f133740516fdb69809a9341cfbab9b16481793a2de",
+  "executed_nodes": 3,
+  "exact_outputs": 6,
+  "population_segment_counts": [
+    6,
+    5,
+    4
+  ],
+  "score_spreads": {
+    "xgb": 0.8666666666666667,
+    "svm": 0.9999930608511951,
+    "glm": 0.8666666666666667
+  },
+  "reference_report_sha256": {
+    "andriy_r_xgb_parity.json": "d03b2bc1bda7f5e18f708a6da4dce75ba391ca4326ab6e7750b6a5a34643e33d",
+    "andriy_r_svm_parity.json": "e30daa3e8efa57948d8a18b342b9becc79f5ec4fbc3f94bc01b59e24dd02ea41",
+    "andriy_r_glm_parity.json": "16152eb329fc84e2e105c2ef758b1e198476d94267f35e8a94fc38a871cefedb"
+  },
+  "validation_files_sha256": {
+    "scripts/validate_andriy_execution.py": "a4d4a1873aef0badac34b24e96559debe088804529e427d986d597a99d8e6235",
+    "sciona/andriy_execution.py": "55f00fafe677ca095b8ef8b8f09d03e90633c352e9861f7e3e75106e28274b62",
+    "tests/test_andriy_execution.py": "7bc7d02cecd571a742b83a9a591cf8579c1ddfab2f8e67c51e2ec06460c7775a"
+  },
+  "limitations": [
+    "Model subgraph only: synthetic normalized features, actual pinned R training and prediction.",
+    "Direct-provider versus serialized-runner parity is routing evidence, not independent algorithm validation; hash-bound source reports supply separate algorithm evidence.",
+    "Full raw three-population graph and full eleven-model ensemble have not been executed by this validator."
+  ]
+}

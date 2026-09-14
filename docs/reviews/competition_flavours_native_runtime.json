@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "library": "libomp",
+  "installed_version": "23.1.1",
+  "binary_sha256": "f19aa166a98e16a5a6a58a01d356b7c96ec667b4239643dd1147428da1028ee7",
+  "notice_sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+  "installation_receipt_sha256": "c55339d73ce185395734d51bbdb49140cb0cf49d74652af33a6209a6338b0ef3",
+  "scope": "External Homebrew runtime linked by XGBoost; installed identity/notice only, bottle publisher authentication pending. Bundled sklearn/torch OpenMP copies remain covered by their package provenance review."
+}

@@ -1,0 +1,22 @@
+{
+  "graph_digest": "3ef7247266b95358ec9405b4fd8222a7904a01e1274b862be83d872679869a64",
+  "nodes": 155,
+  "edges": 523,
+  "root_inputs": 18,
+  "model_branches": 11,
+  "tests_passed": 21,
+  "full_numerical_execution": false,
+  "files_sha256": {
+    "ensemble_execution.py": "e11e73b332ebed425f16e77ff6b0574c9f6c8f0f782fc1b6aec25aa0a4e7d662",
+    "test_ensemble_execution.py": "1226022437137afc5cef345a0102e343e7f2284cbc15dbc2d87dd54a1fa336fb",
+    "test_ensemble_partitions.py": "84c64d7a8b1d0937e1b088feb47c5332821cf3e36f1fe8c8b7ba7c3a51b026cf",
+    "test_ensemble_alignment.py": "fa19458fb75523fdd6142095914bf917898149d0d79faa9f6b6757bbe4b02d7c",
+    "ensemble_wiring.py": "1aeca6cae322229d7ec5f0fa133d2b8fc6ca50db257cb8a72906774e6999f776",
+    "ensemble_partitions.py": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+    "ensemble_alignment.py": "8f663dc472385cc51bf0b1ebe0caed4f8e0d7e6bc776c27e98cb92b887696667"
+  },
+  "limitations": [
+    "Structural, serialization, signature and adapter tests only; complete numerical execution and source-reference comparison remain pending.",
+    "Independent family training groups and orientations are explicit caller contracts."
+  ]
+}

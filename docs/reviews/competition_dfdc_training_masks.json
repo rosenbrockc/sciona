@@ -1,0 +1,28 @@
+{
+  "format": "dfdc-training-masks-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "dependency": {
+    "scikit_image": "0.26.0"
+  },
+  "checks": {
+    "source_difference_mask_cases": 14,
+    "independent_ssim_tests": 6,
+    "region_mask_ast_equal": true,
+    "source_and_independent_region_patterns": 24
+  },
+  "semantics": [
+    "RGB input explicitly reordered to source BGR before per-channel SSIM.",
+    "Difference float maps cast to uint8 before grayscale; above255 wrapping retained.",
+    "Uncomputable small/mismatched pairs yield missing mask; training zero-mask substitution remains to connect.",
+    "Six region patterns use source width-derived row midpoint, including rectangular-image behavior."
+  ],
+  "limits": "Modern structural_similarity replaces removed compare_ssim API in implementation and source harness. Independent constant/negative-SSIM oracles passed, but historical binary equivalence is not asserted. Synthetic crop pairs only; no original media, identities, full preparation or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_difference_mask.py": "12dcbb23b1be1eaca4e0f67b1f2300c3a29da3d75d9659ad9799f51194d76781",
+    "sciona/dfdc_occlusion_masks.py": "4db7e129faa47d44806328ea4b336711611078533a201d758db0da1b5965cf5b",
+    "tests/test_dfdc_difference_mask.py": "ead9095b73442930db34c00a49a21a27f7b9d81414fdfc3283f307a149f56ce7",
+    "scripts/validate_dfdc_masks.py": "da7833f6d4075952f8fa124ba8c7291df0c808b11b3b316ae22d95d4c2731dc5",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

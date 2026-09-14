@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "models": 30,
+  "folds_per_stage": 10,
+  "neural_epochs": 15,
+  "selection_counts": {
+    "neural": {
+      "positive": 5000,
+      "negative": 3000,
+      "labeled_rows": 8060,
+      "query_reference_rows": 8500
+    },
+    "tree": {
+      "positive": 2700,
+      "negative": 2000,
+      "labeled_rows": 4760,
+      "query_reference_rows": 8500
+    }
+  },
+  "sha256": {
+    "sciona/santander_augmentation.py": "7bc7a080d7bf0fe1ce0755a7422be14ef8e25ba0d20ebdb4ac054cc4bd6b7ed5",
+    "sciona/santander_blend.py": "c5acf4b55cae02d0a21b5830540a884a78da1fc7850476632bc2eb1dcbebee74",
+    "sciona/santander_encoding.py": "db28fc3e83721741929c394a32add8e447b0428f0d1bafd53479b294bbcc25c5",
+    "sciona/santander_features.py": "4ee95e6f91b5839d423f257a98c01383ae991bdd3279e59620db4861101b35e6",
+    "sciona/santander_lifecycle.py": "34bf5d0889b7162486447d2644f35cb4579add6102c52a71d1eaae193e5fc488",
+    "sciona/santander_network.py": "9602955027f5bb745d474991816196d1f7bf4e68cb1696ed61a1561184a2b7d8",
+    "sciona/santander_preparation.py": "ad5c10bba0ed9b9de1e58e7913402cb162accc0d4d734213fa9fac8b32fffee8",
+    "sciona/santander_pseudo_labels.py": "1ce11f01b95918de6401316d52944fb2ac6285c9f9fd990688c70aceff660ab6",
+    "sciona/santander_retraining.py": "e72af657ad01d2596b0a6efb05645897bd781df55ef34b80161cc1be799920b3",
+    "sciona/santander_training.py": "bd32ce0626d4e034a93592495b8e2b7e1a1045058a75aa4356fbeafa26928737",
+    "sciona/santander_tree.py": "19329fc56a92fba1ddf96bd05f164aa9c5d7c9b1c908a3a4a764c0041ea040e6",
+    "scripts/validate_santander_default_tails.py": "459d186647a9b3365e248fac3c3ea74ef59e716da47f0d9bfeb07762bd6515b2"
+  },
+  "limits": [
+    "Full documented tail counts on four synthetic feature groups; historical feature width and training volume not reproduced.",
+    "Explicit retained selected-query reference and joint pseudo-label folds; historical membership unresolved.",
+    "No independent generalization, competitive accuracy or publication claim."
+  ]
+}

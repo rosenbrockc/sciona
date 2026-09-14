@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "99a5bd646ed0021b9d356171720d28c28087a9381aab1e3b3113a3a00fdcb0f3",
+  "provider_sha256": "4a19a34c5520d44a0056ad5ab9485f275a7e45832b1eaea5ccbe89316e1df68e",
+  "code_sha256": {
+    "sciona/biosignal_sequence_contract.py": "17d7abf7e31b8d1da580c8ed7e80fef66e6fc1f5f9e5855e7ad208b077b8495f",
+    "sciona/biosignal_sequence_features.py": "1c451d7b85429df17c686baa134df0dcb46ac3c00c09d192779fc5217d43d070",
+    "sciona/biosignal_sequence_graph.py": "94444d9db8296675ed1f817c77a0c312f38d238664e0cd1c05ec0890ca464c4f",
+    "sciona/biosignal_sequence_network.py": "9bd7439b77f3bc96556da67b3b7a846073e328eb3ee2cb6e01c1b8320a5867d7",
+    "sciona/biosignal_sequence_training.py": "c2796713460a1cfc36c6f3ed821b45aeece87edcfa772835880c14d1e470827d",
+    "scripts/biosignal_sequence_synthetic.py": "caa410671452cb311a95d868eede1d4629a9f5c6549418d9671cb9e6811ab696",
+    "scripts/validate_biosignal_sequence_graph_execution.py": "ec8b597a53109d3f00ee1a3570e2ef7335cdc3ddc4168c390b1e7a996f5fdde8"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 4,
+    "calibration_rows": 4,
+    "query_rows": 2,
+    "epochs": 40,
+    "training_windows": 18,
+    "query_windows": 7,
+    "training_improved": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual synthetic five-stage windows/PSD/dual-CNN/masking/aggregation-threshold execution; no served publication or historical accuracy claim."
+}

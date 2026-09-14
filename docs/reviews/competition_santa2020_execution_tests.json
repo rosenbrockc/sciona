@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 11,
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "checks": [
+    "Strict replay/control/query fields",
+    "Query game disjoint from training and validation",
+    "Hidden query thresholds and opponent rewards rejected",
+    "Changed prepared input rejected before fitting",
+    "Prepared input detached from caller",
+    "Repeatable finite JSON next-action output",
+    "Query history does not affect model selection"
+  ],
+  "sha256": {
+    "sciona/santa_execution.py": "eb2c3f568c1a76ea2e674c8a9c5c02edf22b74396bacb82dac9fe63af8a76c1a",
+    "tests/test_santa_execution.py": "38d926ffde2e738f1aa4b0ab0dcafacab5aec8e206c3e7abc3ce2b3d67d93a6e"
+  },
+  "scope": "Synthetic full private replay-to-next-action boundary; no publication yet.",
+  "catalog_mutations": 0
+}

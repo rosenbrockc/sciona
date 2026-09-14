@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "passed": 13,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_gravity_mass_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_gravity_mass_proof.py": "70a5f06b5ccdc1cd47a8e844074a66ad565b1312522cdcaae2cc05383757fcf5",
+    "sciona/physics_ingest/gravity_mass_proof.py": "52adde5c5e77f4ea04aa69b438d5d622c5da27a3d53c28becc174c01633e4bf3"
+  }
+}

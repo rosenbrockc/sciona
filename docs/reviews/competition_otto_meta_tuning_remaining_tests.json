@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 2,
+  "native_models_fitted": {
+    "adaboost_extratrees": 2000,
+    "lasagne_neural": 4800
+  },
+  "elapsed_seconds": 125.45,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Two candidates across four full-size bags for each remaining meta family",
+    "All 250 or 600 member probability matrices verified per fold",
+    "Exact fitting features, labels and heldout populations captured",
+    "Pooled loss matches independent scalar oracle",
+    "Stronger synthetic candidate selected and its OOF classification verified"
+  ],
+  "sha256": {
+    "tests/test_otto_meta_tuning_remaining.py": "0b98637162dc6e55b87d1707643625487b76239f3f0c9c95c2abfb8ffbe82f18",
+    "sciona/otto_meta_tuning.py": "8967f71f6585b2d2125d1dbd8ccb52c0d972aa79e10019affbfba1f88e54e3d1",
+    "sciona/otto_meta_adaboost.py": "ee5a6927e1e00724d8140a5427626b34821845a3f96b6cf6410b27617e7e16fe",
+    "sciona/otto_meta_neural.py": "f4c74aa82515bbf1a7d994cd21beb19dbfc1bea11e098367d92a5b899ae30360",
+    "sciona/otto_meta_neural_worker.py": "d2627bb1820fce3a2acc3e0b8796607659c38501e78c2bcde8bfb814f5a2487d"
+  },
+  "limitations": [
+    "Synthetic meta features supplied directly; first-level OOF provenance/full-stack execution remains pending.",
+    "Candidate selection scores are not independent post-selection test estimates.",
+    "Historical settings/source ambiguities, native closure and publication gates remain pending."
+  ],
+  "catalog_mutations": 0
+}

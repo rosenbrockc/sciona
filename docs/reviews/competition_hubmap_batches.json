@@ -1,0 +1,135 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "cases": [
+    {
+      "seed": 0,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 0,
+      "epoch": 2,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 1,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 1,
+      "epoch": 2,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 2,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 2,
+      "epoch": 2,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 3,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 3,
+      "epoch": 2,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 4,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 4,
+      "epoch": 2,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 5,
+      "epoch": 1,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 5,
+      "epoch": 2,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 6,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 6,
+      "epoch": 2,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 7,
+      "epoch": 1,
+      "population": 6,
+      "batches": 3,
+      "exact_tensors_all_rng": true
+    },
+    {
+      "seed": 7,
+      "epoch": 2,
+      "population": 5,
+      "batches": 2,
+      "exact_tensors_all_rng": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_batches.py": "f8fac1faece0bfa2fd7b127526ef7af820e6a11b909562acbf838854283aff3d",
+    "sciona/hubmap_loader.py": "f3bf1edd803d74aafad49cd7e0b8668baff6bbb7c32b3798c76e083f67156bd1",
+    "sciona/hubmap_sampling.py": "857661887790f1b7539cb99040bb1e593cbbd763797cb874301a8a74064bb961",
+    "sciona/hubmap_augmentation.py": "370f2ca831a8e8e4888802eeb60da5ac7781c4c45fe6068382744ead1db4e851",
+    "scripts/validate_hubmap_batches.py": "66f5fb0b14e9d447d2bf55df79a50f2a325a54116a09479343bbea4968475c36",
+    "scripts/validate_hubmap_loader.py": "ac7b4bbb7bbc6b226c7ccc1f83b286cad2d0a69ff45b150baada776184c64258",
+    "scripts/validate_hubmap_sampling_schedule.py": "bcd8bff38c9a8b18a412621f1467793840186c874555a70a2268de1e1618b61e",
+    "scripts/validate_hubmap_augmentation.py": "f916e76c3c111df079c0eb262bb035f7467d71b123131b53566fd51a118b0e11",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_augmentation_pins.json": "44977ff6956885588f3c30521110e5d038080551f3cf337fd5ec8a73ab9b23c0"
+  },
+  "limitations": [
+    "Current PyTorch DataLoader with explicit CPU generator and zero workers; historical multiworker seeding excluded.",
+    "Decoded synthetic BGR images and runtime RLE inputs only; no data/codec fidelity or CDG approval claim."
+  ]
+}

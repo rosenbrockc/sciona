@@ -77,6 +77,7 @@ class ReviewAssessment:
     publishable: bool
     gates: tuple[ReviewGateResult, ...]
     trust_status: str = "needs_human"
+    require_human_review: bool = False
 
     @property
     def blockers(self) -> tuple[str, ...]:
@@ -85,6 +86,12 @@ class ReviewAssessment:
         blockers: list[str] = []
         for gate in self.gates:
             if gate.status == "published":
+                blockers.extend(
+                    blocker for blocker in gate.blockers
+                    if blocker == "explicit blocked or failed review state"
+                )
+                continue
+            if gate.status == "human_reviewed" and not self.require_human_review:
                 continue
             blockers.extend(gate.blockers)
         return tuple(blockers)
@@ -127,6 +134,7 @@ class ReviewTrustReport:
     human_reviewed: bool
     blockers: tuple[str, ...]
     gates: tuple[Mapping[str, Any], ...]
+    publication_tier: int = 3
 
     @classmethod
     def from_assessment(cls, assessment: ReviewAssessment) -> "ReviewTrustReport":
@@ -154,6 +162,7 @@ class ReviewTrustReport:
             "achieved_status": self.achieved_status,
             "trust_status": self.trust_status,
             "publishable": self.publishable,
+            "publication_tier": self.publication_tier,
             "blocked": self.blocked,
             "needs_human": self.needs_human,
             "human_reviewed": self.human_reviewed,
@@ -320,12 +329,15 @@ def assess_publishability(
     relationships: Iterable[Mapping[str, Any] | Any] = (),
     io_specs: Iterable[Mapping[str, Any] | Any] = (),
     min_parse_confidence: float = 0.8,
+    require_human_review: bool = False,
 ) -> ReviewAssessment:
     """Assess Phase 5 physics-ingest publishability from local row data.
 
     Inputs may be Pydantic rows from :mod:`sciona.physics_ingest.staging`, plain
     dictionaries, or objects with attributes. No database client is accepted or
-    consulted.
+    consulted. Publication defaults to Community (Tier 3). Human review remains
+    visible as evidence but is required only when explicitly requested. This
+    assessment does not confer Tier 2 verification or Tier 1 certification.
     """
 
     candidate_row = _row(candidate)
@@ -344,21 +356,30 @@ def assess_publishability(
         _source_verified_gate(expression_row, reference_rows, relationship_rows),
         _human_reviewed_gate(expression_row, bound_rows),
     )
-    published_gate = _published_gate(gates)
+    required_gates = gates if require_human_review else gates[:-1]
+    published_gate = _published_gate(required_gates)
+    if published_gate.passed and _trust_status(candidate_row, expression_row, bound_rows, gates) == "blocked":
+        published_gate = _gate("published", [*published_gate.blockers, "explicit blocked or failed review state"])
     all_gates = (*gates, published_gate)
 
     achieved_status = "raw_imported"
     for gate in all_gates:
+        if gate.status == "human_reviewed" and not require_human_review:
+            continue
         if gate.passed:
             achieved_status = gate.status
         else:
             break
 
+    trust_status = _trust_status(candidate_row, expression_row, bound_rows, all_gates)
+    if published_gate.passed and trust_status != "blocked" and not gates[-1].passed:
+        trust_status = "automated_pass"
     return ReviewAssessment(
         achieved_status=achieved_status,
         publishable=published_gate.passed,
         gates=all_gates,
-        trust_status=_trust_status(candidate_row, expression_row, bound_rows, all_gates),
+        trust_status=trust_status,
+        require_human_review=require_human_review,
     )
 
 
@@ -729,7 +750,7 @@ def _publication_review_status(
     if _bool(review_row.get("needs_human")):
         return "automated_pass" if _automated_gates_passed(review_row) else "needs_human"
     if _bool(review_row.get("publishable")):
-        return "human_reviewed"
+        return "automated_pass"
     if isinstance(review, ReviewAssessment):
         return "needs_human"
     return "unreviewed"
@@ -771,8 +792,10 @@ def _queue_trust_status(review_row: Mapping[str, Any]) -> str:
         return trust_status
     if _bool(review_row.get("blocked")):
         return "blocked"
-    if _bool(review_row.get("human_reviewed")) or _bool(review_row.get("publishable")):
+    if _bool(review_row.get("human_reviewed")):
         return "human_reviewed"
+    if _bool(review_row.get("publishable")):
+        return "automated_pass"
     if _bool(review_row.get("needs_human")):
         return "needs_human"
     return "unreviewed"

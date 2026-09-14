@@ -1,0 +1,140 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "variant": "model_H",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_I",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_L",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_A",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_F",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_B",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_C",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_M",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_G",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_E",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_D",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_J",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    },
+    {
+      "variant": "model_K",
+      "full_source_model": true,
+      "raw_synthetic_inputs": true,
+      "chunked_training_and_evaluation": true,
+      "finite_aggregate_mae": true,
+      "parameter_update": true,
+      "undefined_absent_type_metrics": 7,
+      "source_precision_predictions": 12
+    }
+  ],
+  "full_ensemble_predictions": 12,
+  "central_five_matches": true,
+  "scope": "All thirteen full models, reusable raw preprocessing and source epoch controller; one synthetic SGD epoch, source schedule/clipping and corrected chunked evaluation. Source-precision unscaling and complete 13-model trimmed ensemble pass. Population/selection and served graph still pending.",
+  "training_runtime_sha256": "f540f139558869e577fc7af40b73e717895a254da91025ff7f812104304399f0",
+  "validator_sha256": "357bb0bb7b3508e6d281b6faf3e7976a06b2064309873f8f26f6fea98ab84a4a"
+}

@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "checks": {
+    "preparation_cases": 4,
+    "ensemble_cases": 4,
+    "rle_cases": 3
+  },
+  "implementation_sha256": "ed96170e509aaf35ddd1c8104855651a027f4a31a2c800ba35937eb8db5a77a2",
+  "adaptations": [
+    "Runtime accepts explicitly selected four times/three channels; raw file loading excluded.",
+    "RLE emits historical plain integers explicitly because NumPy 2 scalar repr changes source list stringification. Empty mask remains source dash sentinel."
+  ],
+  "scope": "Synthetic inference colors and source-sized resizing; exact predict1 weighted accumulation; independent strict-threshold and column-major RLE examples. Full model ensemble lifecycle pending."
+}

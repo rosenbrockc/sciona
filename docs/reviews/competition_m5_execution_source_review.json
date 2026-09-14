@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "f64bac1a-ca7f-5f29-a645-ec7b2b42ca4b",
+  "source_content_hash": "8af8fd4a570aac38f64592903046d4b229fe13604410c786a54ddd9fccc9c949",
+  "scope": "Independent source-corrected M5 six-family CPU pipeline with 28-day equal-mean forecast",
+  "stage_mapping": {
+    "temporal_unrolling": "Day-major history, future rows, release filtering and runtime calendar/price joins",
+    "recursive_feature_engineering": "Source lag inventory, fixed-window sample moments, cutoff target encoding and daily temporary means",
+    "objective_function_optimization": "Six pooled Tweedie families at full 3000 configured rounds with source settings and independent CPU choices",
+    "magic_multiplier": "Unsupported intake claim excluded: inspected final ensemble uses equal arithmetic mean with no constant multiplier",
+    "hierarchical_reconciliation": "Unsupported final-stage claim excluded: inspected final ensemble averages six aligned base-series outputs; no reconciliation is applied"
+  },
+  "source_pins_sha256": "a93a67eae696d54dfaf735e598935cab9ba0f44e185cc4d5c700f55f086c171d",
+  "limitations": [
+    "Independent mathematical reconstruction; original source software reuse grant remains unresolved",
+    "Model-count and horizon validation use reduced synthetic history and series population",
+    "No historical accuracy, unbiased validation, human review or production qualification"
+  ]
+}

@@ -1,0 +1,437 @@
+{
+  "read_only": true,
+  "approved": false,
+  "source_version_id": "a4400b90-e996-55a4-ab83-c99de669c5fe",
+  "source_hash": "c02e81e4444ec844fce7efcdd609197adcebf9b5aa66b01a5cd46c76993b0a80",
+  "notebook_version": 3,
+  "code_cells_sha256": "4a23aa94a4905b6908b48db08741801032be4c03b9237d39bcd8a210057a357d",
+  "inventory": [
+    {
+      "cell": 1,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 2,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "pathlib"
+      ]
+    },
+    {
+      "cell": 4,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 5,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 6,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 7,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 8,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 10,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 12,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 13,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 14,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "pathlib",
+        "settings"
+      ]
+    },
+    {
+      "cell": 16,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 17,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 18,
+      "parsed": false
+    },
+    {
+      "cell": 19,
+      "parsed": false
+    },
+    {
+      "cell": 20,
+      "parsed": false
+    },
+    {
+      "cell": 22,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 23,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 24,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 25,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 28,
+      "parsed": false
+    },
+    {
+      "cell": 29,
+      "parsed": false
+    },
+    {
+      "cell": 30,
+      "parsed": true,
+      "definitions": [
+        "timer"
+      ],
+      "imports": [
+        "contextlib"
+      ]
+    },
+    {
+      "cell": 31,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "pathlib",
+        "settings",
+        "utils"
+      ]
+    },
+    {
+      "cell": 32,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "__future__",
+        "pathlib",
+        "runpy",
+        "settings",
+        "torch.utils.data",
+        "utils"
+      ]
+    },
+    {
+      "cell": 33,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "settings",
+        "utils"
+      ]
+    },
+    {
+      "cell": 34,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "__future__",
+        "pathlib",
+        "runpy",
+        "settings",
+        "torch.utils.data",
+        "utils"
+      ]
+    },
+    {
+      "cell": 35,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "settings",
+        "utils"
+      ]
+    },
+    {
+      "cell": 36,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 38,
+      "parsed": true,
+      "definitions": [
+        "make_submission",
+        "make_chunk_data",
+        "post_process_from_2nd",
+        "detect_events_for_serie"
+      ],
+      "imports": [
+        "glob",
+        "numba",
+        "scipy.signal",
+        "tqdm.auto",
+        "typing"
+      ]
+    },
+    {
+      "cell": 39,
+      "parsed": true,
+      "definitions": [
+        "FeatureCreator",
+        "LIDFeatureCreator",
+        "TimeSeriesStatsFeatureCreator",
+        "TimeSeriesStatsDiffFeatureCreator",
+        "TimeSeriesDiffFeatureCreator",
+        "TimeFeatureCreator",
+        "__init__",
+        "create",
+        "__init__",
+        "create",
+        "__init__",
+        "create",
+        "__init__",
+        "create",
+        "__init__",
+        "create",
+        "__init__",
+        "create"
+      ],
+      "imports": [
+        "itertools"
+      ]
+    },
+    {
+      "cell": 40,
+      "parsed": true,
+      "definitions": [
+        "Preprocessor",
+        "__init__",
+        "_load_sakami_data",
+        "_load_kami_data",
+        "load_data",
+        "create_chunk_data",
+        "create_feature"
+      ],
+      "imports": [
+        "feature_creator",
+        "settings",
+        "shimacos_utils",
+        "utils"
+      ]
+    },
+    {
+      "cell": 42,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "feature_creator",
+        "preprocess",
+        "settings",
+        "shimacos_utils",
+        "utils"
+      ]
+    },
+    {
+      "cell": 44,
+      "parsed": true,
+      "definitions": [
+        "PreprocessorV2",
+        "__init__",
+        "create_feature"
+      ],
+      "imports": [
+        "feature_creator",
+        "preprocess",
+        "settings",
+        "shimacos_utils",
+        "utils"
+      ]
+    },
+    {
+      "cell": 45,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 46,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 47,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "omegaconf",
+        "settings",
+        "shimacos_utils"
+      ]
+    },
+    {
+      "cell": 48,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "omegaconf",
+        "settings",
+        "shimacos_utils"
+      ]
+    },
+    {
+      "cell": 49,
+      "parsed": true,
+      "definitions": [
+        "StackingDataset",
+        "SEScale",
+        "ResidualGRU",
+        "ResNet",
+        "CNNRNNWoDownSample",
+        "sigmoid",
+        "__init__",
+        "_create_indices",
+        "__len__",
+        "__getitem__",
+        "__init__",
+        "forward",
+        "__init__",
+        "forward",
+        "__init__",
+        "forward",
+        "__init__",
+        "forward"
+      ],
+      "imports": [
+        "omegaconf",
+        "settings",
+        "shimacos_utils",
+        "torch.utils.data.dataloader",
+        "tqdm.auto",
+        "typing"
+      ]
+    },
+    {
+      "cell": 51,
+      "parsed": true,
+      "definitions": [],
+      "imports": [
+        "__future__",
+        "runpy",
+        "settings",
+        "torch.utils.data",
+        "utils"
+      ]
+    },
+    {
+      "cell": 53,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 54,
+      "parsed": true,
+      "definitions": [
+        "load_sakami_pred",
+        "load_shimacos_pred",
+        "load_and_concat_shimacos_preds",
+        "make_submission"
+      ],
+      "imports": [
+        "ensemble_config",
+        "runpy",
+        "settings",
+        "shimacos_utils",
+        "utils"
+      ]
+    },
+    {
+      "cell": 55,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 56,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 57,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    },
+    {
+      "cell": 58,
+      "parsed": true,
+      "definitions": [],
+      "imports": []
+    }
+  ],
+  "findings": [
+    "Intake has unrolling, rolling statistics, U-Net, transformer smoothing and peak finding; this does not describe the full multi-branch submission.",
+    "Active ensemble configuration has three shimacos stacking branches (LightGBM, CatBoost, neural) and two sakami branches (transformer, CNN). Five weights sum to one.",
+    "Cell 55 is commented-out alternative code. Its 1:3:2 weights are not the active final ensemble configuration.",
+    "Cell 38 defines event postprocessing and chunk creation; cells 39-44 define feature generation; cell 49 includes residual GRU and CNN/RNN stacking classes.",
+    "Notebook imports external settings, utils and dynamically loaded model code; complete source closure and training lifecycle are not yet established.",
+    "Specific notebook page displays Apache 2.0. Indexed page displays version 1 while retrieved source is version 3; inherited software attribution remains to review."
+  ],
+  "checks": {
+    "cached_code_hash": true,
+    "original_intake_hash_and_draft": true,
+    "active_ensemble_branches": 5,
+    "active_weights_sum": 1.0
+  },
+  "next_action": "Resolve external public software dependencies and training source; validate the actual computational path on synthetic inputs before Tier 3 publication.",
+  "confidentiality": "Only public software inspected. No observations, weights, input-source metadata or notebook outputs retained in this report."
+}

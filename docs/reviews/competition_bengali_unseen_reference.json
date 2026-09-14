@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "c060484bb402246cb592fb8dd3027431fc441a4cf07d462b2065c1264f310383",
+  "cases": 66,
+  "examples": 162,
+  "joint_and_component_predictions_exact": true,
+  "implementation_sha256": {
+    "sciona/bengali_unseen_ensemble.py": "cbbfbb59467c19a8e303cecc4380689ccece340cf0bc5ab9160620aa1c56bff5",
+    "scripts/validate_bengali_unseen_reference.py": "bdc94d0a4819a7e8991cb06ed9a13e0c1ef84cbc5048a99a5aa557dfd3e270c6"
+  },
+  "limits": [
+    "Pinned reduced-notebook out2pred only; no trained two-font or full routing execution.",
+    "Source glyph display replaced with numeric components; no glyph mapping qualification.",
+    "Installed Torch softmax and reduction kernels shared by both executions.",
+    "Submission remapping is covered separately and is not checked by out2pred."
+  ]
+}

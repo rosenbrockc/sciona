@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 3,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entry": 12,
+  "checks": [
+    "Independent full-feature assembly and reference-only standardization oracle",
+    "Six supervised native randomForest selections see excluding-fold labels and features",
+    "54 native Sofia binary fits per full crossfit lifecycle",
+    "Synthetic query learning",
+    "Heldout-label and query-value isolation conditional on fixed embedding"
+  ],
+  "sha256": {
+    "sciona/otto_sofia_interactions.py": "c6a8801ff10c0a1913d2872c72dd08adc5d25351abde86ccc3cbb6a447e98375",
+    "sciona/otto_sofia_interactions_crossfit.py": "c0e3d4c4c96e135083f6fb08c772cda0a9e04dd02b8c47a5f57648a1b376a5e9",
+    "tests/test_otto_sofia_interactions.py": "5bcf3cff29cb291c31d3ed00528c7065d60ad99c3d3df0610807d6707e57d318",
+    "sciona/otto_sofia.R": "332550b60603cc9cec371b857542856e2fb96283234e8c7183baa1aee5d15999",
+    "sciona/otto_interactions.py": "81f14071381f5e58ad6b318e9ff27ea7b353ab461f7b3a60793b3444726aeb6b",
+    "sciona/otto_interactions.R": "18bc8b375be1ddac8c03ec621be6aab81bb6ac9e306a933c43f26dd02f29ec75",
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0"
+  },
+  "limitations": [
+    "Historical interaction subset, importance type, scaling conventions and controls unresolved.",
+    "Reference-only supervised selection and standardization do not erase transductive embedding influence.",
+    "Combined-ROC log-feature branch still pending; source logarithm scope is ambiguous for signed embedding coordinates.",
+    "Remaining neural families, native closure and full-stack publication pending."
+  ],
+  "catalog_mutations": 0
+}

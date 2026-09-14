@@ -1,0 +1,121 @@
+{
+  "format": "adversarial-source-pins.v1",
+  "intake_version": "cebbfc7d-e32e-5f52-9ec2-e1de0d955501",
+  "intake_content_hash": "d6b977ae079c82dec43ffdf88f64fb9089c17e587c3ee4c36f5411aa0b28828b",
+  "sources": [
+    {
+      "branch": "non_targeted",
+      "repository": "https://github.com/dongyp13/Non-Targeted-Adversarial-Attacks",
+      "commit": "5c68162e05de7afed2e3d33115df43e2a7a1c3da",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c",
+          "git_blob_sha1": "879d4755cab6525f77b963e946e2e6d40b9c0afb"
+        },
+        {
+          "path": "README.md",
+          "sha256": "55b6bc628918f04a0a406738e3617eafe78016f33a58c92c7da287bc87d976c8",
+          "git_blob_sha1": "b9e6bcb338bd661d660cec476575f215f491217c"
+        },
+        {
+          "path": "attack_iter.py",
+          "sha256": "be5f6903bb0675f480d10e0551e37f9cbb1dc883fa1dcc63ad05e9fb6fb82d12",
+          "git_blob_sha1": "94f07122791b3441fa2f07bad42b7789c1326d09"
+        },
+        {
+          "path": "nets/__init__.py",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+          "git_blob_sha1": "8b137891791fe96927ad78e64b0aad7bded08bdc"
+        },
+        {
+          "path": "nets/inception_resnet_v2.py",
+          "sha256": "1cfb29b02053c4b21a5dc716861039473c482ccd88f1df6c73e04d3cd4d8db05",
+          "git_blob_sha1": "37ad8b869174aa3826c58089eb99cf21b75adf8c"
+        },
+        {
+          "path": "nets/inception_utils.py",
+          "sha256": "c79e3ecc2333bb72fed342bf0f74a3ab707fb6e1ebf75d60298d85cdcc84df49",
+          "git_blob_sha1": "66ee41fb033ec90edf2f0482d3a7ea252f73ade7"
+        },
+        {
+          "path": "nets/inception_v3.py",
+          "sha256": "3dab90bb283318f869314413a29aaacffe3ff20039daa89bfaaf8d5584171174",
+          "git_blob_sha1": "372d40165b8e5cb33a259ead04cb3ceb9105e5ed"
+        },
+        {
+          "path": "nets/inception_v4.py",
+          "sha256": "f4d2172791b6033670de5db5c65a4950f248131fe7bca6233edeb0188ccd8c40",
+          "git_blob_sha1": "b4f07ea70edf69ecac94fad26fb949295a41eac0"
+        },
+        {
+          "path": "nets/resnet_utils.py",
+          "sha256": "a56e6b1d4159bc10badb1ed266a4b53fa40fd8fc2ccb83cd635f97896b275df9",
+          "git_blob_sha1": "92d7fd145c553e40a6254fdcdd95fd28d6c87569"
+        },
+        {
+          "path": "nets/resnet_v2.py",
+          "sha256": "6b7e1eaa950be4ea9c390b707a4e598c81b11ebb3b5a30b1cf66101f9a8a8f74",
+          "git_blob_sha1": "10f0c4916698335417a7dcbbed6f11a60cabee19"
+        },
+        {
+          "path": "run_attack.sh",
+          "sha256": "a750433dd71e069a42c5914aa1f76ee115d139d9a40f22421c1f3e5d9096cf89",
+          "git_blob_sha1": "1f1b70539e83331867e62ebfee5fe9b89f907d93"
+        }
+      ],
+      "license_notice": "docs/licenses/Adversarial-non_targeted-Apache-2.0.txt",
+      "license_sha256": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+    },
+    {
+      "branch": "targeted",
+      "repository": "https://github.com/dongyp13/Targeted-Adversarial-Attack",
+      "commit": "7da707fe568053a9e2735fcc692c8f0ad7e122a1",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c",
+          "git_blob_sha1": "879d4755cab6525f77b963e946e2e6d40b9c0afb"
+        },
+        {
+          "path": "README.md",
+          "sha256": "ae9ac2cb85f88235536e9a1d94eebf948aba212a548fe56960d9b0607023ae59",
+          "git_blob_sha1": "bb00121b332756f198c8bdecfc5a086bf44f21c3"
+        },
+        {
+          "path": "nets/__init__.py",
+          "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+          "git_blob_sha1": "8b137891791fe96927ad78e64b0aad7bded08bdc"
+        },
+        {
+          "path": "nets/inception_resnet_v2.py",
+          "sha256": "1cfb29b02053c4b21a5dc716861039473c482ccd88f1df6c73e04d3cd4d8db05",
+          "git_blob_sha1": "37ad8b869174aa3826c58089eb99cf21b75adf8c"
+        },
+        {
+          "path": "nets/inception_utils.py",
+          "sha256": "c79e3ecc2333bb72fed342bf0f74a3ab707fb6e1ebf75d60298d85cdcc84df49",
+          "git_blob_sha1": "66ee41fb033ec90edf2f0482d3a7ea252f73ade7"
+        },
+        {
+          "path": "nets/inception_v3.py",
+          "sha256": "3dab90bb283318f869314413a29aaacffe3ff20039daa89bfaaf8d5584171174",
+          "git_blob_sha1": "372d40165b8e5cb33a259ead04cb3ceb9105e5ed"
+        },
+        {
+          "path": "run_attack.sh",
+          "sha256": "ee5a578a5eafd1c646e3f6401366c1a565e62eaff475330f7001aa0af0b6bed2",
+          "git_blob_sha1": "ab019e521f5b50b1d3ea4cb7127df6ea8b71d899"
+        },
+        {
+          "path": "target_attack.py",
+          "sha256": "06150755ab75473774ec22a4037fc83ef73ff2f89771b969e692fae45a4136fd",
+          "git_blob_sha1": "9031a6cdc642ba1eafbf9f942b6780dcda45295c"
+        }
+      ],
+      "license_notice": "docs/licenses/Adversarial-targeted-Apache-2.0.txt",
+      "license_sha256": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+    }
+  ],
+  "selection": "Public active entrypoints, architecture source closure, shell launcher, README and licenses only. No images, labels, weights, logs, model downloads or data archives fetched."
+}

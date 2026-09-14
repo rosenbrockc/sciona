@@ -1,0 +1,414 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "615444e86f4fb5ab916c0b66d311a307f4e4dd27",
+  "cases": [
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "empty",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "empty",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "empty",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "empty",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "full",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "full",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "full",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "full",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "mixed",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "mixed",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "mixed",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 1,
+      "geometry": [
+        1,
+        1
+      ],
+      "foreground": "mixed",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "empty",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "empty",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "empty",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "empty",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "full",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "full",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "full",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "full",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "mixed",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "mixed",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "mixed",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 2,
+      "geometry": [
+        3,
+        4
+      ],
+      "foreground": "mixed",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "empty",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "empty",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "empty",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "empty",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "full",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "full",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "full",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "full",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "mixed",
+      "deep_heads": 0,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "mixed",
+      "deep_heads": 2,
+      "classification_head": false,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "mixed",
+      "deep_heads": 0,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    },
+    {
+      "batch": 3,
+      "geometry": [
+        5,
+        7
+      ],
+      "foreground": "mixed",
+      "deep_heads": 4,
+      "classification_head": true,
+      "exact_value_and_gradients": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f",
+    "scripts/validate_hubmap_losses.py": "0fba8d784ca0659ca4d7d6ad4ef372f89694dbb76e1e5b43d632f837b8c8774b",
+    "tests/test_hubmap_losses.py": "848b3543b1896d26b55b1d8810c46f513b1c99aaa95142d3dda9b4579e4bb86e",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Float32 CPU loss and all input-logit gradients only; no mixed precision or historical-library claim.",
+    "Model forward, optimizer loop, preparation, pseudo-labeling and inference remain separate execution obligations.",
+    "Invalid tensor contracts reject explicitly; no predictive-quality claim."
+  ]
+}

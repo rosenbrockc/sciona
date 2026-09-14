@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "checks": [
+    "Two separate raw/transformed RMSE LightGBM models",
+    "Held-out early stopping selects minimum recorded RMSE iteration",
+    "Independent held-out RMSE matches selected model",
+    "Early stopping terminates at configured patience in constant-target test",
+    "Repeatable agent decision agrees with independent blend",
+    "Prediction preserves observation history",
+    "Game overlap fails before training",
+    "Invalid boosting controls rejected"
+  ],
+  "sha256": {
+    "sciona/santa_boosting.py": "d6a525b6a80a335484d43f8fdf01b5e97bd0c9055ae2ef6262b77bfdab8c4779",
+    "sciona/santa_replay_training.py": "f0033fc23cc0d7d3c777e5a0c69cbcde9e1b74c868bce32717f343be34892921",
+    "sciona/santa_agent_features.py": "b6cd7831b2dfe7b72024f24273092f5bf62ed297c19d30453cfcf04963b2a127",
+    "sciona/santa_threshold_posterior.py": "17228b0cf24f76d530df7858df037fdef80ef2b5d8df5cb0fec010cb2d7b1b7f",
+    "tests/test_santa_boosting.py": "faed69f08ac2d41e4cdc71e26aa05524920342fb0a4a042790e89b775ba9f1a6"
+  },
+  "limitations": [
+    "CPU single-thread deterministic execution; installed LightGBM 4.7.0.",
+    "Source defaults retained: 4095 leaves, 1024 rounds, patience 50, rate .05, feature fraction .9, bagging .5 every five rounds.",
+    "Synthetic tests use 15 leaves, 24-round cap and patience four; full source-size resource configuration not yet qualified.",
+    "Independent seeded replay sampling and game splits, not historical exact replay membership or winning model weights.",
+    "Full closed-loop and serialized execution, environment closure and Tier 3 review remain pending."
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,14 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_escape_speed_proof.py",
+  "test_results": {
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_escape_speed_proof.py": "ac7f1180c19521f86b9908750076c50a07316c61a8a71039a12d54f9ca5b845b"
+  },
+  "comparison_proof_sha256": "ee9a42c593a2f0eb60d4527ab5bb8eb62bf222210472439d19b3e298ec3474d7"
+}

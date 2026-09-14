@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "source_sha256": "01f27b6401bceba9ad6742f680d799cea552d918adf5e322474f04f90223607e",
+  "synthetic_only": true,
+  "node_channels": 43,
+  "vocabulary_combinations": 28,
+  "vocabulary_batch_invariance": true,
+  "node_structure_features_excluded": true,
+  "distance_cases": 10,
+  "structure_adjacency_exact": true,
+  "unmatched_opening_silently_accepted": true,
+  "unmatched_closing_raises": true,
+  "weighted_per_sample_rmse_cases": 6,
+  "tensorflow_executed": false,
+  "scope": "Node features, structure primitives and NumPy RMSE helper only; no folding, full preprocessing, model, gradient or training claim.",
+  "validator_sha256": "fcba45e9872b4d1b2e012077d3f98d84672504ff697222fae73e8723af8146a1"
+}

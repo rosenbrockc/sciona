@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "component_only": true,
+  "catalog_mutations": 0,
+  "model_fits": 50,
+  "total_epochs": 150000,
+  "optimizer_updates": 600000,
+  "synthetic_separator_accuracy": 1.0,
+  "source_sha256": "ef5b20a47aede792a781e0d52a6c8f59a5ca5f3ebbf56781a669f368090f3bb8",
+  "scope": "NumPy float64 reconstruction; full neural training budgets. Modern stratified validation split; no historical runtime parity or integrated pipeline claim."
+}

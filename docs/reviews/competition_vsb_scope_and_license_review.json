@@ -1,0 +1,89 @@
+{
+  "approved": false,
+  "source_pin_sha256": "8a5959f100410f26ad365962eac6bf9117b27b1400f67eb3ccba409ffbeec83b",
+  "license_status": "specific_notebook_grant_not_verified",
+  "license_evidence": [
+    {
+      "url": "https://www.kaggle.com/datasets/kaggle/meta-kaggle-code",
+      "authority": "Kaggle",
+      "finding": "Describes its public notebook-code collection as Apache2.0; membership of this exact version not checked"
+    },
+    {
+      "url": "https://www.kaggle.com/terms",
+      "finding": "HTML shell returned, no readable license grant"
+    }
+  ],
+  "required_attributions": [
+    {
+      "author": "mark4h",
+      "component": "Winning notebook version3"
+    },
+    {
+      "author": "Michael Kazachok",
+      "component": "flatiron",
+      "source": "https://www.kaggle.com/miklgr500/flatiron"
+    }
+  ],
+  "stage_review": [
+    {
+      "stage": "preprocess",
+      "cells": [
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "finding": "Recursive baseline flattening, absolute-window maxima, sorted peak-height knee selection; not established as wavelet denoising"
+    },
+    {
+      "stage": "peak_features",
+      "cells": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "finding": "Per-peak waveform descriptors, three-signal measurement processing and fundamental Fourier phase"
+    },
+    {
+      "stage": "aggregation",
+      "cells": [
+        50,
+        51
+      ],
+      "finding": "Measurement-level counts and phase-resolved aggregates; full path includes additional filtering"
+    },
+    {
+      "stage": "training",
+      "cells": [
+        73,
+        74
+      ],
+      "finding": "Repeated five-way random splits with rotating validation/test roles, both passed to early stopping; MCC threshold evaluation"
+    },
+    {
+      "stage": "inference",
+      "cells": [
+        96,
+        97,
+        98,
+        99,
+        105
+      ],
+      "finding": "Arithmetic mean of fitted LightGBM probabilities, strict threshold comparison, measurement decision broadcast to signals"
+    }
+  ],
+  "unsupported_intake_claims": [
+    "Wavelet denoising",
+    "Deep learning branch",
+    "Tabular/deep weighted blend"
+  ],
+  "next_actions": [
+    "Resolve exact notebook and inherited code reuse terms",
+    "Validate complete preprocessing including knee/plateau edge cases",
+    "Preserve training split and threshold semantics; no untouched-test performance claim"
+  ]
+}

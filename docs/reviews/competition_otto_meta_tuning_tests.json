@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 4,
+  "native_models_fitted": 2000,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Two XGBoost candidates each train four full 250-model bags",
+    "Exact heldout feature/label exclusion captured per candidate and fold",
+    "Pooled log-loss matches independent scalar oracle",
+    "Stronger synthetic candidate selected and OOF class predictions verified",
+    "Invalid identity/fold/deficient-class populations reject before learner selection"
+  ],
+  "sha256": {
+    "sciona/otto_meta_tuning.py": "8967f71f6585b2d2125d1dbd8ccb52c0d972aa79e10019affbfba1f88e54e3d1",
+    "tests/test_otto_meta_tuning.py": "5546ba6bcc2c7c8c3876eb535d5199e63a5f12ef93159ac3ff52029c7c3934d5",
+    "sciona/otto_meta_xgboost.py": "05765b6179e72913210c47eba22dad71348ced0d2dbd6a1e0319abb949f0a4e5"
+  },
+  "limitations": [
+    "AdaBoost and neural family routes are implemented but not yet validated through this tuner.",
+    "Scores are for control selection and are not independent post-selection test estimates.",
+    "Input first-level OOF provenance and embedding scope remain caller duties.",
+    "Whole-stack integration, historical source ambiguities and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

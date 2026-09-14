@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "direct_algorithm_dependencies": "Python standard library only",
+  "graph_schema_dependency_versions": {
+    "pydantic": "2.12.5",
+    "typing-inspection": "0.4.2",
+    "typing-extensions": "4.15.0",
+    "pydantic-core": "2.41.5",
+    "annotated-types": "0.7.0"
+  },
+  "requirements_sha256": "d479f74b8a8d1387836a46928002d44fcb6afa2145678794c4747dbb49549ace",
+  "python_version": "3.13.11",
+  "platform": "Darwin",
+  "architecture": "arm64",
+  "scope": "Provisioned project environment only; not a clean-install or cross-platform qualification."
+}

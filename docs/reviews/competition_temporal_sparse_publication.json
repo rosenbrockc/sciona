@@ -1,0 +1,16 @@
+{
+  "applied": true,
+  "trust_tier": 3,
+  "version_id": "4384168e-6c35-5d00-b070-1af1eaa86783",
+  "graph_sha256": "a09b614fbdc7f3ca46db3cbbb746c45b8a6d691d8be0b9ad0e36cd4f779c0f26",
+  "apply_rows_created": 46,
+  "reapply_rows_created": 0,
+  "rollback_absence_verified": true,
+  "served_catalog_execution": "passed",
+  "served_cdgs": 95,
+  "competition_intakes": 142,
+  "served_derivations": 28,
+  "remaining_without_served_derivation": 114,
+  "catalog_scope": "Configured local Supabase",
+  "coverage_scope": "Mandatory source provenance to served scoped realizations; not historical winner accuracy or every intake option."
+}

@@ -1,0 +1,26 @@
+{
+  "synthetic_only": true,
+  "checks": [
+    {
+      "normalization": "mean_absolute",
+      "batch_independent": false,
+      "maximum_absolute_difference": 1.5683168316831495
+    },
+    {
+      "normalization": "standard_deviation",
+      "batch_independent": false,
+      "maximum_absolute_difference": 3.5504699366564396
+    }
+  ],
+  "implementation_sha256": {
+    "ml_gradient_attacks": "14b3f987a9ea4db481e58acbd80fedf8065221fc033641ad6c52f8b5ab1ff3de",
+    "dl_adversarial": "14dbfcced7bb1557df2ccf8f3d28ce33aef166e04b4b5f78074b0cc6d5906482"
+  },
+  "scope": "Observed cross-example normalization coupling under batch split. Source semantics and complete execution remain to be checked; no approval.",
+  "source_review": {
+    "targeted_source_url": "https://github.com/dongyp13/Targeted-Adversarial-Attack/blob/master/target_attack.py",
+    "finding": "Public targeted source flattens each batch member independently and computes standard deviation along its feature axis, twice. Current NumPy implementation uses global standard deviation.",
+    "source_pin_status": "Mutable branch inspected; immutable commit and file hashes must be established before source-parity approval.",
+    "additional_difference": "Current helpers add 1e-12 to denominators; targeted source does not. Zero-variance behavior requires an explicit bounded policy."
+  }
+}

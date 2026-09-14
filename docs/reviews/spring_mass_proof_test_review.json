@@ -1,0 +1,10 @@
+{
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_spring_mass_proof.py -q",
+  "passed": 15,
+  "failed": 0,
+  "synthetic_only": true,
+  "implementation_sha256": {
+    "sciona/physics_ingest/spring_mass_proof.py": "4975da5f85453ccd30f81c18e7b8e135869c1bf79dc010270f88bdff848e5cf7",
+    "tests/physics_ingest/test_spring_mass_proof.py": "d4dfb8fe73feb4d17167ba07d9670cf18bf3034f4011894fb3a3c939835dd864"
+  }
+}

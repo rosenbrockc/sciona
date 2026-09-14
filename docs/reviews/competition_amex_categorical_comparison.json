@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "comparison_cases": 4,
+  "source_software_sha256": "6de0a4d65a17a0a25e10c8fdf19fa8efca6babd94aef1f6aabf71a72334a8911",
+  "sha256": {
+    "sciona/amex_categorical.py": "613e98a20408e36fc3c9ad499439068749674cd0349b781c6061f1c16a71a2c5",
+    "tests/test_amex_categorical.py": "a4a8a550bee78ef5117cee9ccfedeb94f454e22c7893ad5da93ace72a53738f0",
+    "scripts/validate_amex_categorical_comparison.py": "37532629903456f4ab613e5e8f41800f6ce7c68f0ea961471c62eba0b3782fd0"
+  },
+  "limits": [
+    "Joint numeric-category vocabulary and summaries only; source string mappings and rank/window orchestration remain pending.",
+    "Synthetic source comparison, not complete trainer or publication qualification."
+  ]
+}

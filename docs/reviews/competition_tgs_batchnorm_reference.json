@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "cases": 8,
+  "max_error": 5.960464477539063e-08,
+  "catalog_mutations": 0,
+  "source_urls": [
+    "https://raw.githubusercontent.com/keras-team/keras/2.2.0/keras/layers/normalization.py",
+    "https://raw.githubusercontent.com/keras-team/keras/2.2.0/keras/backend/tensorflow_backend.py",
+    "https://raw.githubusercontent.com/tensorflow/tensorflow/v1.9.0/tensorflow/core/kernels/fused_batch_norm_op.cu.cc"
+  ],
+  "source_sha256": {
+    "sciona_tgs_keras220_normalization.py": "3666537c31295ca777623a17010fed06932882c71c6c87b7615bcac2d00aed75",
+    "sciona_tgs_keras220_tensorflow_backend.py": "6e8e78ed6246a6704f9c0ccb7198ba37a458b9dbab2a59f8f08115eeb7c461d2",
+    "sciona_tgs_tf190_fused_batch_norm.cu.cc": "6501dbede50189904e49b9a3d3792199af1e0bda52bcc4c9f392f05dd2ad30b3"
+  },
+  "limits": [
+    "Numerical reconstruction of reviewed moving-variance factors; no historical GPU execution claim.",
+    "Prior source-budget fit intentionally interrupted before publication because it used population-only moving variance."
+  ]
+}

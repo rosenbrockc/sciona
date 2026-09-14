@@ -1,0 +1,46 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Andriy_FE_main_F.m": "b53474aefc981102cc39cd550cc7d1d63210825003cd046e396555588bff2515",
+    "Andriy_code_normalise_tr_mv.m": "a6bf8370a9aac17d28e676a1cb9f38d494d1a18b7b631358337c18561ad476c9",
+    "Andriy_code_normalise_te_mv.m": "2164f3ee11d67c9a81064a52a7151fc3832c085533a8a44351ce308bb742742b"
+  },
+  "provider_hashes": {
+    "andriy_filter_trim": "2a44ae93d51d644e7428ea3f11a6bcb1449aea9470a3dd08025caaced22769e9",
+    "andriy_joint_normalization": "46162c77f957ef78bb06e7ded04bec2d6475998dd4792ed09d52c335429a36d2"
+  },
+  "validation_sha256": "b4c9c7ff55d474196fb5e814004544a575c3d71d72f7e4e09dc36b7b4b89b4c7",
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "octave": "11.3.0"
+  },
+  "cases": [
+    {
+      "seed": 9811,
+      "sampling_frequency": 200,
+      "duration_seconds": 9,
+      "filter_max_abs_error": 1.5543122344752192e-15,
+      "normalization_max_abs_error": 6.661338147750939e-16
+    },
+    {
+      "seed": 9812,
+      "sampling_frequency": 400,
+      "duration_seconds": 9,
+      "filter_max_abs_error": 3.1086244689504383e-15,
+      "normalization_max_abs_error": 4.440892098500626e-16
+    },
+    {
+      "seed": 9813,
+      "sampling_frequency": 400,
+      "duration_seconds": 600,
+      "filter_max_abs_error": 4.884981308350689e-15,
+      "normalization_max_abs_error": 4.440892098500626e-16
+    }
+  ],
+  "limitations": [
+    "Unmodified source numerical filter block and normalization function bodies run in current Octave, not original MATLAB.",
+    "Synthetic inputs only; no resampling, full feature extraction or model validation implied.",
+    "Source function/file name mismatches retained; Octave accepts these with warnings."
+  ]
+}

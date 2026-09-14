@@ -1,0 +1,9 @@
+{
+  "read_only": true,
+  "competition_intakes": 142,
+  "competition_stages": 783,
+  "served_cdgs": 71,
+  "intakes_with_served_derivative": 5,
+  "intakes_without_served_derivative": 137,
+  "scope": "Configured local Supabase, canonical served derivative links; not a production deployment claim."
+}

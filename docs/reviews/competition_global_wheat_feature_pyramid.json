@@ -1,0 +1,125 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "d5acedbbc2b192516044c9d655e1757dfecea662c518b6de9dfc5056f50f8d2e",
+  "cases": [
+    {
+      "input_spatial_shapes": [
+        [
+          200,
+          200
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          50,
+          50
+        ],
+        [
+          25,
+          25
+        ]
+      ],
+      "initialized_state_exact": true,
+      "output_shapes": {
+        "0": [
+          1,
+          256,
+          200,
+          200
+        ],
+        "1": [
+          1,
+          256,
+          100,
+          100
+        ],
+        "2": [
+          1,
+          256,
+          50,
+          50
+        ],
+        "3": [
+          1,
+          256,
+          25,
+          25
+        ],
+        "pool": [
+          1,
+          256,
+          13,
+          13
+        ]
+      },
+      "outputs_and_all_input_parameter_gradients_exact": true
+    },
+    {
+      "input_spatial_shapes": [
+        [
+          19,
+          23
+        ],
+        [
+          10,
+          12
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "initialized_state_exact": true,
+      "output_shapes": {
+        "0": [
+          1,
+          256,
+          19,
+          23
+        ],
+        "1": [
+          1,
+          256,
+          10,
+          12
+        ],
+        "2": [
+          1,
+          256,
+          5,
+          6
+        ],
+        "3": [
+          1,
+          256,
+          3,
+          3
+        ],
+        "pool": [
+          1,
+          256,
+          2,
+          2
+        ]
+      },
+      "outputs_and_all_input_parameter_gradients_exact": true
+    }
+  ],
+  "implementation_sha256": {
+    "sciona/wheat_feature_pyramid.py": "5748931939bf9df3f48f3daedab8713fe43a8920584e78f4638346f53832d338",
+    "scripts/validate_wheat_feature_pyramid.py": "5e6fe08d7abf40357ac39dfd1d1f2c71a5ac37366d34d88f5aa06e0cc1a248b9"
+  },
+  "limits": [
+    "Feature pyramid only; complete detector losses, proposal selection and ROI heads remain pending.",
+    "Historical source uses installed Torch kernels; no historical native-kernel equivalence claim."
+  ]
+}

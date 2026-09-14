@@ -1,0 +1,20 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "f1a6e63969167159ef72c4ba32897e5aef7c3888",
+  "reviewed_as_matrix_rewrites": 2,
+  "exact_self_neighbor_queries": 136,
+  "checks": {
+    "layer_assignment": true,
+    "nearest_neighbors": true,
+    "sequential_commitment": true,
+    "rebuilt_neighborhood_excludes_used": true
+  },
+  "implementation_sha256": {
+    "scripts/validate_tracking_neighborhoods.py": "58b08d39d8ab9b6e055c9ce1e259cffe35d94fdfd8eb14c35fb056441904f983",
+    "scripts/validate_tracking_detector_geometry.py": "abd5963fc4f432034a41ef575d8b54a8c7dbe7f05ca0f76df363ee8adc89dc71",
+    "sciona/competition_dataframe_compat.py": "6e124f20ad25599937e38e6700d2f7e283477b86d476f0413a2159f4f4e55d80",
+    "tests/test_competition_dataframe_compat.py": "fea043e5c882950de9a15f4d63aff1f570b5825aad479ecac2a877b70ddca8e3"
+  },
+  "scope": "Synthetic detector -> original neighborhoods -> original commitment -> rebuilt neighborhoods. No complete seed/extension/ranking loop or publication approval."
+}

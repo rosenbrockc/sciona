@@ -1,0 +1,29 @@
+{
+  "format": "arc-graph-execution.v1",
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "05688172c80ce497d1a1869779f4675479a60cc3720fffa679aef02b229c9f60",
+  "provider_sha256": "7b0aa5c681447b434724626737866ebe5917fe2a0f2fdfd3d4f0a259f2aed482",
+  "code_sha256": {
+    "sciona/arc_build.py": "0c384ec040cbf402ba0bc2de063bc14225f930c022d729675aea79f093bc592e",
+    "sciona/arc_contract.py": "e9a8aed638f6be671ce76126017390d805992adc0159e99685ac7c8e681566f6",
+    "sciona/arc_graph.py": "dc83fed896a082d414ed3fc64598ba205a42f7ee7fc8995b55ad38db0a49986f",
+    "sciona/arc_process.py": "49fbc91bd70b8a6ae29a71e3fb5251c92b97fa11e97e5ced414890d7b311606f",
+    "sciona/arc_runtime.py": "716811f34f4c629d990eaad25061532fc11846fc9179c360aad09afc360c7e37",
+    "sciona/arc_schedule.py": "60acb4670481e4fa98235e5fb236665e7d7508074a565292a0f8ddab62af4356",
+    "sciona/arc_build_identity.json": "5f011c13990165f5ae8e0a7028dd4e28b20a55f0faec837b18957bea1e014b66",
+    "scripts/validate_arc_graph_execution.py": "be2eabb4921372aa64a94ae0c91988561dd28f1b5d5434a0e41976f942ce943d",
+    "requirements/arc-execution.txt": "e41226edb463a260b8d4b260c7939628d8691d98638196a695037993023535a9"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "full_source_search_runs": 8,
+    "synthetic_test_inputs": 2,
+    "four_adaptive_phases": true,
+    "expected_predictions_retained": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "limits": "Synthetic tasks and a 30-second configured budget; no competition accuracy or served publication claim. Runtime grids captured in memory only."
+}

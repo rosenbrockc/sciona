@@ -1,0 +1,539 @@
+{
+  "approved": false,
+  "applied": false,
+  "catalog_mutations": 0,
+  "runner_version": "aptos-execution-community.v1",
+  "publication_ready": false,
+  "required_actions": [
+    "Bind conditions into a final semantic review and deterministic publication plan",
+    "Pass transactional publication gates and verify served execution"
+  ],
+  "providers": [
+    {
+      "artifact_id": "68b983ad-1ea6-5c16-abb4-d8bedd8d0670",
+      "version_id": "cac04171-edbd-5b40-a7bf-a2cb5707c39a",
+      "fqdn": "sciona.atoms.ml.aptos_execution.aptos_population",
+      "content_hash": "1d3e9e2aaf6b04a253d66036a4c26bb58147a7f2fd0387fb12325e3582d38cf6",
+      "fingerprint": "39c8f00a8ce9154453c81a8e6729ba3a15e3abe67ac9557de379480d340d62a3",
+      "semver": "0.0.0+local.1d3e9e2aaf6b",
+      "target_trust_tier": 3,
+      "description": "Validate disjoint first-stage base and three second-stage added roles. Labeled roles contain [identities, labels]. Base and averaging labels use five ordinals 0..4; group-bounded labels use four ordinals 0..3. Pseudo identities have no supplied labels. Source-role provenance is caller-owned.",
+      "import_module": "sciona.atoms.ml.aptos_execution",
+      "source_symbol": "aptos_population",
+      "source_sha256": "97953529d448b804912e47eee127293094de60fc63f12ecf05dfacab15c966ab",
+      "signature": "(base: list, average: list, grouped: list, pseudo_keys: list) -> object",
+      "owner_id": "33ed07a2-1bea-5b17-8b71-d6d0e590fdd9",
+      "source_repo_id": "27b787a0-27ed-4760-92b7-ad8e8b4b815c",
+      "io_specs": {
+        "input": [
+          {
+            "name": "base",
+            "type_desc": "list",
+            "constraints": "Pair of unique private keys and supplied 0..4 labels; caller-prepared combined first-stage population",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "average",
+            "type_desc": "list",
+            "constraints": "Pair of unique private keys and supplied 0..4 labels; enters only stage two with label/teacher averaging",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "grouped",
+            "type_desc": "list",
+            "constraints": "Pair of unique private keys and supplied 0..3 group labels; enters only stage two with group-mean target bounding",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "pseudo_keys",
+            "type_desc": "list",
+            "constraints": "Nonempty unique unlabeled private keys; all four population roles disjoint",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ],
+        "output": [
+          {
+            "name": "plan",
+            "type_desc": "object",
+            "constraints": "Validated Aptos Population with source-separated roles; revalidated at execution",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ]
+      }
+    },
+    {
+      "artifact_id": "7af30c0b-05e9-5bb2-bb73-e46cc49e73d1",
+      "version_id": "03b1f916-fdb1-51b5-bbd1-79a876f53199",
+      "fqdn": "sciona.atoms.ml.aptos_execution.aptos_train_ensemble",
+      "content_hash": "565a1b3041b9ed0f42df0fd75a5311aa9eabfae3e3e371dca701246cfc3d5b44",
+      "fingerprint": "35ec136609e3eaf82a47b07aefef9204f6e28021d9e38bc8628bd04ca2f9f13f",
+      "semver": "0.0.0+local.565a1b3041b9",
+      "target_trust_tier": 3,
+      "description": "Fit eight pretrained models, refine targets and continue ten epochs. References map four families to [local safetensors path, reviewed SHA256]. Budgets and seeds map (family, replica) pairs to integers. All first-stage fits precede the ensemble teacher; second-stage model weights continue with fresh Adam. Reference augmentation, normalization and single-view inference are explicit reconstruction choices. Results include private predictions, soft targets and aggregate fit histories. Temporary trained checkpoints are verified by replay and removed, never published here.",
+      "import_module": "sciona.atoms.ml.aptos_execution",
+      "source_symbol": "aptos_train_ensemble",
+      "source_sha256": "97953529d448b804912e47eee127293094de60fc63f12ecf05dfacab15c966ab",
+      "signature": "(plan: object, query_keys: list, images: dict, references: dict, first_stage_epochs: dict, seeds: dict, batch_size: int, learning_rate: float, lower_deviation: float, upper_deviation: float, tie_policy: str, work_root: str) -> dict",
+      "owner_id": "33ed07a2-1bea-5b17-8b71-d6d0e590fdd9",
+      "source_repo_id": "27b787a0-27ed-4760-92b7-ad8e8b4b815c",
+      "io_specs": {
+        "input": [
+          {
+            "name": "plan",
+            "type_desc": "object",
+            "constraints": "Validated Aptos Population with source-separated roles; revalidated at execution",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "query_keys",
+            "type_desc": "list",
+            "constraints": "Nonempty unique private keys; disjoint from supplied-label roles; may overlap pseudo keys",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "images",
+            "type_desc": "dict",
+            "constraints": "Exactly population and query coverage; values are nonempty RGB uint8 HWC arrays; caller establishes physical identity and provenance",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "references",
+            "type_desc": "dict",
+            "constraints": "Exactly four model families mapped to local safetensors paths and reviewed full SHA256; no downloads",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "first_stage_epochs",
+            "type_desc": "dict",
+            "constraints": "Exactly eight (family, integer replica) keys; positive integer multiples of five; historical winning budgets unproven",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "seeds",
+            "type_desc": "dict",
+            "constraints": "Exactly eight (family, integer replica) keys with distinct nonnegative 32-bit integer seeds",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "batch_size",
+            "type_desc": "int",
+            "constraints": "Explicit positive integer; retains final partial batch",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "learning_rate",
+            "type_desc": "float",
+            "constraints": "Explicit finite positive Adam learning rate; constant schedule and fresh stage-two optimizer are reference choices",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "lower_deviation",
+            "type_desc": "float",
+            "constraints": "Finite nonnegative lower bound distance from group mean; source demonstrates 0.5",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "upper_deviation",
+            "type_desc": "float",
+            "constraints": "Finite nonnegative upper bound distance; symmetric 0.5 is a reference choice",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "tie_policy",
+            "type_desc": "str",
+            "constraints": "Explicit upper or lower handling of equality at fixed cut points 0.7,1.5,2.5,3.5",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "work_root",
+            "type_desc": "str",
+            "constraints": "Existing caller-managed private directory; temporary trained checkpoints removed after execution",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ],
+        "output": [
+          {
+            "name": "result",
+            "type_desc": "dict",
+            "constraints": "Private ordered scalar scores and ordinals, 16 fit histories, teacher/final model outputs and soft targets; checkpoint replay evidence",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ]
+      }
+    }
+  ],
+  "execution": {
+    "artifact_id": "8b0912b0-8a2e-57d3-b1a0-281e0efcf096",
+    "version_id": "c71a9540-6a18-5483-86a4-8ec1903dd800",
+    "fqdn": "cdg.competition.solution.kaggle.aptos_blindness_1st.execution",
+    "content_hash": "5d81a258553ad5e1737ee9ec38799315a20ee1bde92e67fa986f2902ca9ffebe",
+    "target_trust_tier": 3,
+    "nodes": [
+      {
+        "node_id": "population",
+        "parent_node_id": "",
+        "name": "population",
+        "description": "Validate first-stage base and three disjoint second-stage added populations",
+        "concept_type": "custom",
+        "status": "atomic",
+        "matched_primitive": "sciona.atoms.ml.aptos_execution.aptos_population",
+        "type_signature": "{\"format\":\"sciona.execution_graph.v1\",\"graph\":{\"edges\":[{\"alignment_expectation\":\"\",\"data_kind\":\"\",\"edge_kind\":\"data_flow\",\"input_name\":\"plan\",\"loss_class\":\"preserving\",\"output_name\":\"plan\",\"provenance\":\"\",\"requires_glue\":false,\"source_id\":\"population\",\"source_type\":\"object\",\"target_id\":\"train_ensemble\",\"target_type\":\"object\",\"time_basis\":\"\"}],\"metadata\":{\"artifact_source\":\"competition_source_corrected_execution\",\"choices\":[\"Two separately seeded models in each of four Inception/SE-ResNeXt families; native 512/384 resolutions\",\"Trainable GeM and scalar linear head; Smooth-L1 loss; arithmetic model averaging\",\"Only base labels enter stage one; averaging, four-level group bounding and soft pseudo-label roles enter stage two\",\"Ensemble teacher; each own checkpoint continues ten epochs with a fresh constant-LR Adam optimizer\",\"Reference augmentation before plain bilinear resize and legacy publisher normalization; single-view inference\"],\"limitations\":[\"Original winner runtime, model artifact identity and optimization settings unproven\",\"First-stage budgets, augmentation semantics, teacher aggregation, full group-bound interval and threshold equality are explicit reconstruction choices\",\"Caller establishes input-role provenance and physical-image identity; queries may overlap pseudo-label training population\",\"External weights remain caller-managed with separate use rights; no model redistribution grant inferred\",\"Synthetic execution does not establish competition accuracy or human-reviewed Tier 1 status\"],\"num_edges\":1,\"num_nodes\":2,\"publication_status\":\"draft\",\"scope\":\"Corrected pretrained eight-model two-stage CPU regression and thresholded inference reference.\",\"source_version_ids\":[\"94df8d52-0272-5d0b-b84f-1f150d8e11f0\"],\"target_tier\":3},\"nodes\":[{\"action_class\":\"replace_stage\",\"boundary_kind\":\"none\",\"boundary_port_name\":\"\",\"children\":[],\"concept_type\":\"custom\",\"conceptual_summary\":\"\",\"critic_notes\":\"\",\"decomposition_rationale\":\"\",\"depth\":0,\"description\":\"Validate first-stage base and three disjoint second-stage added populations\",\"fixed_point_convergence_field\":\"\",\"fixed_point_max_iterations\":0,\"inputs\":[{\"constraints\":\"Pair of unique private keys and supplied 0..4 labels; caller-prepared combined first-stage population\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"base\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Pair of unique private keys and supplied 0..4 labels; enters only stage two with label/teacher averaging\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"average\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Pair of unique private keys and supplied 0..3 group labels; enters only stage two with group-mean target bounding\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"grouped\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Nonempty unique unlabeled private keys; all four population roles disjoint\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"pseudo_keys\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"}],\"is_external\":false,\"is_opaque\":false,\"is_optional\":false,\"map_hop_size\":0,\"map_window_size\":0,\"matched_primitive\":\"sciona.atoms.ml.aptos_execution.aptos_population\",\"name\":\"population\",\"node_id\":\"population\",\"outputs\":[{\"constraints\":\"Validated Aptos Population with source-separated roles; revalidated at execution\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"plan\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"object\"}],\"parallelizable\":false,\"parent_id\":null,\"primitive_binding_confidence\":0.0,\"primitive_binding_source\":\"\",\"resolution_reason\":\"\",\"resolved_by\":\"\",\"status\":\"atomic\",\"type_signature\":\"\"},{\"action_class\":\"replace_stage\",\"boundary_kind\":\"none\",\"boundary_port_name\":\"\",\"children\":[],\"concept_type\":\"custom\",\"conceptual_summary\":\"\",\"critic_notes\":\"\",\"decomposition_rationale\":\"\",\"depth\":0,\"description\":\"Fit eight models, refine targets using ensemble teacher, continue ten epochs and blend scores\",\"fixed_point_convergence_field\":\"\",\"fixed_point_max_iterations\":0,\"inputs\":[{\"constraints\":\"Validated Aptos Population with source-separated roles; revalidated at execution\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"plan\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"object\"},{\"constraints\":\"Nonempty unique private keys; disjoint from supplied-label roles; may overlap pseudo keys\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"query_keys\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Exactly population and query coverage; values are nonempty RGB uint8 HWC arrays; caller establishes physical identity and provenance\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"images\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Exactly four model families mapped to local safetensors paths and reviewed full SHA256; no downloads\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"references\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Exactly eight (family, integer replica) keys; positive integer multiples of five; historical winning budgets unproven\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"first_stage_epochs\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Exactly eight (family, integer replica) keys with distinct nonnegative 32-bit integer seeds\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"seeds\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Explicit positive integer; retains final partial batch\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"batch_size\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"int\"},{\"constraints\":\"Explicit finite positive Adam learning rate; constant schedule and fresh stage-two optimizer are reference choices\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"learning_rate\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"float\"},{\"constraints\":\"Finite nonnegative lower bound distance from group mean; source demonstrates 0.5\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"lower_deviation\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"float\"},{\"constraints\":\"Finite nonnegative upper bound distance; symmetric 0.5 is a reference choice\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"upper_deviation\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"float\"},{\"constraints\":\"Explicit upper or lower handling of equality at fixed cut points 0.7,1.5,2.5,3.5\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"tie_policy\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"str\"},{\"constraints\":\"Existing caller-managed private directory; temporary trained checkpoints removed after execution\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"work_root\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"str\"}],\"is_external\":false,\"is_opaque\":false,\"is_optional\":false,\"map_hop_size\":0,\"map_window_size\":0,\"matched_primitive\":\"sciona.atoms.ml.aptos_execution.aptos_train_ensemble\",\"name\":\"train_ensemble\",\"node_id\":\"train_ensemble\",\"outputs\":[{\"constraints\":\"Private ordered scalar scores and ordinals, 16 fit histories, teacher/final model outputs and soft targets; checkpoint replay evidence\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"result\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"}],\"parallelizable\":false,\"parent_id\":null,\"primitive_binding_confidence\":0.0,\"primitive_binding_source\":\"\",\"resolution_reason\":\"\",\"resolved_by\":\"\",\"status\":\"atomic\",\"type_signature\":\"\"}],\"planning_artifact\":null},\"snapshot_hash\":\"5d81a258553ad5e1737ee9ec38799315a20ee1bde92e67fa986f2902ca9ffebe\"}"
+      },
+      {
+        "node_id": "train_ensemble",
+        "parent_node_id": "",
+        "name": "train_ensemble",
+        "description": "Fit eight models, refine targets using ensemble teacher, continue ten epochs and blend scores",
+        "concept_type": "custom",
+        "status": "atomic",
+        "matched_primitive": "sciona.atoms.ml.aptos_execution.aptos_train_ensemble",
+        "type_signature": "{\"format\":\"sciona.execution_graph_ref.v1\",\"snapshot_hash\":\"5d81a258553ad5e1737ee9ec38799315a20ee1bde92e67fa986f2902ca9ffebe\"}"
+      }
+    ],
+    "edges": [
+      {
+        "source_id": "population",
+        "target_id": "train_ensemble",
+        "output_name": "plan",
+        "input_name": "plan"
+      }
+    ],
+    "bindings": [
+      {
+        "node_id": "population",
+        "bound_artifact_fqdn": "sciona.atoms.ml.aptos_execution.aptos_population",
+        "bound_version_content_hash": "1d3e9e2aaf6b04a253d66036a4c26bb58147a7f2fd0387fb12325e3582d38cf6",
+        "binding_source": "aptos-execution-community.v1"
+      },
+      {
+        "node_id": "train_ensemble",
+        "bound_artifact_fqdn": "sciona.atoms.ml.aptos_execution.aptos_train_ensemble",
+        "bound_version_content_hash": "565a1b3041b9ed0f42df0fd75a5311aa9eabfae3e3e371dca701246cfc3d5b44",
+        "binding_source": "aptos-execution-community.v1"
+      }
+    ],
+    "metadata": {
+      "artifact_source": "competition_source_corrected_execution",
+      "publication_status": "draft",
+      "target_tier": 3,
+      "source_version_ids": [
+        "94df8d52-0272-5d0b-b84f-1f150d8e11f0"
+      ],
+      "scope": "Corrected pretrained eight-model two-stage CPU regression and thresholded inference reference.",
+      "choices": [
+        "Two separately seeded models in each of four Inception/SE-ResNeXt families; native 512/384 resolutions",
+        "Trainable GeM and scalar linear head; Smooth-L1 loss; arithmetic model averaging",
+        "Only base labels enter stage one; averaging, four-level group bounding and soft pseudo-label roles enter stage two",
+        "Ensemble teacher; each own checkpoint continues ten epochs with a fresh constant-LR Adam optimizer",
+        "Reference augmentation before plain bilinear resize and legacy publisher normalization; single-view inference"
+      ],
+      "limitations": [
+        "Original winner runtime, model artifact identity and optimization settings unproven",
+        "First-stage budgets, augmentation semantics, teacher aggregation, full group-bound interval and threshold equality are explicit reconstruction choices",
+        "Caller establishes input-role provenance and physical-image identity; queries may overlap pseudo-label training population",
+        "External weights remain caller-managed with separate use rights; no model redistribution grant inferred",
+        "Synthetic execution does not establish competition accuracy or human-reviewed Tier 1 status"
+      ],
+      "num_nodes": 2,
+      "num_edges": 1
+    },
+    "io_specs": {
+      "input": [
+        {
+          "name": "base",
+          "type_desc": "list",
+          "constraints": "Pair of unique private keys and supplied 0..4 labels; caller-prepared combined first-stage population",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "average",
+          "type_desc": "list",
+          "constraints": "Pair of unique private keys and supplied 0..4 labels; enters only stage two with label/teacher averaging",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "grouped",
+          "type_desc": "list",
+          "constraints": "Pair of unique private keys and supplied 0..3 group labels; enters only stage two with group-mean target bounding",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "pseudo_keys",
+          "type_desc": "list",
+          "constraints": "Nonempty unique unlabeled private keys; all four population roles disjoint",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "query_keys",
+          "type_desc": "list",
+          "constraints": "Nonempty unique private keys; disjoint from supplied-label roles; may overlap pseudo keys",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "images",
+          "type_desc": "dict",
+          "constraints": "Exactly population and query coverage; values are nonempty RGB uint8 HWC arrays; caller establishes physical identity and provenance",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "references",
+          "type_desc": "dict",
+          "constraints": "Exactly four model families mapped to local safetensors paths and reviewed full SHA256; no downloads",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "first_stage_epochs",
+          "type_desc": "dict",
+          "constraints": "Exactly eight (family, integer replica) keys; positive integer multiples of five; historical winning budgets unproven",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "seeds",
+          "type_desc": "dict",
+          "constraints": "Exactly eight (family, integer replica) keys with distinct nonnegative 32-bit integer seeds",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "batch_size",
+          "type_desc": "int",
+          "constraints": "Explicit positive integer; retains final partial batch",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "learning_rate",
+          "type_desc": "float",
+          "constraints": "Explicit finite positive Adam learning rate; constant schedule and fresh stage-two optimizer are reference choices",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "lower_deviation",
+          "type_desc": "float",
+          "constraints": "Finite nonnegative lower bound distance from group mean; source demonstrates 0.5",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "upper_deviation",
+          "type_desc": "float",
+          "constraints": "Finite nonnegative upper bound distance; symmetric 0.5 is a reference choice",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "tie_policy",
+          "type_desc": "str",
+          "constraints": "Explicit upper or lower handling of equality at fixed cut points 0.7,1.5,2.5,3.5",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "work_root",
+          "type_desc": "str",
+          "constraints": "Existing caller-managed private directory; temporary trained checkpoints removed after execution",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        }
+      ],
+      "output": [
+        {
+          "name": "result",
+          "type_desc": "dict",
+          "constraints": "Private ordered scalar scores and ordinals, 16 fit histories, teacher/final model outputs and soft targets; checkpoint replay evidence",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        }
+      ]
+    },
+    "mandatory_source_dependency": {
+      "dependency_artifact_fqdn": "cdg.competition.solution.kaggle.aptos_blindness_1st",
+      "dependency_content_hash": "02129e9c5bef75cf05490e52f2291f5d336d70a92e114d022a1b635ad35b3f58",
+      "optional": false,
+      "scope": "Conceptual provenance; original intake is not invoked and remains draft"
+    }
+  },
+  "review_conditions": [
+    "Automated Community Tier 3 reference; no human-reviewed Tier 1 or usage-qualified Tier 2 designation.",
+    "Corrected eight-model CPU reconstruction; original winner runtime, artifact identity and leaderboard equivalence remain unproven.",
+    "First-stage budgets in five-epoch increments, Adam settings, ensemble teacher and fresh second-stage optimizer are explicit reference choices.",
+    "Augmentation units/distributions/order, bilinear resize, publisher normalization, scalar head and single-view inference are explicit choices.",
+    "Symmetric group bounds and threshold equality convention are explicit; the source establishes only the demonstrated lower-bound example.",
+    "Caller establishes population-role provenance and physical-image identity; supplied-label queries reject, while pseudo-label queries are deliberately transductive.",
+    "Synthetic full-resolution execution uses five first-stage and ten second-stage epochs per model; original population-scale performance is unproven.",
+    "Local external model artifacts require caller use rights. Each call retrains; temporary checkpoints are verified and removed.",
+    "Retain pooling, upstream, dependency and supplemental notices with the reconstruction.",
+    "Caller supplies model artifacts they are entitled to use; integrity and source correspondence checks do not establish usage rights.",
+    "Smp-hub cards declare license other; no independent model-weight grant or redistribution permission is inferred.",
+    "Review future distribution of external model artifacts or dependency wheels separately.",
+    "Pinned maintainer mirror identity is established; exact winner artifact/runtime identity and competitive accuracy remain unproven."
+  ],
+  "sha256": {
+    "scripts/prepare_aptos_publication.py": "af87dcac3f88962fea714719e5849c61c6550ea59ca3478b524cb36f1e316c24",
+    "scripts/build_aptos_execution_graph.py": "331b6f51f443887d00b8614884f5ead70d6bda38426a5691a5b81c3b4fcc8dc7",
+    "docs/reviews/competition_aptos_source_review.json": "dc769b2b88a724831047d93fcdf2008e0f3fe374268f476cf922fb9de3629f60"
+  }
+}

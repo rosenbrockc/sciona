@@ -1,0 +1,22 @@
+{
+  "status": "implementation_in_progress",
+  "source_version_id": "26d177bb-7d6d-5ee1-b881-2bafe69064cd",
+  "source_content_hash": "a32fed30707dd363c95f39462a6bd6db505102f4449f3dccf24fb62d71af34ee",
+  "catalog_mutations": 0,
+  "source_scope": "Generic five-stage benchmark topology; intake supplies only the Kaggle homepage, no historical solution or source implementation.",
+  "implementation_choices": [
+    "Possessions estimated from field-goal attempts plus caller coefficient times free-throw attempts minus offensive rebounds plus turnovers. Ratios aggregate totals rather than averaging per-game ratios.",
+    "Directed PageRank edges transfer one unit per loss to the winner, retaining repeated games. Rank is a declared graph feature, not a certified true strength-of-schedule estimate.",
+    "Each season resets Elo with explicit initial value, K and scale; neutral matchup update without margin or home advantage. Game ordering must be explicit and unique.",
+    "Feature vectors concatenate both teams and their differences. Standardization fits only training seasons. Mirrored matchups augment training and calibration.",
+    "Disjoint ordered seasons for training, calibration and prediction; regular games must end before each corresponding target matchup.",
+    "Frozen base classifier with sigmoid calibration on one explicit held-out population; no base refit. Final orientation-symmetric probability projection is explicit and not an empirical calibration guarantee."
+  ],
+  "references": [
+    "https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html"
+  ],
+  "next_steps": [
+    "Serialized graph/provider boundary and full runner execution.",
+    "Dependency/license/source-scope review, rejection gates and authorized Tier 3 publication verification."
+  ]
+}

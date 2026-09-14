@@ -1,0 +1,34 @@
+{
+  "read_only": true,
+  "synthetic_only": true,
+  "trust_tier": 3,
+  "provider_versions_verified": 8,
+  "served_cdg_count": 70,
+  "catalog_graph_source_comparison": "passed",
+  "cases": [
+    {
+      "variant": 3,
+      "start_epoch": 49,
+      "end_epoch": 51,
+      "exact_checkpoint_rng_validation": true,
+      "validation_passes": 9,
+      "executed_nodes": 8,
+      "exact_final_inference": true,
+      "proposal_count": 77
+    },
+    {
+      "variant": 4,
+      "start_epoch": 159,
+      "end_epoch": 161,
+      "exact_checkpoint_rng_validation": true,
+      "validation_passes": 7,
+      "executed_nodes": 8,
+      "exact_final_inference": true,
+      "proposal_count": 0
+    }
+  ],
+  "graph_sha256": "21c64c5e8d85593534d568543d01b27f32a32c34ad909e153cf4057f637ea962",
+  "version_id": "56f29a87-40dc-5038-97e8-ab5eb099cfbd",
+  "original_intake_status": "draft",
+  "verifier_sha256": "579f2578f4cf2a0933e1a57871004ba8a5a4be3998b4d0cc8c4db1fa81cd36ad"
+}

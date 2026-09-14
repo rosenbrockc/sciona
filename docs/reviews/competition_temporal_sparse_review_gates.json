@@ -1,0 +1,25 @@
+{
+  "format": "temporal_sparse-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "source_changes_accepted",
+    "unbounded_output",
+    "validation_label_leakage",
+    "missing_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_temporal_sparse_execution.py": "93001787fe55d7ac12606e78d6a01aac94385e76d1a74dcdca7af2eb91803329",
+    "scripts/validate_temporal_sparse_review_gates.py": "0be528c8ad082de63848d8f6eeb415cae25efd6eb41f908b464c355cca17d550"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

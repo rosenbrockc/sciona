@@ -1,0 +1,321 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "scope": "Shared runner/numerical startup and atom discovery and synthetic XGBoost training/checkpoint replay. Distribution-file attribution; not publisher authentication or exhaustive lazy-execution coverage.",
+  "packages": {
+    "PeakUtils": {
+      "version": "1.3.5",
+      "module_files": 4
+    },
+    "PyWavelets": {
+      "version": "1.9.0",
+      "module_files": 21
+    },
+    "PyYAML": {
+      "version": "6.0.3",
+      "module_files": 18
+    },
+    "Pygments": {
+      "version": "2.19.2",
+      "module_files": 16
+    },
+    "annotated-doc": {
+      "version": "0.0.4",
+      "module_files": 2
+    },
+    "annotated-types": {
+      "version": "0.7.0",
+      "module_files": 1
+    },
+    "anyio": {
+      "version": "4.12.1",
+      "module_files": 31
+    },
+    "asttokens": {
+      "version": "2.4.1",
+      "module_files": 4
+    },
+    "attrs": {
+      "version": "26.1.0",
+      "module_files": 13
+    },
+    "biosppy": {
+      "version": "2.2.4",
+      "module_files": 27
+    },
+    "certifi": {
+      "version": "2026.2.25",
+      "module_files": 2
+    },
+    "charset-normalizer": {
+      "version": "3.4.5",
+      "module_files": 10
+    },
+    "click": {
+      "version": "8.3.1",
+      "module_files": 12
+    },
+    "cycler": {
+      "version": "0.12.1",
+      "module_files": 1
+    },
+    "fastapi": {
+      "version": "0.129.0",
+      "module_files": 38
+    },
+    "filelock": {
+      "version": "3.25.2",
+      "module_files": 11
+    },
+    "flatbuffers": {
+      "version": "25.12.19",
+      "module_files": 9
+    },
+    "httpx": {
+      "version": "0.28.1",
+      "module_files": 23
+    },
+    "icontract": {
+      "version": "2.7.3",
+      "module_files": 9
+    },
+    "idna": {
+      "version": "3.11",
+      "module_files": 5
+    },
+    "inflect": {
+      "version": "7.5.0",
+      "module_files": 3
+    },
+    "jax": {
+      "version": "0.9.2",
+      "module_files": 214
+    },
+    "jaxlib": {
+      "version": "0.9.2",
+      "module_files": 52
+    },
+    "joblib": {
+      "version": "1.5.3",
+      "module_files": 38
+    },
+    "jsonpatch": {
+      "version": "1.33",
+      "module_files": 1
+    },
+    "jsonpointer": {
+      "version": "3.0.0",
+      "module_files": 1
+    },
+    "kiwisolver": {
+      "version": "1.5.0",
+      "module_files": 3
+    },
+    "langchain-core": {
+      "version": "1.2.19",
+      "module_files": 79
+    },
+    "langgraph": {
+      "version": "1.1.2",
+      "module_files": 57
+    },
+    "langgraph-checkpoint": {
+      "version": "4.0.1",
+      "module_files": 12
+    },
+    "langsmith": {
+      "version": "0.7.17",
+      "module_files": 23
+    },
+    "matplotlib": {
+      "version": "3.10.8",
+      "module_files": 99
+    },
+    "ml_dtypes": {
+      "version": "0.5.4",
+      "module_files": 4
+    },
+    "more-itertools": {
+      "version": "11.0.1",
+      "module_files": 3
+    },
+    "mpmath": {
+      "version": "1.3.0",
+      "module_files": 51
+    },
+    "msgpack": {
+      "version": "1.1.2",
+      "module_files": 4
+    },
+    "networkx": {
+      "version": "3.6.1",
+      "module_files": 285
+    },
+    "numexpr": {
+      "version": "2.14.2",
+      "module_files": 6
+    },
+    "numpy": {
+      "version": "2.4.2",
+      "module_files": 144
+    },
+    "opt_einsum": {
+      "version": "3.4.0",
+      "module_files": 18
+    },
+    "orjson": {
+      "version": "3.11.7",
+      "module_files": 2
+    },
+    "ormsgpack": {
+      "version": "1.12.2",
+      "module_files": 2
+    },
+    "packaging": {
+      "version": "26.0",
+      "module_files": 3
+    },
+    "pandas": {
+      "version": "2.3.3",
+      "module_files": 295
+    },
+    "pillow": {
+      "version": "11.3.0",
+      "module_files": 20
+    },
+    "psutil": {
+      "version": "7.0.0",
+      "module_files": 6
+    },
+    "pyarrow": {
+      "version": "23.0.1",
+      "module_files": 11
+    },
+    "pydantic": {
+      "version": "2.12.5",
+      "module_files": 74
+    },
+    "pydantic_core": {
+      "version": "2.41.5",
+      "module_files": 3
+    },
+    "pyparsing": {
+      "version": "3.3.2",
+      "module_files": 11
+    },
+    "python-dateutil": {
+      "version": "2.9.0.post0",
+      "module_files": 12
+    },
+    "python-multipart": {
+      "version": "0.0.32",
+      "module_files": 4
+    },
+    "pytz": {
+      "version": "2026.1.post1",
+      "module_files": 5
+    },
+    "requests": {
+      "version": "2.32.5",
+      "module_files": 17
+    },
+    "requests-toolbelt": {
+      "version": "1.0.0",
+      "module_files": 15
+    },
+    "rich": {
+      "version": "14.3.3",
+      "module_files": 60
+    },
+    "scikit-learn": {
+      "version": "1.8.0",
+      "module_files": 247
+    },
+    "scipy": {
+      "version": "1.17.1",
+      "module_files": 528
+    },
+    "setuptools": {
+      "version": "81.0.0",
+      "module_files": 1
+    },
+    "six": {
+      "version": "1.17.0",
+      "module_files": 1
+    },
+    "sniffio": {
+      "version": "1.3.1",
+      "module_files": 3
+    },
+    "sse-starlette": {
+      "version": "3.2.0",
+      "module_files": 3
+    },
+    "starlette": {
+      "version": "0.52.1",
+      "module_files": 21
+    },
+    "sympy": {
+      "version": "1.14.0",
+      "module_files": 437
+    },
+    "tenacity": {
+      "version": "9.1.4",
+      "module_files": 11
+    },
+    "threadpoolctl": {
+      "version": "3.6.0",
+      "module_files": 1
+    },
+    "torch": {
+      "version": "2.11.0",
+      "module_files": 684
+    },
+    "tqdm": {
+      "version": "4.67.3",
+      "module_files": 8
+    },
+    "typeguard": {
+      "version": "4.5.1",
+      "module_files": 11
+    },
+    "typing-inspection": {
+      "version": "0.4.2",
+      "module_files": 3
+    },
+    "typing_extensions": {
+      "version": "4.15.0",
+      "module_files": 1
+    },
+    "urllib3": {
+      "version": "2.6.3",
+      "module_files": 28
+    },
+    "uuid_utils": {
+      "version": "0.14.1",
+      "module_files": 3
+    },
+    "uvicorn": {
+      "version": "0.41.0",
+      "module_files": 18
+    },
+    "xgboost": {
+      "version": "3.4.1",
+      "module_files": 17
+    },
+    "xxhash": {
+      "version": "3.6.0",
+      "module_files": 3
+    },
+    "zstandard": {
+      "version": "0.25.0",
+      "module_files": 2
+    }
+  },
+  "unmatched": [],
+  "first_party_module_files": 2629,
+  "stdlib_module_files": 301,
+  "sha256": {
+    "scripts/audit_flavours_import_origins.py": "e716a1b6d1244d630e1763b8ff4b8cb083a29b570a8e633744da9cb1ec3f3b1d"
+  }
+}

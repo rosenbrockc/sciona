@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "9f3c8c4f-ce85-5e9d-b169-8b055562ce65",
+  "source_content_hash": "3cc5a5fdfab302b5c1a37abe86916ac996f577d11b733cba0bbf7b7d4438b2cd",
+  "sha256": {
+    "sciona/tabular_ensemble_training.py": "5404123c59e394e7e35f62a5261f60d9a87ce8864017cc9a15723121cc3be272",
+    "tests/test_tabular_ensemble_training.py": "de380524f870bf7927482f2168110097b8a7be7b21a1977d04a01d47d616b291"
+  },
+  "checks": [
+    "Complete OOF coverage for two base models",
+    "Per-fold feature fitting with no group crossing",
+    "Held-out feature/label mutation leaves corresponding fitted fold unchanged",
+    "Logistic stacker consumes OOF probabilities",
+    "Full-training base refit",
+    "Exact repeat",
+    "Invalid folds/classes/groups rejected"
+  ],
+  "limits": [
+    "Explicit caller fold/group assignments; no automatic semantic group discovery or time ordering",
+    "Logistic plus ExtraTrees base models with logistic probability stacker",
+    "Retained fold models are private in-memory verification state; portable persistence not qualified",
+    "Separate calibration, serialized graph and Tier3 publication pending"
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "status": "provenance_unresolved",
+  "original_version_id": "6256d5b1-d742-53b1-9ff4-c2c7265ce981",
+  "original_hash": "1f7003883cd8067a1fcaa170601336d99e2911e2024a0590eb41425757dc0539",
+  "source_repository": "https://github.com/yandexdataschool/flavours-of-physics-start",
+  "source_commit": "0dc9b5ed71617f2fa65b645fb19b9485d78d3978",
+  "tree_complete": true,
+  "license_files": [],
+  "findings": [
+    "Source repository identifies itself as starter kit, not first-place submission.",
+    "Intake claims first place by Yandex authors; primary competition writeup instead identifies winning team Go Polar Bears.",
+    "Do not promote this intake as verified first-place implementation without reconciling provenance.",
+    "Existing component matches do not prove complete trainer or protected-feature contract.",
+    "No source data or model files downloaded; no catalog mutation."
+  ],
+  "sources": [
+    "https://github.com/yandexdataschool/flavours-of-physics-start",
+    "https://www.kaggle.com/competitions/flavours-of-physics/writeups/josef-slavicek-third-place-solution"
+  ]
+}

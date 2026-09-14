@@ -1,0 +1,33 @@
+{
+  "approved": false,
+  "status": "license_review_pending",
+  "notebook_version": 3,
+  "imports": [
+    "IPython.core.display",
+    "copy",
+    "gc",
+    "lightgbm",
+    "matplotlib",
+    "numba",
+    "numpy",
+    "os",
+    "pandas",
+    "pyarrow",
+    "pyarrow.parquet",
+    "scipy.stats",
+    "seaborn",
+    "sklearn",
+    "sklearn.metrics",
+    "sys",
+    "warnings"
+  ],
+  "metadata_endpoint_status": 403,
+  "findings": [
+    "Public pull endpoint yielded code; secondary metadata endpoint denied request, not bypassed.",
+    "Default RECALCULATE_PEAK_FEATURES=True and USE_SIMPLIFIED_VERSION=False; both preprocessing and full feature path must be reviewed.",
+    "Source training uses repeated random five-way splits, rotates validation/test folds and trains on other three; num_folds parameter does not change hardcoded randint upper bound5.",
+    "Both test and validation sets are supplied to LightGBM early stopping. Do not claim this nominal test fold is untouched evaluation.",
+    "Intake wavelet/deep-learning/weighted-blend stage descriptions not established by current code inventory.",
+    "No source adaptation or publication pending explicit reuse terms; no real signal or notebook outputs saved."
+  ]
+}

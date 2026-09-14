@@ -1,0 +1,23 @@
+{
+  "read_only": true,
+  "catalog_mutations": 0,
+  "status": "passed",
+  "physics_source_families": 45,
+  "families_with_mandatory_served_provenance": 45,
+  "legacy_representations": 45,
+  "projected_representations": 44,
+  "separately_accounted_equation_scopes": 10,
+  "physics_execution_versions": 55,
+  "trust_tiers": {
+    "3": 55
+  },
+  "provider_bindings_checked": 55,
+  "missing_source_families": [],
+  "issues": [],
+  "limits": [
+    "Current catalog provenance and selection metadata audit only; no new numerical execution.",
+    "Corrected served scopes do not certify every original equation or inference.",
+    "Coverage includes exact source versions or one retained derives_from source-version link."
+  ],
+  "implementation_sha256": "98219a6d2f17e99b1493a4b3f1064dcfdf4019c707f3548b6b5f561606724c86"
+}

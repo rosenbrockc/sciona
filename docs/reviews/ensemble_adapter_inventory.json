@@ -1,0 +1,681 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "graph_digest": "3ef7247266b95358ec9405b4fd8222a7904a01e1274b862be83d872679869a64",
+  "providers": [
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_alignment.aligned_eleven_model_blend",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_alignment.aligned_eleven_model_blend",
+      "version_id": "3cd8b612-9a60-5cba-ab45-3417e16d7df9",
+      "content_hash": "df4215ef7d091e337984f85f2e6d2c6e6e43bcae784ab7288d2fdc19e3929881",
+      "provider_sha256": "8f663dc472385cc51bf0b1ebe0caed4f8e0d7e6bc776c27e98cb92b887696667",
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "predictions",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction_ids",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "output_ids",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "baseline",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "output",
+          "name": "ensemble_scores",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "blend"
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.collect_population_scores",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.collect_population_scores",
+      "version_id": "5c878259-9b7e-5ee5-9b26-6360002601d9",
+      "content_hash": "900ad737a1b7f67a597d9ceee752d0fde84a71367d29e852aa17f9db4589ef15",
+      "provider_sha256": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "scores0",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "ids0",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "scores1",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "ids1",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "scores2",
+          "ordinal": 4,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "ids2",
+          "ordinal": 5,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "output",
+          "name": "scores",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "ids",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "collect_combined",
+        "collect_autocorrelation",
+        "collect_coherence",
+        "collect_relative_power",
+        "collect_feng_xgb",
+        "collect_feng_knn",
+        "collect_feng_expanded_knn",
+        "collect_feng_glm"
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ensemble_population_indices",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ensemble_population_indices",
+      "version_id": "29243e8a-d0e1-502c-8eae-a238891a6da8",
+      "content_hash": "0fbdd063ff2f704f2521a716ccb0d6e3e745e8977df66ddc79afabf470085e18",
+      "provider_sha256": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+      "interfaces": [
+        {
+          "direction": "output",
+          "name": "population0",
+          "ordinal": 0,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "population1",
+          "ordinal": 1,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "population2",
+          "ordinal": 2,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "indices"
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ordered_prediction_ids",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ordered_prediction_ids",
+      "version_id": "5e7c1739-1908-5c2b-b68a-9b3074fa8fab",
+      "content_hash": "341d3bc60a33dd7ee2a5e12a9392be84704aa187c98d325f72ce60ba43165b78",
+      "provider_sha256": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "prediction_populations",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "identity_populations",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "output",
+          "name": "ids",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "andriy_ids"
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.select_ensemble_population",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.select_ensemble_population",
+      "version_id": "dfba0187-a66a-5cac-8c67-10a4340b9e11",
+      "content_hash": "3867095306d373d855f3cfe360ed2b8df6d14519a798963ef0f26f31e482460b",
+      "provider_sha256": "f41aef750c2f24f2a32525ec6db5939a9a28c08d5904a31d8fce323aa5ddc668",
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "training_populations",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction_populations",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "label_populations",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "identity_populations",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "population_index",
+          "ordinal": 4,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "output",
+          "name": "training_segments",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "prediction_segments",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "segment_labels",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "prediction_ids",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "alex_population0",
+        "alex_population1",
+        "alex_population2",
+        "feng_population0",
+        "feng_population1",
+        "feng_population2"
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.ensemble_family_inputs",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.ensemble_family_inputs",
+      "version_id": "88b457e4-1d9d-575f-b4f6-f4f44a11e88a",
+      "content_hash": "e7c90e40728e9d4f638cb9fc882633c1f5026648b654103bf8e1f691bc1055e3",
+      "provider_sha256": "1aeca6cae322229d7ec5f0fa133d2b8fc6ca50db257cb8a72906774e6999f776",
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "alex_training_populations",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "alex_prediction_populations",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "alex_label_populations",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "alex_identity_populations",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_training_populations",
+          "ordinal": 4,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_prediction_populations",
+          "ordinal": 5,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_label_populations",
+          "ordinal": 6,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_identity_populations",
+          "ordinal": 7,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction",
+          "ordinal": 8,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "andriy_identity_populations",
+          "ordinal": 9,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "output",
+          "name": "alex_training_populations",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "alex_prediction_populations",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "alex_label_populations",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "alex_identity_populations",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "feng_training_populations",
+          "ordinal": 4,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "feng_prediction_populations",
+          "ordinal": 5,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "feng_label_populations",
+          "ordinal": 6,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "feng_identity_populations",
+          "ordinal": 7,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_prediction_populations",
+          "ordinal": 8,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_identity_populations",
+          "ordinal": 9,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "families"
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.pack_eleven_predictions",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.pack_eleven_predictions",
+      "version_id": "2d1da033-a606-50e1-a340-b25c78a0a219",
+      "content_hash": "1b70b6d25c6ffdbc3a97df3838fa75b3e18df0ddcaa390e34cd65464b2e01563",
+      "provider_sha256": "1aeca6cae322229d7ec5f0fa133d2b8fc6ca50db257cb8a72906774e6999f776",
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "combined",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "autocorrelation",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "coherence",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "relative_power",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_xgb",
+          "ordinal": 4,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_knn",
+          "ordinal": 5,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_expanded_knn",
+          "ordinal": 6,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_glm",
+          "ordinal": 7,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "andriy_svm",
+          "ordinal": 8,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "andriy_glm",
+          "ordinal": 9,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "andriy_xgb",
+          "ordinal": 10,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "alex_ids",
+          "ordinal": 11,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "feng_ids",
+          "ordinal": 12,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "input",
+          "name": "andriy_ids",
+          "ordinal": 13,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider contract for population, identity and numerical requirements."
+        },
+        {
+          "direction": "output",
+          "name": "predictions",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "prediction_ids",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Exact tuple ordinal and identity order follow provider contract."
+        }
+      ],
+      "graph_nodes": [
+        "pack"
+      ]
+    }
+  ],
+  "provider_count": 7,
+  "graph_occurrences": 19
+}

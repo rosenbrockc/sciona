@@ -1,0 +1,23 @@
+{
+  "format": "dfdc-detector-validation.v1",
+  "result": "passed",
+  "source_commit": "787da06156087cd6b616fe6608213722bddc30cd",
+  "checks": {
+    "normalized_class_ast_parity": 4,
+    "unchanged_cascade_functions": 9,
+    "actual_network_forward_backward_cases": 3,
+    "actual_cascade_cases": 2,
+    "explicit_state_restoration": true,
+    "invalid_state_rejections": 4,
+    "implicit_loads_forbidden": true
+  },
+  "limits": "Synthetic random subnetworks and deliberately constructed constant-bias cascade states. Verifies execution and parity, not pretrained face-detection quality or historical dependency equivalence. Full competition lifecycle still unvalidated.",
+  "sha256": {
+    "sciona/dfdc_detector.py": "b44391c23d79d6c6724360e49e34450a9d073facba491075879f9bba0d2336a6",
+    "sciona/dfdc_mtcnn_networks.py": "f1f3c5d22e9aaddc753016b315281c1e38924e9f58528fbfc35d0935c7d417ec",
+    "sciona/dfdc_mtcnn_cascade.py": "056419d1f931902495d2778cb2e7b214c0a73599eedcdf917e48bbb78bf379a1",
+    "sciona/dfdc_faces.py": "8852942a6a366dd0b8adb5af038cd6f42cc414c013fad24f265f21d954041a68",
+    "scripts/validate_dfdc_detector.py": "1bc2643c3a2c60ce28458bafb00dae82f679914bea0091a8e604b279f29125c1",
+    "docs/reviews/competition_dfdc_facenet_source_pins.json": "64c37605ad55ebdecf58bac2fd6d1df18a7a87b6e6c046c43c66961a91e1e2d8"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "format": "geotemporal-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "c451b7f63ae5a6471eca2ba547d4d49dc64ef466e10133f4d007ddb1be0fdb43",
+  "validator_sha256": "ec810121efab82ce2b6afb4f6ec6eb99fefeeb84673e124b1b659bdcbd413963",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

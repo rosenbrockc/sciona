@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "scope": "Source and proof only; runtime and publication pending",
+  "test_results": {
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "source_sha256": {
+    "tests/physics_ingest/test_work_energy_proof.py": "cbd3d5f52dd65c7165a0f2db7a25d14379109cf1e7cc5288619034284afaf5e5",
+    "sciona/physics_ingest/work_energy_proof.py": "bb6220ac3bc2fb1a3e96ac422309567673d412a4fb4fb27c575da5297c3a971b",
+    "scripts/validate_work_energy_source.py": "0257ac738320535c96011b1f8595e2a51f18d8f5afe34819194cc11c1a722701"
+  }
+}

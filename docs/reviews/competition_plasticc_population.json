@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "checks": {
+    "original_objects": 15,
+    "augmented_objects": 15,
+    "raw_features": 230,
+    "selected_features": 41,
+    "trained_folds": 3,
+    "normalized_output_rows": 30,
+    "augmentation_replays": 1
+  },
+  "hashes": {
+    "sciona/plasticc_population.py": "64022bdcd6f38344e0e03e34d863f8ae4bad4a2aa90953b6d4d8ffa77600729f",
+    "sciona/plasticc_defaults.py": "5143ee8d74dec155c01b1456037de03c1c12c8bd82257c76d72f9eee51c8be78",
+    "sciona/plasticc_observations.py": "694196bf77c42833f07aa0367d67d0a0fbe5491a5d0aaf5d4acf174260310385",
+    "sciona/plasticc_augmentation.py": "66f5ad6d847368d845fa128f57af737519c602fedf2a0b800a5fbaf5d89d8fa4",
+    "sciona/plasticc_features.py": "e2b0841b8c65008cf8b11088192688c1d7d22f9742b4bb60ff0a0ecc64ad6c69",
+    "sciona/plasticc_weighting.py": "cb2a5293d4d02399f1a627c6139555182178afa88e3ac9f4bdc9362ca2473013",
+    "sciona/plasticc_training.py": "3d0937fbe12431f5de58dd1b7737da6651901115f4f78aca7b8a3bb5dfa8727c",
+    "sciona/plasticc_predictions.py": "22fa11fb13ea480be21bb31b04094363434e458cbcb039b6e6edb6e6a74ed0a3",
+    "scripts/validate_plasticc_population.py": "5c9f99c1bf22798c2cbc7f175364b7915ebdaf6720f8ca9cd7c9675a1892bc26",
+    "docs/reviews/competition_plasticc_defaults.json": "dcdcc1edc985978c41a2fc104c94bbc990a17dc94a490a7e0537ec2f3c102064"
+  },
+  "scope": "Integrated actual synthetic augmentation/GP/features/folds/train/predict/postprocess",
+  "limitations": [
+    "Synthetic training capacity overrides; no accuracy claim",
+    "Serialized payload/graph and publication review outstanding"
+  ]
+}

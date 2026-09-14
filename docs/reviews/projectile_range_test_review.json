@@ -1,0 +1,15 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_projectile_range.py tests/physics_ingest/test_projectile_range_proof.py",
+  "test_results": {
+    "tests": 40,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_projectile_range.py": "5534983100f2c9de09e16f5fe4c160e92deee29724c4c0a7a678f9eceec4ebb9",
+    "tests/physics_ingest/test_projectile_range_proof.py": "a771a36a22c391ce7868d66aa61b6d4ac08f1eb625f90d0e0525aaa59bdf037e"
+  },
+  "provider_sha256": "80333f415609cb085eb13e4d6e7723050d53e702ea7414e5715ca1ea1610a67c"
+}

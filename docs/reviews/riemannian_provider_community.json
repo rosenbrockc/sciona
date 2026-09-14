@@ -1,0 +1,191 @@
+{
+  "atoms": [
+    {
+      "artifact_id": "7de02f3a-b23b-5a2e-aed6-e4e8c728cca9",
+      "version_id": "a5402dee-d313-55c4-a698-0f50895ee430",
+      "fqdn": "sciona.atoms.ml.xgboost.competition_bagging.bagged_window_probabilities",
+      "runtime_fqdn": "sciona.atoms.ml.xgboost.competition_bagging.bagged_window_probabilities",
+      "source_sha256": "6b86609f1e7ec1c72c665aeab3c7858a29f25e75fabead34c5c06d71de9ea2d6",
+      "intake_evidence_sha256": "2e8f55f220e126f3636cc087b8094cfafb40b071a463d464288cfc2ce1782aa7",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Explicit segment-to-window binary label alignment, source bagging/tree hyperparameters, in-memory fit and labelled positive-class output. Modern sklearn estimator API and XGBoost defaults are disclosed; no untrusted model loading.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "0048ecc6-ea3e-55d9-8ca5-b2919855021e",
+      "version_id": "e20c613a-1800-5b47-8204-f4c04615fdde",
+      "fqdn": "sciona.atoms.riemannian_bci.covariance_features.delay_correlation.channel_delay_correlations",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.covariance_features.delay_correlation.channel_delay_correlations",
+      "source_sha256": "3fd849081b38f29dc759f48ad1061981e18341d5accc5e1b31a37449266bf679",
+      "intake_evidence_sha256": "9963f21a9f4f8847b5def9bc98408b9eb65b464bb9a605b838d16089e2954bca",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Circular subsampled per-channel delay correlations with explicit list/integer-order semantics. Existing truncated multichannel covariance has different semantics. PSD output may be singular; no hidden regularization.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "0d8a323c-6325-57e2-a6c4-6c75efa95513",
+      "version_id": "021e410f-daa5-5a5e-aeff-c5773dc3d940",
+      "fqdn": "sciona.atoms.riemannian_bci.covariance_features.frequency_coherence.frequency_band_coherence",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.covariance_features.frequency_coherence.frequency_band_coherence",
+      "source_sha256": "db7f311992fe17c964f945b1871cf5038f10e9d6cb1dcf5c7cf16fb315552130",
+      "intake_evidence_sha256": "7b3db6941cb654c7e60b36314e907e016ae777ec7b78d084ddd56d3f3bb8be8e",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Mean complex FFT coefficients per half-open band before normalized cross-products; distinct from existing channel-coherence operation. Reject empty bands/zero power. Channel-count generalization is explicit.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "de397eac-f1c9-51a2-8597-bce4531ac786",
+      "version_id": "6e6880f0-7d7c-568a-b834-48ae0c65618f",
+      "fqdn": "sciona.atoms.riemannian_bci.covariance_features.source_tangent.channel_tangent_features",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.covariance_features.source_tangent.channel_tangent_features",
+      "source_sha256": "2285c5b1712da489859194428862fb0cedb29108cfce10a38ecccba5afb2d0e1",
+      "intake_evidence_sha256": "0ec51b50be4a4e65d195458c9691e679473984c0655bd155f1a313d0b06612a2",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Source trace-target shrinkage 1e-9 then identity or log-Euclidean reference and weighted upper triangles. Prediction batch reference update is explicit and transductive. Inputs validated PSD and outputs finite.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "4c0d811d-df39-5d8b-9706-b9cd6702ea0d",
+      "version_id": "581268f0-37bf-5f59-a2b0-4642b55c8f96",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.segment_scores.segment_probability_max",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.segment_scores.segment_probability_max",
+      "source_sha256": "ce9a4e5aaab1df7c5e578a234122e473936afd916ff1dd1404e58ff28c2d37f8",
+      "intake_evidence_sha256": "1e81e679455b568a56d360e89ca021878f0b9593ceb0c6ae23432316f1d64219",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Max by complete zero-based segment identities, preserving segment order and variable window counts. Existing sample-level overlap reducer is a different algorithm. Reject missing IDs and invalid probabilities.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "c60e3dd1-6e22-5692-975d-d3ef4ccf317b",
+      "version_id": "7cc9a7ed-79da-53de-890e-796bbf5a4576",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.segment_windows.window_signal_segments",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.segment_windows.window_signal_segments",
+      "source_sha256": "cd2ebec9cbcbe8ae456ddbb709aa9f200a2c3f288e71e6272bbb80e7231a0481",
+      "intake_evidence_sha256": "127d68845610cf270e8e7fdff5e8b1481be30eb77022e2477173aa01edfe3148",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Finite numeric multichannel segments, positive complete-window geometry, independent float64 copies and stable segment/time order. Delegates audio framing; exact synthetic source Windower parity and boundary/no-alias tests.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "98eb1141-ce74-54ba-803b-dfd0f5b171eb",
+      "version_id": "7a84a508-48e1-54f0-b4b5-ba89d94c5f1e",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.source_inputs.prepare_segment_windows",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.source_inputs.prepare_segment_windows",
+      "source_sha256": "f693a88faa75d5d138c54d18b601dcd14f02b22d9df8504e02d178d7a8e56100",
+      "intake_evidence_sha256": "6baccab9b15845913e5ebf33b5e168dc0ff75f49b0b560051debd68ee0da08c9",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Delegates separately to registered windowing, checks cross-partition channel count, and returns separate provenance vectors and prediction count. No label or train/prediction mixing.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    },
+    {
+      "artifact_id": "5f3907af-342e-5547-b8e7-2a89913b65e8",
+      "version_id": "4ca9a95a-8fd5-53da-991f-05f1a3553913",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.source_inputs.source_riemann_configuration",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.source_inputs.source_riemann_configuration",
+      "source_sha256": "f693a88faa75d5d138c54d18b601dcd14f02b22d9df8504e02d178d7a8e56100",
+      "intake_evidence_sha256": "7868df7f8108f838c28c219fa6c554eb48d0aa87807efd479941311c14e33f07",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Pinned source YAML constants; distinct branch settings avoid global-input collisions. Fresh mutable lists on each call. Only the two Riemannian source branches are configured.",
+      "review_limitations": [
+        "Synthetic numerical and contract validation only; no predictive-performance or clinical-validity claim.",
+        "Current numerical libraries; not the original 2016 runtime.",
+        "Community Tier 3 only; no human certification, usage-threshold verification or liability coverage."
+      ]
+    }
+  ],
+  "tests_passed": 47,
+  "test_source_hashes": {
+    "test_multichannel_segment_windows.py": "0e4ca20a1a6575b563d1826c9774cd0c004ef4634a8b30dc8456e13052228f08",
+    "test_channel_delay_correlations.py": "9bb0ffd0a991776ae0a63458a4fe9a9d7b99001c2de0223f9118baabb5408385",
+    "test_frequency_band_coherence.py": "875bbc5e4c1eed59e13efccc1b836b1f96329245a96cad578c177ba23368bdfb",
+    "test_channel_tangent_features.py": "257d75809423e06de2e9a1ba322fdf517bbff766c5210eb1b621a5560d116a3b",
+    "test_bci_prediction_contracts.py": "74b9f16fca2d285016d47c85dd7a0f1ec2602117b3e53fb4ecc3b0a775c2eb9f",
+    "test_riemannian_bci_execution.py": "e17e3eb37668960a96b3bb9ca8a5f923af5bbcde846a8a75236f4a7a3db23458"
+  },
+  "execution_evidence": "riemannian-execution-intake.v1",
+  "scope": "Eight exact provider versions supporting a two-branch component; original full competition ensemble remains unapproved."
+}

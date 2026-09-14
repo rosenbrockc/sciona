@@ -1,0 +1,59 @@
+{
+  "approved": false,
+  "notebooks": {
+    "inference": {
+      "http_status": 200,
+      "version": 8,
+      "license_fields": []
+    },
+    "resnext": {
+      "http_status": 200,
+      "version": 21,
+      "license_fields": []
+    },
+    "vit": {
+      "http_status": 200,
+      "version": 3,
+      "license_fields": []
+    },
+    "efficientnet": {
+      "http_status": 200,
+      "version": 11,
+      "license_fields": []
+    }
+  },
+  "cropnet": {
+    "metadata_endpoint": "https://www.kaggle.com/api/v1/models/google/cropnet/tensorFlow2/classifier-cassava-disease-v1/get",
+    "legacy_model_reference": "https://tfhub.dev/google/cropnet/classifier/cassava_disease_V1/2",
+    "model_metadata": {
+      "id": 646,
+      "slug": "classifier-cassava-disease-v1",
+      "framework": "tensorFlow2",
+      "versionId": 779,
+      "versionNumber": 1,
+      "licenseName": "Apache 2.0",
+      "url": "https://www.kaggle.com/models/google/cropnet/TensorFlow2/classifier-cassava-disease-v1"
+    },
+    "status": "model_license_declared",
+    "weights_downloaded": true,
+    "remaining": "Establish equivalence to winner cached copy; official reference artifact now pinned and executed.",
+    "artifact_evidence": "docs/reviews/competition_cassava_cropnet_artifact.json",
+    "runtime_evidence": "docs/reviews/competition_cassava_cropnet_validation.json"
+  },
+  "notebook_license_status": "Publisher viewer Apache-2.0 declaration verified together with public metadata and all four pinned versions.",
+  "reference_loss": {
+    "source": "https://github.com/google/bi-tempered-loss",
+    "license": "Apache-2.0",
+    "notice": "docs/licenses/Cassava-bi-tempered-Apache-2.0.txt",
+    "implementation_basis": "Local loss adapted from licensed Google reference; notebook helper used for numerical comparison only."
+  },
+  "remaining": [
+    "Third-party notices and final source attribution inventory",
+    "EfficientNet upstream model redistribution terms",
+    "CropNet cached-copy identity limitation review",
+    "Complete execution dependency inventory and notices"
+  ],
+  "catalog_mutations": 0,
+  "notebook_license_evidence": "docs/reviews/competition_cassava_notebook_license_declaration.json",
+  "timm_weight_license_evidence": "docs/reviews/competition_cassava_timm_pretrained_license.json"
+}

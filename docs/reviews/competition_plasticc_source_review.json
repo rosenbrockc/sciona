@@ -1,0 +1,36 @@
+{
+  "approved": false,
+  "intake_version": "57909e28-f500-51c8-91da-8e104377d2fd",
+  "intake_content_hash": "3290c60e5dc631a1a69f70a9fed6a9d232727c4f8c7dc1fd97dfc778c8be7a57",
+  "source_repository": "https://github.com/kboone/avocado",
+  "source_commit": "cd7809db4d7eb92860b178d8f5a53ab16f03ad91",
+  "source_files": 28,
+  "license": "MIT",
+  "source_relationship": "README identifies Avocado as the codebase developed for the winning solution and says current implementation reproduces results; pinned maintained implementation, not a claim of identical original submission bytes.",
+  "findings": [
+    "GP is two-dimensional Matern32 over time/wavelength with fixed wavelength lengthscale, optimized time lengthscale/amplitude, optional fixed amplitude, initial-guess fallback on optimizer failure.",
+    "Source contains dedicated astronomical redshift/observation augmentation and custom feature extraction; generic flux correction and tsfresh/cesium intake descriptions require correction.",
+    "Classifier uses weighted LightGBM folds; inspected source does not establish intake MLP ensemble or Platt calibration.",
+    "Final known/unknown class adjustment masks galactic/extragalactic cross predictions and uses an explicit unknown-class formula followed by renormalization; source warns it is task-tuned."
+  ],
+  "dependency_availability": {
+    "astropy": false,
+    "george": false,
+    "lightgbm": false,
+    "scipy": true,
+    "pandas": true,
+    "sklearn": true,
+    "tables": false
+  },
+  "next": [
+    "Trace documented augmentation/featurization/train/predict scripts and settings",
+    "Implement bounded astronomical observation/GP contracts and independent synthetic numerical checks",
+    "Preserve full augmentation/features/fold weighting/classifier/final adjustment lifecycle in derived Community realization",
+    "Publish only after graph/provider/evidence/served-execution gates"
+  ],
+  "confidentiality": "Public software/docs/license only; no observation data, catalogs, model files or notebook outputs retrieved.",
+  "implementation_sha256": {
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  }
+}

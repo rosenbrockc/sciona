@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_euler_formula.py": "d1593020bca082c3431ac27bcda632eeb9eeffbc481bc80ad1e63b7236d6338d",
+    "tests/physics_ingest/test_euler_formula_proof.py": "1543f6686227f1dfe8db4f653e3b8048143271495d2863f3619acb3a1c735001"
+  },
+  "provider_sha256": "76cdce963e3cec3b98f3ae32df7d03e002a1dfd352fc4bee7d2b0f17315ea079",
+  "synthetic_only": true
+}

@@ -1,0 +1,96 @@
+{
+  "format": "arc-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "4a5eaed3-fbc0-564f-b12b-120a76304e05",
+  "source_hash": "6be75e601582ede9f8122169f2ff4a763759a628a0631acae25b34a3fda826bf",
+  "source_commits": {
+    "winning_solver": "9407072659de1270358c2ba34c527785214dd68b"
+  },
+  "serialized_graph_sha256": "05688172c80ce497d1a1869779f4675479a60cc3720fffa679aef02b229c9f60",
+  "provider_sha256": "7b0aa5c681447b434724626737866ebe5917fe2a0f2fdfd3d4f0a259f2aed482",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "build_identity_sha256": "5f011c13990165f5ae8e0a7028dd4e28b20a55f0faec837b18957bea1e014b66",
+  "intake_stage_mapping": [
+    {
+      "intake": "grid_translation",
+      "realization": "C++ signed-char Image, strict private grid boundary and reversible color normalization",
+      "evidence": [
+        "source_contract_review",
+        "source_execution",
+        "graph_execution"
+      ]
+    },
+    {
+      "intake": "dsl_construction",
+      "realization": "Full pinned scalar/vector image DSL and cost-limited DAG expansion",
+      "evidence": [
+        "build_review",
+        "source_contract_review",
+        "schedule_execution"
+      ]
+    },
+    {
+      "intake": "tree_search",
+      "realization": "Output-size deduction, cross-example piece extraction, greedy composition and outer-product deduction across 3/23/33/4 phases",
+      "evidence": [
+        "source_contract_review",
+        "build_review",
+        "schedule_execution",
+        "graph_execution"
+      ]
+    },
+    {
+      "intake": "program_validation",
+      "realization": "Source candidate training-agreement score with depth/piece penalty; partial agreement allowed, no saved-program claim",
+      "evidence": [
+        "source_contract_review",
+        "build_review"
+      ]
+    },
+    {
+      "intake": "inference",
+      "realization": "Test DAG evaluation, color reconstruction, scored top-three merging, explicit resource limits and missing predictions",
+      "evidence": [
+        "process_probe",
+        "schedule_execution",
+        "graph_execution",
+        "runtime_gates"
+      ]
+    }
+  ],
+  "dependencies": {
+    "psutil": "7.0.0"
+  },
+  "limitations": [
+    "Automated Tier 3 Community reconstruction. No Tier 1 human certification or Tier 2 usage qualification; original intake remains draft.",
+    "Original intake repository URL is superseded by the primary winner announcement linking top-quarks/ARC-solution. Source methods correct Python/A* and mandatory all-training-match claims.",
+    "Full pinned C++ solver with two recorded portability patches and explicit signed-char compilation. Reviewed macOS ARM64 binary only; another platform/toolchain requires a new reviewed build identity.",
+    "Same-toolchain release builds were byte-identical; 30 paired synthetic ASan/UBSan comparisons passed. These checks do not prove correctness for every input or historical GCC equivalence.",
+    "Four adaptive phases, original concurrency and estimates preserved. Monotonic clock and 10ms RSS sampling differ from original 100ms monitor. Timed-out children are explicitly killed/reaped; missing baselines/outputs are exposed, not fabricated.",
+    "Source nine-hour/95-percent time and memory defaults cap caller budgets; synthetic evidence used shorter explicit budgets. No nine-hour competition benchmark or historical accuracy claim.",
+    "RSS is sampled process memory, not an instantaneous OS cap or parent-memory accounting. Zero observed baseline RSS yields a derived limit failure rather than silently increasing the budget.",
+    "Strict rectangular integer grids, maximum 30x30 and explicit adapter caps of 20 training pairs/20 test inputs. Test labels rejected; each test is isolated. Predictions and runtime grids are private caller data.",
+    "No implicit downloads or caller executable paths. A local reviewed build bundle is required; matcher supplies broader runner dependencies and clean-environment installation is unverified."
+  ],
+  "finding": "Full source implementation, adaptive execution, build/source integrity and real serialized graph evidence support Tier 3 selection within the explicit runtime limits. Catalog publication and served verification remain separate gates.",
+  "evidence_sha256": {
+    "competition_arc_source_pins.json": "aebb89e39091fe6ac6f8e9d1718c088d90a1a87b0efd0adfe8c88c39176b68fc",
+    "competition_arc_source_execution.json": "d2631d2c72c283ae0df42d7e4ce6747bb3e875a7d7c95e5876c95702cc053575",
+    "competition_arc_source_contract_review.json": "24ad44275ddb09b0b02590c620f3132d02b629b23e3e42a0047fd03d734257a8",
+    "competition_arc_build_review.json": "464f655fe8d8f1d3394f1ab78c76a0ce19a28e9e5603131f232bf701a0de8869",
+    "competition_arc_build_gates.json": "8c4d018444c4e56ebfe710794183c6317f91278faeddf15a1aa80edb31466977",
+    "competition_arc_process_probe.json": "c85fe56e7d0084b315a69b7f2a844380416fccf84af8a945d1b364dd71f6db82",
+    "competition_arc_schedule_execution.json": "4ca13ff8fc7aa398b33e993a8f7c4c95bc4b9ba8a30080afd111dbf2adb5c123",
+    "competition_arc_graph_execution.json": "570f7e7da7486abc22f32b3664900d2bc357859d83a56270e8de5b5c73bf4f5a",
+    "competition_arc_runtime_gates.json": "b0f37c041ddcc43d1c0b74c8f8565d61a8364b582a78ecfb79784fb7852a27ed",
+    "competition_arc_environment.json": "6aa0cda62c79b44134790f055941ce83b01eed0ce5c942f46fae6047269dbcd5"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_arc_execution.py": "0814f7852a803d0ffa43affa03df5b767e734dc7c83ae1295e33accb5907946e",
+    "requirements/arc-execution.txt": "e41226edb463a260b8d4b260c7939628d8691d98638196a695037993023535a9",
+    "docs/licenses/ARC-solution-MIT.txt": "c1bce530447da29e46a0b9055dab7c1ac04692889144530efbd0edbcbfff36e0"
+  },
+  "catalog_mutations": 0
+}

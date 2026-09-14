@@ -1,0 +1,19 @@
+{
+  "status": "implementation_pending",
+  "source_version_id": "e78e1ac4-49ad-5fe2-9a58-c82862d11ec7",
+  "source_content_hash": "b8925fbe4d0563e5f596c38b2ef39166d47316f3e6cf704267ba4f60f9d49f7b",
+  "source_commit": "ea702d75cc2258d9d7dd35ca8e5e2539d71f3140",
+  "license": "MIT",
+  "catalog_mutations": 0,
+  "findings": [
+    "The intake describes a generic causal isolation-forest OR autoencoder representation, predictive anomaly score, rolling three-sigma threshold and NAB evaluation; it does not identify a winning detector implementation.",
+    "The cited NAB repository supplies benchmark tooling and multiple detector implementations; its existence does not establish that the intake recipe is a historical high-tier result.",
+    "Pinned selected software and license only. Nine independent synthetic scoring cases passed; two core scoring boundary defects reproduced."
+  ],
+  "intended_scope": "Complete explicitly configured causal isolation-forest branch of the generic intake plus rolling score threshold and corrected NAB evaluation. No Numenta HTM or scoreboard-equivalent claim.",
+  "next_steps": [
+    "Implement current-point exclusion from representation fitting and threshold statistics with explicit warmup, fit history, model seed and window controls.",
+    "Define source boundary corrections for low thresholds and singleton windows; retain ordinary-case NAB score parity and validate probation, multiple windows and normalization.",
+    "Validate prefix invariance, full synthetic graph execution, source-scope review and Tier 3 publication gates before any catalog approval."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_sine_squared.py tests/physics_ingest/test_sine_squared_proof.py -q",
+  "test_source_sha256": {
+    "tests/physics_ingest/test_sine_squared.py": "9f3b2ad7cd22bc4719ffa2f2da584ad9e8802b54a4490a3c46b5ef6b0af40fa4",
+    "tests/physics_ingest/test_sine_squared_proof.py": "aa5bb03fb6f45f6a18267fdc2eac5b84d161f4f9cfcc583101e85a1db691099a"
+  },
+  "provider_sha256": "34310773d2bd84284702d894fabc061d9faa264c4c63dd75a25ff933ff63be0c"
+}

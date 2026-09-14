@@ -1,0 +1,24 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "classifier_training_sequence_exact_array_and_rng_cases": 18,
+  "detector_selected_training_sequence_exact_array_and_both_rng_cases": 15,
+  "source_adaptations": [
+    "Clock seed replaced by explicit shared RNG; file loading returns synthetic arrays.",
+    "Python 2 mutable range and integer coordinate dimensions ported."
+  ],
+  "limitations": [
+    "Detector sequence starts after image/target selection; dataset-level sampling still requires validation.",
+    "Optimizer epoch parity, validation and checkpoint lifecycle remain.",
+    "Training uses raw detector intensities and zero classifier rotation padding, unlike root loaders."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_training.py": "7ad662bd73073152f8d0e582ee2a86d6c6fc7a75816343f13ba729eadf448524",
+    "sciona/dsb_components.py": "0fd1509064a803e71c479821065946799c1485a8aaff0cd304797afb21d3e89c",
+    "sciona/dsb_detector_crop.py": "95cf1a3e0d6498276139c78d3f210f524b59fc794c7cac87d8ba5908c72789be",
+    "sciona/dsb_anchor_mapping.py": "0ad06f4f883ba1e841544099b41129eb1ed12ca8dacc4e537d8448670cbf936b",
+    "scripts/validate_dsb_training_sequence.py": "96222b0fa4a1773fb4defddf6a1bc67cb58f4c6ac1a33eb9cbdab1bab440aed2",
+    "tests/test_dsb_training.py": "e8c34035f394b4943067748a3188332df49c27e14bba237632797a3d2fc94b37"
+  }
+}

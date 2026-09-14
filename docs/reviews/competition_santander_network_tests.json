@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 9,
+  "sha256": {
+    "sciona/santander_network.py": "9602955027f5bb745d474991816196d1f7bf4e68cb1696ed61a1561184a2b7d8",
+    "tests/test_santander_network.py": "90e3e69938ac6dc1804a6b6cc300ae960da59dc37532e236dd3dc6644dc844d9"
+  },
+  "checks": [
+    "Uniform attention equals independent branch average",
+    "Learned attention positive and normalized",
+    "Finite nonzero gradients through every branch",
+    "Actual optimizer changes parameters",
+    "Evaluation singleton deterministic without state updates",
+    "Invalid shape/category/nonfinite/dtype/training singleton rejected"
+  ],
+  "source_comparison": {
+    "group_normalization": "Feature-axis BatchNorm1d for three-dimensional groups, channel normalization in flattened attention and pooled head",
+    "head_order_reference": "https://raw.githubusercontent.com/fastai/fastai1/master/fastai/layers.py",
+    "head_order": "First linear/ReLU; then BatchNorm/dropout/linear",
+    "intercepts": "Single constant embedding entry instead of unused feature-ID lookup entries; no feature identities supplied"
+  },
+  "limits": [
+    "Independent implementation; no third-party source copied",
+    "PyTorch initialization, not historical seed replay or exact checkpoint reproduction",
+    "Component tests use synthetic feature groups; full preprocessing/training/pseudo-label/ensemble lifecycle unverified",
+    "Source licensing remains unresolved for any copying or redistribution of original programs"
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,25 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "94df8d52-0272-5d0b-b84f-1f150d8e11f0",
+  "source_content_hash": "02129e9c5bef75cf05490e52f2291f5d336d70a92e114d022a1b635ad35b3f58",
+  "source_fqdn": "cdg.competition.solution.kaggle.aptos_blindness_1st",
+  "original_intake_status": "draft",
+  "primary_reference": "https://www.kaggle.com/competitions/aptos2019-blindness-detection/writeups/guanshuo-xu-1st-place-solution-summary",
+  "stage_mapping": {
+    "image_standardization": "Plain full-image resizing replaces unsupported retinal cropping/local-color subtraction. Reference augmentation and publisher normalization are explicit choices.",
+    "cnn_backbone": "Eight models: two each of Inception-ResNet-v2, Inception-v4, SE-ResNeXt-50 and SE-ResNeXt-101, with trainable GeM and scalar regression head. EfficientNet substitution excluded.",
+    "quadratic_weighted_kappa_qwk_loss": "Smooth-L1 regression replaces unsupported differentiable-QWK training loss. QWK motivates final fixed ordinal thresholds, not the training objective.",
+    "pre_training_fine_tuning": "All pretrained backbone parameters train in stage one; an ensemble teacher builds three added target roles, and each own model continues ten epochs. Four-level grouping differs from five-level averaging labels.",
+    "threshold_calibration": "Fixed manually selected cuts 0.7,1.5,2.5,3.5 replace unsupported Nelder-Mead optimization. Equality convention is explicit."
+  },
+  "scope": "Conceptual source correspondence with explicit conditional reconstruction choices; no exact original winner execution or competitive accuracy claim.",
+  "sha256": {
+    "docs/reviews/competition_aptos_pooling_source_pins.json": "a0772d14f912e2a6bfd202e2c14b7b22b9ac36fb849a5a2bbae902c720b418ee",
+    "docs/reviews/competition_aptos_pooling_validation.json": "8c8137d82e937aa6a5b15cfefb1867fe4dca45a273aa9f85b72aedad8a6a9e39",
+    "docs/reviews/competition_aptos_pretrained_mirror_pins.json": "6cc1fbea809c017040be7cd7c637dec87a9d8f99dd06c2dd7600df05987b9012",
+    "docs/reviews/competition_aptos_population_validation.json": "3841e19c334a4bcb2cd283e0c8f2a5f1cc3a65833f5ce4784ee46002876bcf57",
+    "docs/reviews/competition_aptos_group_refinement_contract.json": "d1a8313f0291bd5adec85bf15af5ab22ed9625aa9bf55bad2ad68b400ea1e933",
+    "docs/reviews/competition_aptos_augmentation_validation.json": "d0d0ff36827c2736730a074bdbc79c0bc09c61366b89e24cf60c02f509d8fb5f"
+  }
+}

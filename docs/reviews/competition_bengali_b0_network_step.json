@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "completed_updates": 1,
+  "full_sized_generators": 2,
+  "full_sized_discriminators": 2,
+  "classifier": "EfficientNet-B0 with 1280 LayerNorm and 14784 logits",
+  "pretrained_weights": false,
+  "all_four_trainable_networks_updated": true,
+  "classifier_unchanged": true,
+  "metrics": {
+    "step": 1,
+    "learning_rate": 0.0002,
+    "generator": {
+      "gan_a": 1.8880647420883179,
+      "gan_b": 6.474025726318359,
+      "cycle_a": 6.6862640380859375,
+      "cycle_b": 6.493715763092041,
+      "font": 9.586523056030273,
+      "total": 31.12859344482422
+    },
+    "discriminator": {
+      "real_a": 1.9384211301803589,
+      "fake_a": 1.2888023853302002,
+      "real_b": 6.262932300567627,
+      "fake_b": 2.9464104175567627,
+      "domain_a": 1.6136116981506348,
+      "domain_b": 4.604671478271484,
+      "total": 6.218283176422119
+    }
+  },
+  "sha256": {
+    "sciona/bengali_gan_networks.py": "23cb1594e69493edddce30ef960c6eb2caf5a7d298d1ee59ae6a9534a70e4010",
+    "sciona/bengali_gan_training.py": "0c963b499915f651986d9ca8b11033e678897ea21999fba0ef994efd3ebbb441",
+    "sciona/bengali_font_classifier.py": "3ffb988219fba2ae6c38b44030c9fbe93b2a161dab7369439d63db4a880330d9"
+  },
+  "limits": [
+    "Random classifier weights; not trained font-classifier qualification.",
+    "One synthetic batch of one is a diagnostic, not source training completion.",
+    "Original EfficientNet dependency identity, trained checkpoint and full winning pipeline remain unqualified."
+  ]
+}

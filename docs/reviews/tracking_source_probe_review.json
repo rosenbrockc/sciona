@@ -1,0 +1,10 @@
+{
+  "synthetic_only": true,
+  "approved": false,
+  "checks": {
+    "tracking_full_source_probe_repeat_identical": true,
+    "tracking_multiround_source_probe_repeat_identical": true,
+    "changed_source_rejected_before_algorithm_execution": true
+  },
+  "validator_sha256": "533e6835e0dc117611d4a889cad07e93915a687a316aff9c7645e29970b910ce"
+}

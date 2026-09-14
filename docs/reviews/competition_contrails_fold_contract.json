@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "checks": {
+    "source_score_ast_equal": true,
+    "independent_fold_tests": 2
+  },
+  "hashes": {
+    "sciona/contrails_fold.py": "577cc12b5c2afc9c27e7ce52c68613c2e56e46483fe1c1568d2a978595b80d10",
+    "sciona/contrails_score.py": "ff6543f88e6c5c5f97bcc201b2aacb39110f7514406bbfc112cd3ee4c191382c",
+    "tests/test_contrails_fold.py": "919496b175d0dfc2192dc9843eee9550def54172ed4c4802c1378c3e6b9cb26b"
+  },
+  "scope": "Terminal state rather than best-validation selection; exact epoch timing, diagnostic threshold sweep, no-update rejection. Complete multi-fold execution pending.",
+  "epoch_limit_adaptation": "Optional explicit cap leaves source learning-rate schedule unchanged; default runs full schedule."
+}

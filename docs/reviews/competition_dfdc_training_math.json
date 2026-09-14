@@ -1,0 +1,25 @@
+{
+  "format": "dfdc-training-math-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "loss_source_value_gradient_cases": 15,
+    "independent_loss_tests": 12,
+    "scheduler_ast_equal": true,
+    "scheduler_source_and_independent_steps": 12
+  },
+  "semantics": [
+    "Separate per-class BCE means averaged with fixed divisor two, including single-class batches.",
+    "Label exactly .5 belongs to real class; labels enter this loss already smoothed.",
+    "get_lr mutates internal counter; logging observes a different value without changing optimizer parameter-group LR.",
+    "Explicit scheduler.step uses batch + epoch*2500; source modulo counter wrap retained."
+  ],
+  "limits": "Synthetic loss/scheduler components only. Source OHEM inactive in selected config. Both schedulers use installed Torch base implementation; no historical binary, Apex, data preparation, full epoch or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_loss.py": "f7a09a92025bd40dc053f108d137750521433c3912c80ae16de3fc0a2b8f57a9",
+    "sciona/dfdc_scheduler.py": "a7e2cc97acb8e6e2c3ba7d0e464e12c99d80a4da8ce570c5e85724f8921a5a54",
+    "tests/test_dfdc_loss.py": "322710c4c1685d08aa3b73f62c98a8d57ed3919729dc2c6dde65999f5c2a7921",
+    "scripts/validate_dfdc_training_math.py": "90a009e46523e2d8b210c850e0606c6dc68b655223d7a12480e29934d35ac8d8",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

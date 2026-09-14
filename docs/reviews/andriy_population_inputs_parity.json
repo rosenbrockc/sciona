@@ -1,0 +1,47 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Andriy_data_preprocess.m": "7270d94f782ccb0850a8b1241386e52232c3fb2cfb916d1602610b8afb15cf14",
+    "Andriy_code_normalise_tr_mv.m": "a6bf8370a9aac17d28e676a1cb9f38d494d1a18b7b631358337c18561ad476c9",
+    "Andriy_code_normalise_te_mv.m": "2164f3ee11d67c9a81064a52a7151fc3832c085533a8a44351ce308bb742742b"
+  },
+  "provider_sha256": {
+    "andriy_population_inputs.py": "916722a1f917f78e69ef870205df25eb8e65e6852cf8577098e8fb3b432d35f8",
+    "andriy_normalization.py": "46162c77f957ef78bb06e7ded04bec2d6475998dd4792ed09d52c335429a36d2"
+  },
+  "validation_sha256": "a3505313caf0cccbdb57c35f457275a4a7239809d7547ae1cf6ba0b4ce6c9d8e",
+  "test_sha256": "a5b574d6e0b520aabb7c0e5047a42d78f84d3132d14d0bdc5891e18aeed74184",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 711,
+      "auxiliary_group_present": true,
+      "constant_column": false,
+      "retained_training_rows": 93,
+      "prediction_rows": 38,
+      "maximum_finite_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 712,
+      "auxiliary_group_present": false,
+      "constant_column": false,
+      "retained_training_rows": 74,
+      "prediction_rows": 38,
+      "maximum_finite_error": 1.3322676295501878e-15
+    },
+    {
+      "seed": 713,
+      "auxiliary_group_present": true,
+      "constant_column": true,
+      "retained_training_rows": 93,
+      "prediction_rows": 38,
+      "maximum_finite_error": 8.881784197001252e-16
+    }
+  ],
+  "limitations": [
+    "Already assembled clip features and caller-supplied safe group membership; no file discovery or membership inference.",
+    "Reference applies source non-NaN row criterion then runs unchanged three-chunk normalization and label construction.",
+    "Current Octave, not historical MATLAB; raw preprocessing/model pipeline integration remains separate."
+  ]
+}

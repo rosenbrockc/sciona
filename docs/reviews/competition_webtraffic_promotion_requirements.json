@@ -1,0 +1,77 @@
+{
+  "approved": false,
+  "proposed_tier": 3,
+  "policy_source": {
+    "path": "../sciona/association.pdf",
+    "sha256": "2eed0ef61e0dd60e972d7d5d89e1ee87fa63a471710679ee80e007d6a0bb5dc4"
+  },
+  "policy_interpretation": {
+    "human_review_required_for_tier3": false,
+    "tier2": "Rigorous adversarial testing plus community usage; not established by present evidence.",
+    "tier1": "Independent expert certification; not requested for this promotion.",
+    "not_blanket_tier3_gates": [
+      "Exact TensorFlow random sequence or GPU kernel replay",
+      "Executing every competition-length training step",
+      "Original TensorFlow checkpoint file interoperability"
+    ],
+    "still_required": "Accurate bounded semantics, executable stage/boundary closure, version-bound automated review, provenance/license and canonical served execution."
+  },
+  "evidence": {
+    "reports": 20,
+    "implementation_hash_entries": 137,
+    "report_sha256": {
+      "competition_webtraffic_adam.json": "be93d2d6e05a1e13fb0efb278e42a3dc98933c0009903d042232d7248b1a19fd",
+      "competition_webtraffic_assembly.json": "2bb0b1cf0cbf0ba9e4cd1088fb5bbe2df2d75be1d589d770c98090e84c9ef8dc",
+      "competition_webtraffic_batches.json": "64200076271bea8c6be69f772456a56f60d6337d297136d730151945d0e839d3",
+      "competition_webtraffic_calendar.json": "02f9fbb85a13190ee2faf723bcef4c238c1cdb5667bb8df71f67855ca750f6bd",
+      "competition_webtraffic_decoder.json": "692764ce7de14f97b2a2db80f513745111b2be2d310f2e1ff9a643c38b38471e",
+      "competition_webtraffic_dropout.json": "73bd284372afd6f052c30bb7fe2bff18611cdd21057d1635529039769d1c37f3",
+      "competition_webtraffic_ema.json": "d6d2681ac485d0fec338f77edf928a2d808a38439d09283e77cc611f706e51d7",
+      "competition_webtraffic_encoder.json": "ca434f30353282dc707ad9be9b6e8448658a8357ae91cdb60950a50d1acaa374",
+      "competition_webtraffic_ensemble.json": "c99f8e36a99dca0a55f69b488f0b170bed8f989e5a5b29f4d7f75ff48cb56287",
+      "competition_webtraffic_features.json": "6ed6ec6eb11142e0cc94daabca74281ff093dfc8b1bff3cbb381493a8da7caa2",
+      "competition_webtraffic_full_batch.json": "f561edad4623d3764b636bdc2d12a25fbed709d93137e0b4e460771ba84ce54b",
+      "competition_webtraffic_initialization.json": "3415c1d5c9554ffce97a8e6ff46447e86a5c74cf426587a1b5a203ce5bd59029",
+      "competition_webtraffic_lifecycle.json": "56d2293a0ab27656356f773d2aa6db4fa0984ab39a1b11be6b59d681e17dc005",
+      "competition_webtraffic_losses.json": "3949edb62dd0b719e6dfc256380720e85943044b6c77ac6dcdcb7440da88158e",
+      "competition_webtraffic_pages.json": "fad895d98cf0b6255d4262aad7cd52fefb849810f6834d5fd3399fc36faf9190",
+      "competition_webtraffic_schedule.json": "adb2d541c9ad28ee0abc9f8da7fcf3a0eacc96496129547a50b4597ffe688ea6",
+      "competition_webtraffic_train_step.json": "b10fcb7865799b8557d899a05f7107e60c42df09bd5420984c78ddbafae5324c",
+      "competition_webtraffic_training_forward.json": "cb048df61d360ea780da8cecf788c18d2eaae91dfaf4153d5c8ff0ae64a7e133",
+      "competition_webtraffic_training_review.json": "63095edd26d293774ad1575844968cab1259d659b2fbd56cca9c37e18339aecd",
+      "competition_webtraffic_windows.json": "590e14e7b291939c2a4dabdd3c4802e75abb9f349cf56f1f4d948f1d45e57328"
+    },
+    "demonstrated": [
+      "Feature preparation and batching",
+      "Source-width batch256 three-model gradient/update execution",
+      "Adam and EMA arithmetic, explicit stochastic inputs and observed EMA snapshots",
+      "Saved-state continuation and ensemble prediction"
+    ]
+  },
+  "proposed_contract_review": {
+    "status": "required_before_approval",
+    "preserve": [
+      "Original intake stays immutable/draft; derived version explicitly identifies corrected GRU/s32 architecture",
+      "All training/prediction stages executable, including reproducible initialization and checkpoint/ensemble state",
+      "Explicit runtime stochastic inputs and EMA observation behavior must be part of public callable contract"
+    ],
+    "exclude_claims": [
+      "Original source seeded-run/competition-score reproduction",
+      "Tier1 certification or Tier2 community-usage qualification"
+    ],
+    "disconnected_attention": "s32 does not consume attention; omission requires explicit semantic review and prevents original full-checkpoint equivalence claims."
+  },
+  "artifacts_present": {
+    "provider": false,
+    "graph": false,
+    "publication_script": false,
+    "served_execution_verifier": false
+  },
+  "remaining": [
+    "Finalize and automatically review complete executable boundary semantics for randomness, EMA observations and checkpoint representation",
+    "Register provider functions and shape witnesses; build immutable derived execution graph",
+    "Exercise serialized graph with positive/negative synthetic lifecycle cases and hash-bound dependency closure",
+    "Apply idempotent Tier3 publication transaction and verify served retrieval, materialization and execution"
+  ],
+  "catalog_status": "No mutation; last separately verified snapshot remains72served CDGs,142competition intakes,5covered by canonical served derivatives."
+}

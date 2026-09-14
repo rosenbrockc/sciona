@@ -72,6 +72,7 @@ class MacroArtifactCandidate:
     visibility_tier: str = "general"
     cdg: Any | None = None
     terminal_on_match: bool = True
+    trust_tier: int = 3
 
 
 @dataclass(frozen=True)

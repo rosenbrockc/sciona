@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "component_only": true,
+  "catalog_mutations": 0,
+  "model_fits": 30,
+  "boosting_rounds": 13458,
+  "checkpoint_replays_exact": true,
+  "synthetic_separator_accuracy": 0.95,
+  "source_sha256": "b46e73cd2e1c396b60b96e81be960da2a75223953ac2685ffc5140e759bf9800",
+  "xgboost_version": "3.4.1",
+  "verifier_sha256": "ad6f5963c27aaccf1f2ec42b17e19416ea9edcca447d211b893a2393c4d92910",
+  "scope": "Full classifier budgets with synthetic prepared views. No integrated feature-generation, neural branch, competition accuracy or historical runtime parity claim."
+}

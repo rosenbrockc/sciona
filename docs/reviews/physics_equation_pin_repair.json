@@ -1,0 +1,17 @@
+{
+  "read_only": true,
+  "original_version_id": "ffb043f3-05a3-5ca6-9d94-87a17ff512d3",
+  "alternative_version_id": "76274cb1-ebf6-533d-a777-b505190f3d17",
+  "unchanged_rows": {
+    "artifact_cdg_nodes": 13,
+    "artifact_cdg_edges": 12,
+    "artifact_io_specs": 0
+  },
+  "binding_rows": 31,
+  "changed_binding_hashes": 1,
+  "status": {
+    "status": "draft",
+    "is_publishable": false,
+    "is_latest": false
+  }
+}

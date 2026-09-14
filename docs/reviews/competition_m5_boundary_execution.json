@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "synthetic_only": true,
+    "models": 220,
+    "horizon": 28,
+    "synthetic_series": 70,
+    "strict_json_output": true,
+    "identifiers_excluded": true,
+    "code_unchanged": true
+  },
+  "sha256": {
+    "sciona/m5_calendar.py": "32f729ea52f80f109ff3ec8f46d595051a14e97f3b13a640f238e23e1ce4470d",
+    "sciona/m5_encoding.py": "83cdef7393eb4d87f1df0ca2717462aa8c94196d0cc644bbe493bbee62eac18a",
+    "sciona/m5_execution.py": "af183997bcbf809b444d4c96342eb6f681fab31e6b686fead191a920c4bc25b8",
+    "sciona/m5_family.py": "51283e76eb1b00eff625ea570e2a194c9774997925f4829e27acb6277f1ffe05",
+    "sciona/m5_forecast.py": "ac4d932b358b89ebfb8f9041d0695d561115a5be414aead8fe11a81f16be2d2f",
+    "sciona/m5_grid.py": "9f3831c77638395b07be10268c30503adbde39a7345217611ad53c7b89ea0787",
+    "sciona/m5_join.py": "4d574d15807afe29c92da95e17cf9f0dd764cf639935b1603682d8e23e074d49",
+    "sciona/m5_lags.py": "c74e2b42dfdd3dacf09bc3c2e1be6f956b9c8252e2c89562693e40b4b206b7c4",
+    "sciona/m5_pooled_training.py": "9c674a5d7a8c9f6c5083a530aaed3fa13836f01885736949cc41f764c5d75ff7",
+    "sciona/m5_precision.py": "7606b0ce072e14bdca3b711562af56386143ea1652ffa779df9f64a733ff64d4",
+    "sciona/m5_preprocessing.py": "76823cb49cedc165ab4a8201f296cf485c9c119eb221f874c240849c30ad9dcd",
+    "sciona/m5_price_block.py": "f1d2623a4956a3f79c12adcef52a8dc53a702fdae9cacbdc2c979925dc27b016",
+    "sciona/m5_prices.py": "12d228b78d17e357fca0dce1a881cb1a3090204065f1a8a8d7782d20f660c512",
+    "sciona/m5_training.py": "77ce1bfb9da5f31f0b68e6142a24686c241e7a45bb72d370f1f897431951bf83",
+    "scripts/validate_m5_boundary.py": "0ae25fcfeaabfcdb16c6c13ea6e8df170c0f6152b01553e7349797fef56880c8",
+    "scripts/validate_m5_full_inventory.py": "bcbd8db5d2bc0531095bb1979f6205f2e2a7f300570a3bb05bf4e29db8ec9d36"
+  },
+  "scope": "Full model inventory and horizon through private boundary on reduced synthetic population; no historical accuracy qualification."
+}

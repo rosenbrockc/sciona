@@ -1,0 +1,20 @@
+{
+  "status": "published_and_served_execution_verified",
+  "local_catalog_only": true,
+  "trust_tier": 3,
+  "version_id": "b9e239a7-588b-56c9-9be2-d7720a341350",
+  "graph_sha256": "2eeaaa8b3b622b0a20baacdfd5255b0f9d32281c57ea08f3f2fac8cfb3479e6b",
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "provider_versions": 2,
+  "publication_rows_created": 40,
+  "idempotent_reapply_rows_created": 0,
+  "semantic_negative_gates": 10,
+  "publication_negative_gates": 6,
+  "served_cdgs": 97,
+  "competition_intakes": 142,
+  "covered_intakes": 30,
+  "remaining_intakes": 112,
+  "final_served_runtime_status": "passed",
+  "commit_or_push": false,
+  "served_verification_sha256": "834c3cf7d00a728d5a9e27f537d8355a712d9dfb9244b9bacd150b0464e11ce4"
+}

@@ -1,0 +1,29 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_sha256": {
+    "sampler.py": "3e58a2bc4bb221449f18b0db7e965513a107d13485e2b78839003bb5c6199cfd",
+    "_utils/worker.py": "f0758e97eecf261a4953de70d88e7b5cfa64b63ee8a9e4c604e71fba2514c18f",
+    "dataloader.py": "6d72247529c7501ad47919d01424144ac475fa9cf68cff5c5b0f5b22ce4a7f24"
+  },
+  "confirmed_contract": {
+    "worker_count": 16,
+    "worker_python_and_torch_seed": "base_seed + worker_id",
+    "worker_numpy_seed_explicit": false,
+    "iterator_base_seed_draw": "torch.empty((), dtype=torch.int64).random_()",
+    "random_sampler": "main-stream torch.randperm without modern extra seed draw"
+  },
+  "sampler_report": "docs/reviews/competition_global_wheat_sampler.json",
+  "pending": [
+    "Complete source base-fit lifecycle and full training inventory"
+  ],
+  "worker_qualification_report": "docs/reviews/competition_global_wheat_workers.json",
+  "worker_qualification": {
+    "workers": 16,
+    "epochs": 2,
+    "batches": 64,
+    "samples": 256,
+    "augmented_outputs_and_four_rng_streams_exact": true,
+    "main_rng_exact": true
+  }
+}

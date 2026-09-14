@@ -1,0 +1,44 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "Andriy_README.md": "54cc1543a70c4e2e7725348de278725cac73f1703301d1865aa3b63e12c10e5f",
+    "Andriy_mod_glmnet_5_3.R": "b54aac9694eeb6efa525d4de8b17df27062b173424ac8232ac0f9b2fc5cae2d3",
+    "Andriy_mod_svm_5_7.R": "aae151d53a6e3e8d13034596dc7d087f3e925179f4bf4b3ad8bb34ae707fbed0",
+    "Andriy_mod_xgb_7_5.R": "3b5ad2bf7d12b23d07c54d2c00b93d29cb86157022a8660cfeb7463dd267ee2e",
+    "Andriy_data_preprocess.m": "7270d94f782ccb0850a8b1241386e52232c3fb2cfb916d1602610b8afb15cf14",
+    "Andriy_FE_main_AR.m": "0fb8d8ae6861ddede6630c318f6af9dded126d943b3c3311423657f7f5b44f3d",
+    "Andriy_FE_main_CONN.m": "cdc6ad7aa1b2497167a73c0d743bf141fc948fe95c5db996312839e0680e5dcd",
+    "Andriy_FE_main_CSP_AR.m": "b280b961868c7f125e0e492f274323356e76205621a15322172f63c1d3fa8eef",
+    "Andriy_FE_main_F.m": "b53474aefc981102cc39cd550cc7d1d63210825003cd046e396555588bff2515",
+    "Andriy_code_README.md": "85cac8201a1d9650868a6629c2d5f867cf408ad37b88a8b9bde5a6495c44ac3e",
+    "Andriy_code_SPC_extract_features.m": "d4e977a4f630f88adf14d04907f6e6e03b46e5392da0b93b42fc546912ae08bc",
+    "Andriy_code_SPC_extract_featuresAR.m": "7df7b7a3704f33f4914fb98b38871e502250834b973bfaf3b6cc21277772a0ee",
+    "Andriy_code_normalise_tr_mv.m": "a6bf8370a9aac17d28e676a1cb9f38d494d1a18b7b631358337c18561ad476c9",
+    "Andriy_code_normalise_te_mv.m": "2164f3ee11d67c9a81064a52a7151fc3832c085533a8a44351ce308bb742742b",
+    "Andriy_code_mean_nan.m": "f3998cbc9dd08b97e9c827b07712de1fe5e338af8ec46fb6bf1a73b80bfa5adf"
+  },
+  "runtime_probe": {
+    "Rscript_on_path": false,
+    "octave_on_path": false,
+    "matlab_on_path": false
+  },
+  "normalization": {
+    "provider_sha256": "46162c77f957ef78bb06e7ded04bec2d6475998dd4792ed09d52c335429a36d2",
+    "test_sha256": "fe40e18d646953abc5ab79ec019ba79e51c21ac0cbd76e694343abd2b7df1d35",
+    "tests_passed": 9,
+    "evidence_level": "source formula inspection and synthetic contract tests; no MATLAB runtime parity"
+  },
+  "unresolved": [
+    "MATLAB resample semantics and inclusive trim endpoint; no direct replacement with Feng resampling.",
+    "Four source feature families: mainstream 102 per channel, AR errors9 per channel, first CSP channel AR9, connectivity180; source concatenation follows MATLAB column-major order.",
+    "CSP learning requires explicit source selection/sequence inputs; public source skips selected directory entries and uses source-specific selection rules needing review.",
+    "Within-clip missing-feature mean imputation and selected log1p transforms precede row validity decisions.",
+    "Normalization fits all training groups plus valid prediction rows using sample standard deviation, not train-only population scaling.",
+    "R XGBoost uses set.seed with five seed values; mapping to Python seed parameters is unproven.",
+    "XGBoost importance Feature names are converted directly to numeric R indices; verify source-version index base and ordering before reconstruction.",
+    "LiblineaR types5/6, decision/probability column orientation, sample-SD scaling and glmnet path interpolation require source-runtime validation.",
+    "Nineteen-window segment reduction differs: SVM masks each invalid window, XGB/GLM only zero segments with no valid windows; preserve distinction.",
+    "XGB and GLM rank each submodel across all populations then average normalized ranks before final ensemble blend."
+  ],
+  "publication": "No Andriy atom or CDG approval in this audit; complete ensemble remains draft."
+}

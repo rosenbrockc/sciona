@@ -1,0 +1,74 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "iwmf_and_bw_low": "12f745eae65d2b049a9c39c199d7fe9796554c8763f2abfdfb378558a0ad82a2"
+  },
+  "provider_sha256": "38851928dd9384fd39bbc3e8bece8c6486181ffb35f1b57730de23c42fa8b80d",
+  "validation_sha256": "eba33d8dfc7f093376b4e31daf1e3e6740070db7af4ee4f95fdb58d13f50ee32",
+  "test_sha256": "46e8c2e4024dc34cfb8cf9e5961dcc4562a496457c3f41b2fcea6c3d48fd605d",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 128,
+      "maximum_absolute_error": 2.842170943040401e-14,
+      "native_octave_default_difference": 1.4418709719062477
+    },
+    {
+      "seed": 10211,
+      "samples": 768,
+      "maximum_absolute_error": 5.684341886080802e-14,
+      "native_octave_default_difference": 0.8520306548355094
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 2.4158453015843406e-13,
+      "native_octave_default_difference": 0.42569954064452986
+    },
+    {
+      "seed": 10212,
+      "samples": 128,
+      "maximum_absolute_error": 1.4210854715202004e-14,
+      "native_octave_default_difference": 2.8017251650879373
+    },
+    {
+      "seed": 10212,
+      "samples": 768,
+      "maximum_absolute_error": 7.105427357601002e-14,
+      "native_octave_default_difference": 0.37447692277670797
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 6.394884621840902e-14,
+      "native_octave_default_difference": 0.2993452953281519
+    },
+    {
+      "seed": 10213,
+      "samples": 128,
+      "maximum_absolute_error": 4.973799150320701e-14,
+      "native_octave_default_difference": 1.5207292158142707
+    },
+    {
+      "seed": 10213,
+      "samples": 768,
+      "maximum_absolute_error": 9.237055564881302e-14,
+      "native_octave_default_difference": 1.2289733787950254
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 2.8421709430404007e-13,
+      "native_octave_default_difference": 0.38666277181143016
+    }
+  ],
+  "documented_defaults_url": "https://www.mathworks.com/help/signal/ref/pwelch.html",
+  "signal_package_version": "1.4.8",
+  "octave_pwelch_sha256": "7849f80bad5804779cb35c804d098cf3dc62e4557d8e0ffaeda735d538405f44",
+  "limitations": [
+    "Source moment calculation retained; pwelch call adapted to explicit documented Hamming window and overlap, with Octave R12+ no-detrending mode. Native defaults differ.",
+    "Current documented MATLAB settings only; historical MATLAB parity is unproven. No full model execution claim."
+  ]
+}

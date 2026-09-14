@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "case": "empty_correct",
+      "source_match": true
+    },
+    {
+      "case": "empty_false_positive",
+      "source_match": true
+    },
+    {
+      "case": "threshold_boundary",
+      "source_match": true
+    },
+    {
+      "case": "unequal_labels",
+      "source_match": true
+    },
+    {
+      "case": "random",
+      "source_match": true
+    },
+    {
+      "case": "attention_rounding",
+      "source_match": true
+    }
+  ],
+  "invalid_inputs_rejected": 3,
+  "runtime_sha256": "5e248a8fe58b3ce0a12e1acc8fde9b856dfbf294ad4083db1624ba9771d34ad8",
+  "validator_sha256": "408eb3d1427de693e5c886c604de058cfa02e685bb13f85cef8465d538ea76e5",
+  "scope": "Exact per-record metric semantics including empty targets and two-clip max pooling. Checkpoint ranking/full model validation remains separate."
+}

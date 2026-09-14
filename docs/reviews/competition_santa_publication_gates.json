@@ -1,0 +1,15 @@
+{
+  "format": "santa-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "f274e4c56ffb8d3cf99e3f657ed5ccc9a2da5af703a5c3940bab43b85291a899",
+  "validator_sha256": "8d4c14ca861f4a608f1a4d6ef0157675139ebc6daac4e409c086adc9e4620036",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

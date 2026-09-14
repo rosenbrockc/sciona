@@ -1,0 +1,30 @@
+{
+  "format": "dfdc-training-crops-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_crop_writer_cases": 12,
+    "independent_pair_slice": true,
+    "actual_training_detector_frames": 35,
+    "actual_detector_batches": [
+      32,
+      3
+    ],
+    "training_landmark_threshold_source_checks": 2
+  },
+  "semantics": [
+    "Detect all original frames at half resolution in batches32; training thresholds differ from inference.",
+    "Every tenth frame cropped with original detections reused for altered clip; all actors retained.",
+    "No two-actor/320frame cap applied here: those limits belong to later landmark/difference generation."
+  ],
+  "limits": "Complete synthetic decoded arrays only. Partial decoding/indexing and media codec not covered. Actual detector uses constructed synthetic states, not pretrained-quality evidence. Landmark extraction and group folds still outstanding; no full lifecycle/promotion claim.",
+  "sha256": {
+    "sciona/dfdc_training_crops.py": "ab190178ec5f5f8e20b097e6bba00aaee132fc26b525e77c3d5f0893124765f2",
+    "sciona/dfdc_detector.py": "b44391c23d79d6c6724360e49e34450a9d073facba491075879f9bba0d2336a6",
+    "sciona/dfdc_faces.py": "8852942a6a366dd0b8adb5af038cd6f42cc414c013fad24f265f21d954041a68",
+    "sciona/dfdc_mtcnn_networks.py": "f1f3c5d22e9aaddc753016b315281c1e38924e9f58528fbfc35d0935c7d417ec",
+    "sciona/dfdc_mtcnn_cascade.py": "056419d1f931902495d2778cb2e7b214c0a73599eedcdf917e48bbb78bf379a1",
+    "scripts/validate_dfdc_training_crops.py": "add7299147e7a031ea7747bce66eff6989bea9cb12eff9d420a3be6f644013d7",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

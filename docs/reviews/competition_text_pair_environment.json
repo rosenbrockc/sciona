@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "dependency_versions": {
+    "scipy": "1.17.1",
+    "numpy": "2.4.2",
+    "scikit-learn": "1.8.0",
+    "threadpoolctl": "3.6.0",
+    "joblib": "1.5.3"
+  },
+  "requirements_sha256": "e60b311cb4bfcd42e1627036821f64565c64f0bc9d06c14cc5a7c24b730d0707",
+  "license_sha256": {
+    "TextPair-scikit-learn-0-COPYING": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "TextPair-numpy-0-LICENSE.txt": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf",
+    "TextPair-numpy-1-LICENSE.txt": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+    "TextPair-numpy-2-COPYING": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+    "TextPair-numpy-3-LICENSE": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+    "TextPair-numpy-4-dragon4_LICENSE.txt": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+    "TextPair-numpy-5-LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+    "TextPair-numpy-6-LICENSE": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+    "TextPair-numpy-7-LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+    "TextPair-numpy-8-LICENSE.txt": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+    "TextPair-numpy-9-LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+    "TextPair-numpy-10-LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+    "TextPair-numpy-11-LICENSE.md": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+    "TextPair-numpy-12-LICENSE.md": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+    "TextPair-numpy-13-LICENSE.md": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+    "TextPair-numpy-14-LICENSE.md": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+    "TextPair-numpy-15-LICENSE.md": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+    "TextPair-numpy-16-LICENSE.md": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+    "TextPair-scipy-0-LICENSE.txt": "60a7d05d729ed5c763852a324a1cb4223d665d4ad3f4b8a0c130ae5c60c93e49"
+  },
+  "python_version": "3.13.11",
+  "scope": "Provisioned environment only; no clean-install or cross-platform claim."
+}

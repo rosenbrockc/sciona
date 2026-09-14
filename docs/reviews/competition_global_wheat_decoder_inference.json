@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "pretrained_weights": false,
+  "independent_index_cases": 4,
+  "indices_checked": 20000,
+  "index_and_selected_tensor_values_exact": true,
+  "full_d6_inference_views": 8,
+  "detections_per_view": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "fused_detections": 16,
+  "compatibility_change": "Single pinned index division uses floor division, preserving historical nonnegative integer semantics.",
+  "semantics_reference": "https://github.com/pytorch/pytorch/releases/tag/v1.6.0",
+  "implementation_sha256": {
+    "sciona/wheat_legacy_decode.py": "6995c05bb2f92528a728310a0aafc07022443cff690a8f374bde1bd10d0e40b1",
+    "sciona/wheat_tta.py": "a1e1080b19c42772da8e2dfa65667e2bb060d914c1ae35a0aa0cb7da43944997",
+    "sciona/wheat_prediction_boundary.py": "bdc08921229695e1f3de97928cd52e9ed0025b27be102e090d4c21f52049eb19",
+    "sciona/wheat_fusion.py": "28a656a0cfc307386085e4359ae47f931cf9be5210c24e340dd3653c3c8c4ba9",
+    "scripts/validate_wheat_decoder_inference.py": "4da45a72796d09e2236e6c0243a2cb7ee0845faa5c71c151577fac79f4878b58"
+  },
+  "limits": [
+    "Random D6 inference through eight TTA views, detector boundary and fusion; no recognition or trained-model claim.",
+    "Historical NMS/kernel equivalence and remaining detector configurations require separate qualification.",
+    "Full training and publication remain pending."
+  ]
+}

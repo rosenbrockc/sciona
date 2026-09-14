@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 10,
+  "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+  "source_content_hash": "5ee3659042611115b7a83dbf165f7b44355a0f09ff346514ce4dd2a15e66340b",
+  "checks": {
+    "bounded_line_and_source_bytes": true,
+    "strict_duplicate_key_json": true,
+    "ordered_nonempty_streams": true,
+    "nonfinite_record_rejection": true,
+    "chronological_split_gap": true,
+    "source_change_detection": true,
+    "private_disk_snapshot_immutable": true,
+    "snapshot_closed_after_use": true,
+    "errors_without_source_echo": true
+  },
+  "sha256": {
+    "sciona/temporal_sparse_source.py": "98b540b7fba296fa7ae27f286fe848daf3fabab440f25e923f47b3611577e3bc",
+    "sciona/temporal_sparse_features.py": "4dc40b7909d9fb8b4516a7256da1ad4c15022c0e7a939286c4cfd4d224f5b450",
+    "tests/test_temporal_sparse_source.py": "a0052135bec2eff9924b72892798fbff83efe8f4e41ee13590d19c0a54ad0b0d"
+  },
+  "scope": "Synthetic private JSONL source inspection and immutable snapshots; runtime paths/digests never included in publication evidence. Full execution boundary/graph pending.",
+  "catalog_mutations": 0
+}

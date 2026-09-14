@@ -1,0 +1,68 @@
+{
+  "format": "tabular-ensemble-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "9f3c8c4f-ce85-5e9d-b169-8b055562ce65",
+  "source_hash": "3cc5a5fdfab302b5c1a37abe86916ac996f577d11b733cba0bbf7b7d4438b2cd",
+  "source_scope": "Generic five-stage classical tabular ensemble topology; explicit binary mixed-table realization, not a historical winning implementation.",
+  "serialized_graph_sha256": "20ad0ed48457be92c61f27dbb7f21cf151eeb1151050134b1feda74b9c696772",
+  "provider_sha256": "1a8ce3ed80ada7ee985444c42c4723a64a2cde224dd3174285b32edd1d21aae9",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": {
+    "table_audit_cleaning": "Fold-local median imputation, quantile clipping and constant/duplicate numeric removal",
+    "split_aware_feature_engineering": "Fold-local one-hot and frequency features",
+    "tabular_model_zoo": "Scaled logistic regression and ExtraTrees with64 trees per fit",
+    "ensemble_stacking_blending": "Logistic stacker trained on complete OOF probabilities; full-training base refit",
+    "metric_calibration": "Separate regularized sigmoid on clipped stack-score logits; fixed0.5 decision"
+  },
+  "dependencies": {
+    "joblib": "1.5.3",
+    "numpy": "2.4.2",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.17.1",
+    "threadpoolctl": "3.6.0"
+  },
+  "limitations": [
+    "Automated Tier 3 Community only; no Tier 1 human certification or Tier 2 usage qualification. Original generic intake remains draft with mandatory provenance.",
+    "Complete five-stage binary mixed-table realization using allowed cleaning, split-aware features, shallow model zoo, OOF stacking and calibration alternatives. No historical winning recipe or accuracy claim.",
+    "Fold-local numeric median imputation, quantile clipping, constant and duplicate numeric removal; all-null numeric columns use zero before constant removal. Categorical one-hot and frequency encoding fit only fold training rows; unknown categories map to zeros.",
+    "Caller supplies meaningful group identifiers and contiguous folds. A group cannot cross folds or training/calibration/query populations. No automatic duplicate detection, group discovery or chronological validation.",
+    "Each fitting fold requires both classes. Scaled logistic regression and ExtraTrees produce one held-out probability per training row per base model. Logistic stacker fits this OOF matrix; final base models refit all training rows.",
+    "Separate regularized C=1 sigmoid fits clipped stack-score logits using calibration labels, with no base/stacker refit. Fixed0.5 decisions. No empirical calibration, improved accuracy or unbiased calibration-score guarantee.",
+    "Synthetic direct, isolation, negative-boundary and serialized lifecycle evidence only. Dense features; large/high-cardinality tables, resource use, cross-platform behavior and clean installation unqualified.",
+    "Strict finite JSON boundary; fitted intermediate objects are trusted in-process. No portable model serialization claim. Query labels are never inputs; real data is runtime-only."
+  ],
+  "evidence_sha256": {
+    "competition_tabular_ensemble_source_triage.json": "e76da9d6e9f089dd842dd0ebdc74b7e38a87b0a9cb194cf0374b1e8d6933e860",
+    "competition_tabular_ensemble_runtime_tests.json": "b63dcb853bb5efbf05a824ea9b103e3dbd3dbe89c74420a95396e83b8138a7d3",
+    "competition_tabular_ensemble_graph_execution.json": "187a5aa63bff580d7070414b57bb7bc32790559e23490442f9e4d4a1b8262cd7",
+    "competition_tabular_ensemble_environment.json": "f98bceaa3eecf3c6e616e8723810f532bfb88812007c191263a5b442a12b67ab"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_tabular_ensemble_execution.py": "5256ccb1c50d8a229774cb5adff4adc78f359b39c090d392439e604538d1bff1",
+    "requirements/tabular-ensemble-execution.txt": "e60b311cb4bfcd42e1627036821f64565c64f0bc9d06c14cc5a7c24b730d0707",
+    "docs/licenses/TabularEnsemble-joblib-0-LICENSE.txt": "42612911c1872c5e4b43f6ae0e8ee59467cd350332241cf72ce90640264fae6a",
+    "docs/licenses/TabularEnsemble-numpy-0-LICENSE.txt": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf",
+    "docs/licenses/TabularEnsemble-numpy-1-LICENSE.txt": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+    "docs/licenses/TabularEnsemble-numpy-2-COPYING": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+    "docs/licenses/TabularEnsemble-numpy-3-LICENSE": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+    "docs/licenses/TabularEnsemble-numpy-4-dragon4_LICENSE.txt": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+    "docs/licenses/TabularEnsemble-numpy-5-LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+    "docs/licenses/TabularEnsemble-numpy-6-LICENSE": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+    "docs/licenses/TabularEnsemble-numpy-7-LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+    "docs/licenses/TabularEnsemble-numpy-8-LICENSE.txt": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+    "docs/licenses/TabularEnsemble-numpy-9-LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+    "docs/licenses/TabularEnsemble-numpy-10-LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+    "docs/licenses/TabularEnsemble-numpy-11-LICENSE.md": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+    "docs/licenses/TabularEnsemble-numpy-12-LICENSE.md": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+    "docs/licenses/TabularEnsemble-numpy-13-LICENSE.md": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+    "docs/licenses/TabularEnsemble-numpy-14-LICENSE.md": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+    "docs/licenses/TabularEnsemble-numpy-15-LICENSE.md": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+    "docs/licenses/TabularEnsemble-numpy-16-LICENSE.md": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+    "docs/licenses/TabularEnsemble-scikit-learn-0-COPYING": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "docs/licenses/TabularEnsemble-scipy-0-LICENSE.txt": "60a7d05d729ed5c763852a324a1cb4223d665d4ad3f4b8a0c130ae5c60c93e49",
+    "docs/licenses/TabularEnsemble-threadpoolctl-0-LICENSE": "81ac619075248b06e53660b652d10e485f4675f5d0ae0f97ea22370da1f7e23b"
+  },
+  "catalog_mutations": 0
+}

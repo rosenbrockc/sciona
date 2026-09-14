@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 13,
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "checks": [
+    "Exhaustive integer draw reward probability",
+    "Uniform prior raw and transformed expectation",
+    "Hand Bayes success/failure updates",
+    "Opponent decay without opponent rewards",
+    "Stable normalized 2000-observation log likelihood",
+    "Strict bounded own reward history"
+  ],
+  "sha256": {
+    "sciona/santa_threshold_posterior.py": "17228b0cf24f76d530df7858df037fdef80ef2b5d8df5cb0fec010cb2d7b1b7f",
+    "tests/test_santa_threshold_posterior.py": "f1e2a90ce2daf4e2d3f2343f99c1d1ea4d206e79451ea50ae014e3d62d3e3987"
+  },
+  "scope": "Independent discrete posterior component only; no full-agent or winner-performance claim.",
+  "catalog_mutations": 0
+}

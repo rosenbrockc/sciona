@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "families": [
+    {
+      "recursive": true,
+      "pooling": "outlet",
+      "source_sha256": "86c72937a6245b19c4e039d845c45f689206e3940802325714807186df936ca2"
+    },
+    {
+      "recursive": true,
+      "pooling": "outlet_category",
+      "source_sha256": "1542c68bb17c5e4c98c38ffa262cd317c594fe92c1d21996527f7d17ea508ba9"
+    },
+    {
+      "recursive": true,
+      "pooling": "outlet_department",
+      "source_sha256": "fc72b8af847e384942cd94c2e905e4f7dda7f598dde3aa39dec9729fbca350d1"
+    },
+    {
+      "recursive": false,
+      "pooling": "outlet",
+      "source_sha256": "7e414f5c886362cf4beee4c8f76ed4130274428d288e9977595f3263662b79bb"
+    },
+    {
+      "recursive": false,
+      "pooling": "outlet_category",
+      "source_sha256": "5a32a3474badf871a59887f45fafa9dfaa3b03a2c5d11c7679e3381816388546"
+    },
+    {
+      "recursive": false,
+      "pooling": "outlet_department",
+      "source_sha256": "df3ab21865126d8975118d806784f6a54380944bcc83819790e9f12fbffc404e"
+    }
+  ],
+  "checks": {
+    "source_parameter_sets_compared": 6,
+    "configured_rounds": 3000
+  },
+  "independent_runtime_choices": [
+    "CPU single-thread deterministic column-wise training",
+    "In-memory model transport"
+  ],
+  "scope": "Parameter dictionaries only; full family feature selection and forecasting still incomplete.",
+  "sha256": {
+    "sciona/m5_training.py": "77ce1bfb9da5f31f0b68e6142a24686c241e7a45bb72d370f1f897431951bf83"
+  }
+}

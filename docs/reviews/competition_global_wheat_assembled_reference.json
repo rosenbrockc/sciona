@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "input_size": 1024,
+  "initialized_tensors_exact": 805,
+  "losses_exact": [
+    "loss_classifier",
+    "loss_box_reg",
+    "loss_objectness",
+    "loss_rpn_box_reg"
+  ],
+  "parameter_gradients_exact": 174,
+  "training_rng_exact": true,
+  "inference_exact": true,
+  "source_sha256": {
+    "models/detection/backbone_utils.py": "698089e302ee1c07b3392bddf06d1b96a51c864679f3f44d9d3a1338e97dc2e5",
+    "models/detection/faster_rcnn.py": "b9df7856bad4aa091e67d04d363ea85e2bbf47ca4d0008f58418d6b8d304ff59",
+    "models/detection/rpn.py": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751",
+    "models/detection/roi_heads.py": "dfe9ac02abbbd2b6db522d66d00210ad0d7dac1cc66cf1f0c3e9bd628f37be2c",
+    "models/detection/transform.py": "46024143aa8d85210135e659fc6487b642cd5d8b0296cc4b7f29f1a329a836aa",
+    "models/resnet.py": "4e1b72ec251835ac5f6a6c3f32a378fa9168efc9dd20953af42ed140a7344a37",
+    "ops/feature_pyramid_network.py": "d5acedbbc2b192516044c9d655e1757dfecea662c518b6de9dfc5056f50f8d2e",
+    "ops/misc.py": "f75578efe5c4054e2fdd479db15bfb5cca15b610b909185b40f452c4b87a91db",
+    "models/detection/_utils.py": "cb80cd35f7f0ba41e5929c1bf37b1096ce6d2f0d1a34954d9dfa8d9ac3e29484",
+    "ops/poolers.py": "f3f65f56bf3a3e2fe9b0d5e9082b779fd8344e7ed4b5fb2a8fcb5215ca5af1aa",
+    "ops/roi_align.py": "c3e92d1db2f418d17bb7f20887d99e4644b44df1e7cd7bd6b5021f7751acdc15",
+    "models/detection/generalized_rcnn.py": "c8d3c0bfa7feb914e2fe5d72115c3667941b396a513de7552352b97ff8559380",
+    "torch14_functional.py": "45d25e49078f0c00bd559d3d7ff412d9250d6f4ad1faf406bb4abab968db4cfb"
+  },
+  "validator_sha256": "4d919be453978a57fb434ff19da178222332981d35c1f3294e5ae38c19e17694",
+  "limits": [
+    "One synthetic full-resolution batch; complete source training budgets and ensemble remain pending.",
+    "Historical Python architecture uses installed native kernels and eager execution; historical native-kernel/TorchScript parity is not claimed."
+  ],
+  "post_execution_implementation_consistency_sha256": {
+    "sciona/wheat_fasterrcnn.py": "7078eac9ed3c22b864805a975589004e9220d0ea510f5d5e449519bcbb1ad714",
+    "sciona/wheat_resnet_backbone.py": "f84f2061fdb3fa1bf231082cfaeabb44fa2dfaf91d16d961a96b9a27ecf0332d",
+    "sciona/wheat_legacy_weights.py": "b4a395ea0eb1a67c5c8521d0bd9e0b4977938af6448d72eb3a46bf4b78c8a68f",
+    "sciona/wheat_frozen_normalization.py": "a5b798bab7c4e3821e9a0989a684e0b8f612512190c5da18f421befef348cc4b",
+    "sciona/wheat_feature_pyramid.py": "5748931939bf9df3f48f3daedab8713fe43a8920584e78f4638346f53832d338",
+    "sciona/wheat_proposals.py": "0882c44f8d14361f705fd3f05b6eab6b1e780018fd15b0bcf769e8a6cb9752e2",
+    "sciona/wheat_anchors.py": "b0bc3215a42cdb3b9439b7fd29bfa037d909bea82aede5e8b12c8079d8fcb53d",
+    "sciona/wheat_detection_losses.py": "719384771526143c827e028700a2e92135b5f6fba4f47fcff15ce4c51122a062",
+    "sciona/wheat_image_transform.py": "7bc66b3939b5c02c37d85273c485ccadedd1434bb26cdb0d16d31d4673697e5f"
+  }
+}

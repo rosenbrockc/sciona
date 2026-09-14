@@ -1,0 +1,47 @@
+{
+  "status": "historical_affine_geometry_resolved_environment_identity_pending",
+  "catalog_mutations": 0,
+  "imgaug_sources": [
+    {
+      "version": "0.2.9",
+      "url": "https://files.pythonhosted.org/packages/4f/96/c55f2985b464ea377238e61026dfb1da54d8edc1534c649e70077e94c642/imgaug-0.2.9.tar.gz",
+      "sha256": "42b0c4c8cbe197d4f5dbd33960a1140f8a0d9c22c0a8851306ecbbc032092de8",
+      "source_sha256": "5b7bf5ca240610a79ffae681b468bc80ac23529808b02f10f1eee2de67bb614d"
+    },
+    {
+      "version": "0.3.0",
+      "url": "https://files.pythonhosted.org/packages/c8/24/194d1d13aaa150abd7c4ffcc6bebe36f3993318eb814520465d271b505c7/imgaug-0.3.0.tar.gz",
+      "sha256": "e1354d41921f1b306b50c5141b4870f17e81b531cae2f5c3093da9dc4dcb3cf4",
+      "source_sha256": "d2f715f94b315273a3e14b01454d1886bd6000dec6a3eaf133ccdddd890b61a5"
+    },
+    {
+      "version": "0.4.0",
+      "url": "https://files.pythonhosted.org/packages/25/7d/820295b8fdaf06dce9688ef2fdeb5a317896d3276db7723e5a94e85e1253/imgaug-0.4.0.tar.gz",
+      "sha256": "46bab63ed38f8980630ff721a09ca2281b7dbd4d8c11258818b6ebcc69ea46c7",
+      "source_sha256": "e27e8710d7273298778b941bb7d1feea8fc0b0a1ff68cf5e38a41c76ca3f29a4"
+    }
+  ],
+  "skimage_sources": [
+    {
+      "version": "0.16.2",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.16.2/skimage/transform/_geometric.py",
+      "sha256": "64839f18922f469eaa485365e34276e871561200a76b5997ad9a0d51b8c48065"
+    },
+    {
+      "version": "0.17.2",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.17.2/skimage/transform/_geometric.py",
+      "sha256": "a15ce53673d3a8fcda9c982c4c4e3877f8a51bf52344f225aa13cb25bff3ad77"
+    }
+  ],
+  "verified": [
+    "Inspected imgaug0.3.0 Affine sampling-result matrix construction centers at(width/2-0.5,height/2-0.5).",
+    "For uint8 RGB and order1, imgaug0.3.0 auto backend uses OpenCV linear warpAffine with the forward matrix and requested constant border.",
+    "scikit-image0.16.2 and0.17.2 affine constructors use the same shear/rotation trigonometric matrix for unit scale.",
+    "Zero-rotation unit-scale shear linear part is[[1,-sin(shear)],[0,cos(shear)]], centered by translation composition."
+  ],
+  "limits": [
+    "Other downloaded imgaug versions are retained as comparison candidates; no assertion that all their geometry matches0.3.0.",
+    "Exact notebook environment and random-state behavior remain unqualified.",
+    "No historical package installation, real-image execution or catalog approval."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 3,
+  "sha256": {
+    "sciona/santander_preparation.py": "ad5c10bba0ed9b9de1e58e7913402cb162accc0d4d734213fa9fac8b32fffee8",
+    "tests/test_santander_preparation.py": "16d24194f92da24f5aff089fadd2c2192c21ac38d9157e6f264a4eeb1259dfdb"
+  },
+  "checks": [
+    "Sorted per-column observed-category vocabulary",
+    "Unknown test category maps to zero",
+    "Combined train/test population moments hand verified",
+    "Excluded test rows still participate in scaling",
+    "Constant substituted columns standardized to zero",
+    "Separate column vocabularies and input immutability"
+  ],
+  "limits": "Transductive source preparation, not fold-isolated scaling or streaming inference; no full training lifecycle claim."
+}

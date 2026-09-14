@@ -1,0 +1,78 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "6a64446123cfa6d3a867837057cda256cf13442c674317bc239117d00520374b",
+  "provider_sha256": "8f663dc472385cc51bf0b1ebe0caed4f8e0d7e6bc776c27e98cb92b887696667",
+  "validator_sha256": "ed4cc3803821cf26d426a2bbd33ac49d6fe3e9ef38b3ec535df8fa7f6198c173",
+  "test_sha256": "fa19458fb75523fdd6142095914bf917898149d0d79faa9f6b6757bbe4b02d7c",
+  "numpy_version": "2.4.2",
+  "pandas_version": "2.3.3",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "case": 0,
+      "exact": true,
+      "model_rows": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "output_rows": 4,
+      "nonzero_baseline": false,
+      "all_tied": false
+    },
+    {
+      "case": 1,
+      "exact": true,
+      "model_rows": [
+        4,
+        5,
+        6,
+        4,
+        5,
+        6,
+        4,
+        5,
+        6,
+        4,
+        5
+      ],
+      "output_rows": 4,
+      "nonzero_baseline": true,
+      "all_tied": false
+    },
+    {
+      "case": 2,
+      "exact": true,
+      "model_rows": [
+        4,
+        5,
+        6,
+        4,
+        5,
+        6,
+        4,
+        5,
+        6,
+        4,
+        5
+      ],
+      "output_rows": 4,
+      "nonzero_baseline": true,
+      "all_tied": true
+    }
+  ],
+  "limitations": [
+    "Synthetic opaque integer identities replace source file identities; no real prediction files are read.",
+    "Source CSV I/O replaced by synthetic DataFrames; Python 2 dictionary-values summation adapted to a list.",
+    "Source dictionary insertion order used explicitly; historical Python 2 iteration order may differ in last-bit summation.",
+    "Final blending only; does not execute the eleven upstream models."
+  ]
+}

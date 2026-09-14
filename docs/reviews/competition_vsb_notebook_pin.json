@@ -1,0 +1,113 @@
+{
+  "source_url": "https://www.kaggle.com/code/mark4h/vsb-1st-place-solution",
+  "api_source_sha256": "df2ce616e82ad0dc39312fab0b7a4557a3c0d27cda0c5095b4ddf4d7b5e3f008",
+  "code_cells_sha256": "ee289da71520cfa781723070f5face629c962e9430fd06bb4f2069a3b72a83b9",
+  "code_cell_count": 99,
+  "approved": false,
+  "scope": "Code-only extraction; notebook outputs and data references not retained in report",
+  "notebook_id": 3391408,
+  "version_number": 3,
+  "license_status": "not_returned_by_pull_endpoint",
+  "callable_inventory": [
+    {
+      "cell": 10,
+      "name": "flatiron",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 11,
+      "name": "drop_missing",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 12,
+      "name": "_local_maxima_1d_window_single_pass",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 12,
+      "name": "local_maxima_1d_window",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 13,
+      "name": "plateau_detection",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 14,
+      "name": "get_peaks",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 15,
+      "name": "clip",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 16,
+      "name": "create_sawtooth_template",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 16,
+      "name": "calculate_peak_features",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 17,
+      "name": "process_signal",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 18,
+      "name": "process_measurement_peaks",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 19,
+      "name": "process_measurement",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 20,
+      "name": "calculate_50hz_fourier_coefficient",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 29,
+      "name": "plot_sawtooth_example",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 49,
+      "name": "save_importances",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 50,
+      "name": "process",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 51,
+      "name": "create_features",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 73,
+      "name": "mcc",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 73,
+      "name": "eval_mcc",
+      "kind": "FunctionDef"
+    },
+    {
+      "cell": 74,
+      "name": "train",
+      "kind": "FunctionDef"
+    }
+  ]
+}

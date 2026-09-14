@@ -1,0 +1,25 @@
+{
+  "format": "geotemporal-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "calibration_leakage",
+    "false_warmup_validation",
+    "query_population_leakage",
+    "missing_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_geotemporal_execution.py": "fb877decbb592e9c820b1c9b7338a06b43b390a4ed61c2309d9818890ab6c2cb",
+    "scripts/validate_geotemporal_review_gates.py": "551098b8b0c4ab74d6c9c5086bcfda3e10f2cc319f316219b98e0b1f464d4722"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

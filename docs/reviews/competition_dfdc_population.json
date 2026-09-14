@@ -1,0 +1,23 @@
+{
+  "format": "dfdc-population-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_selection_and_rng_comparisons": 24,
+    "independent_permutation": true,
+    "empty_selection_retained": true,
+    "invalid_population_rejections": 3
+  },
+  "semantics": [
+    "Training selects other folds and downsamples fake examples without replacement to match the real count.",
+    "Validation retains its fold; optional frame-number modulo20 thinning follows class concatenation.",
+    "Effective seed is (epoch+1)*seed; pandas downsampling and final shuffle use separate identically seeded streams.",
+    "Source post-shuffle RNG state returned for augmentation continuation without mutating caller RNG."
+  ],
+  "limits": "Synthetic positional arrays only; caller identities must be valid/nonmissing. Does not generate source grouped folds, prepare images, or execute full training. Original validation-membership module excluded.",
+  "sha256": {
+    "sciona/dfdc_population.py": "a2b18eae1aaab9d572bb05a021685c97cfa81754557948f298f2a76763e2314f",
+    "scripts/validate_dfdc_population.py": "986089cf8badf767e4a8bebd82f43539c2c7e686454d4c21de79228df674f6d1",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

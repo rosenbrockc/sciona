@@ -446,6 +446,9 @@ class CDGExecutionSession:
             edges = list(cdg.edges)
             metadata = dict(cdg.metadata)
 
+        if metadata.get("artifact_source") == "competition_intake":
+            raise ValueError("Competition intake requires a validated implementation version before execution")
+
         graph_snapshot = {
             "nodes": [node.model_dump(mode="json") for node in nodes],
             "edges": [edge.model_dump(mode="json") for edge in edges],

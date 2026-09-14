@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "component_tests_passed": 3,
+  "crossfit_tests_passed": 2,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "source_entries": [
+    8,
+    9
+  ],
+  "checks": [
+    "Native two-run log/raw pair and six-run log ensemble",
+    "One explicit epoch count per member and reference-only scaling",
+    "Native learning and repeatability under reordered queries",
+    "Actual 12-model and 36-model five-fold/full-query lifecycles",
+    "Exact excluding-fold reference features/labels and heldout populations captured",
+    "Synthetic OOF and query nine-class learning"
+  ],
+  "sha256": {
+    "sciona/otto_lasagne.py": "6015601c9e189771b71ad66e060ec5a9210792857c34d427db8bbe58f49e9a37",
+    "sciona/otto_lasagne_worker.py": "f2d8519cd416816300377db90181bcc3161fbda184244f55406d2e032b014489",
+    "sciona/otto_lasagne_crossfit.py": "acd81d66c5e48c915ab29d6335e5fd80ce92b0301679f64fbb110ae81917bfd7",
+    "tests/test_otto_lasagne.py": "4f90a9029fea8e5118c972d890d872a3c6d74188890e2b5865bf9522fa773de0",
+    "tests/test_otto_lasagne_crossfit.py": "cc3ac7ab597404de7f1f5070c1eed9cffc429f69e1b8dd68c80a4ba7fd4e00e0",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b"
+  },
+  "limitations": [
+    "Independent explicit rectifier architecture and Nesterov controls; historical settings and seed schedule unresolved.",
+    "CPU Python-linker runtime only; GPU ensembles and GPU validation still pending.",
+    "Native dependency closure and full-stack publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

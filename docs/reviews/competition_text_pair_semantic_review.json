@@ -1,0 +1,69 @@
+{
+  "format": "text-pair-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "1169253d-76d3-5b76-885f-07b58bed795c",
+  "source_hash": "896ea8e61c63f03fcb22b6bc418126ac23acf0fb3ad55e5a11c3815ae00e1bd7",
+  "source_scope": "Generic six-stage text-pair feature ensemble topology; explicit binary matching realization, not a historical winning implementation.",
+  "serialized_graph_sha256": "4a5e403fcdb5da06bf44812043e3a06bb66de2012a3af7dcf9d6eb091651787c",
+  "provider_sha256": "cfedc44d1f8bfb0d6f50055a2dd69230ed45f9d9948090c74b1b23146323a560",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": {
+    "pair_normalization": "NFKC/casefold/word-token normalization",
+    "lexical_similarity_features": "Exact match, token/character Jaccard, length ratio, edit similarity, TF-IDF cosine",
+    "embedding_similarity_features": "Training-only TF-IDF and truncated SVD cosine/distance",
+    "pair_context_features": "Training candidate graph, with current edge excluded for training features",
+    "feature_ensemble": "Training-only scaled logistic regression plus64-tree random forest, equal score mean",
+    "metric_thresholding": "Held-out binary F1 maximization with highest-threshold tie rule"
+  },
+  "dependencies": {
+    "joblib": "1.5.3",
+    "numpy": "2.4.2",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.17.1",
+    "threadpoolctl": "3.6.0"
+  },
+  "limitations": [
+    "Automated Tier 3 Community only, no Tier 1 human certification or Tier 2 usage qualification. Original generic intake remains draft with mandatory provenance.",
+    "Complete six-stage binary pair-matching realization using allowed lexical, LSA, graph-context, shallow ensemble and metric-threshold alternatives. No historical winning recipe or accuracy claim.",
+    "NFKC/casefold/word-token normalization can erase meaningful punctuation/case. Inputs limited to512 characters before normalization; empty text rejected. No external corpus, spelling correction, pretrained semantic embeddings or learned query expansion.",
+    "TF-IDF uses normalized unique training texts and word uni/bigrams. Truncated SVD fits only training documents; insufficient dimension rejected. Twelve symmetric feature definitions are fixed; no query-population refit.",
+    "Candidate graph is unlabeled co-occurrence, not known equivalence. Current training edge is excluded from its graph statistics. Empty-set Jaccard equals one; zero-norm LSA cosine equals zero.",
+    "Normalized unordered pairs are disjoint across training/calibration/query, with duplicate fitted pairs rejected. Individual text entities may recur across splits; no unseen-entity or temporal generalization guarantee.",
+    "Training-only scaler/logistic regression and random forest are equally averaged. Forest size/depth/minimum leaf and LSA size/seed are explicit. No out-of-fold stacking, probability calibration or class-balance guarantee.",
+    "Held-out calibration chooses maximum binary F1 with highest-threshold tie rule and score >= threshold decisions. Calibration F1 is selection evidence, not unbiased held-out accuracy. Query labels are never inputs.",
+    "Synthetic direct, isolation, negative-boundary and serialized lifecycle evidence only. Provisioned environment with pinned dependencies and retained installed notices; no clean-install, cross-platform, resume or resource qualification.",
+    "Private text and scores remain runtime values. Strict JSON input/output; intermediate fitted objects trusted in-process and no portable model serialization claim."
+  ],
+  "evidence_sha256": {
+    "competition_text_pair_source_triage.json": "7538b5f0c1ce4b512650da18b3f41c35bd561c3cf50ea70b57f4be24be66138d",
+    "competition_text_pair_runtime_tests.json": "b16001908312f3a1a3d1badf95af3906097941d6b6610142dbc06a5fa7882d7c",
+    "competition_text_pair_graph_execution.json": "13f22f176cc054dbecda6c28ebbcbe11e2d602a6c9079b1dd0c6b2068f699b28",
+    "competition_text_pair_environment.json": "4dcb7689b4307970b51018c61e80e988475137f42ed9a3334e09ba2cbdafe6f6"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_text_pair_execution.py": "9019c0f94518a1654a0df0bc8ccff2a5b8b9ded71604fda4a381e4f5100b1b77",
+    "requirements/text-pair-execution.txt": "e60b311cb4bfcd42e1627036821f64565c64f0bc9d06c14cc5a7c24b730d0707",
+    "docs/licenses/TextPair-scikit-learn-0-COPYING": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "docs/licenses/TextPair-numpy-0-LICENSE.txt": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf",
+    "docs/licenses/TextPair-numpy-1-LICENSE.txt": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+    "docs/licenses/TextPair-numpy-2-COPYING": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+    "docs/licenses/TextPair-numpy-3-LICENSE": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+    "docs/licenses/TextPair-numpy-4-dragon4_LICENSE.txt": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+    "docs/licenses/TextPair-numpy-5-LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+    "docs/licenses/TextPair-numpy-6-LICENSE": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+    "docs/licenses/TextPair-numpy-7-LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+    "docs/licenses/TextPair-numpy-8-LICENSE.txt": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+    "docs/licenses/TextPair-numpy-9-LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+    "docs/licenses/TextPair-numpy-10-LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+    "docs/licenses/TextPair-numpy-11-LICENSE.md": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+    "docs/licenses/TextPair-numpy-12-LICENSE.md": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+    "docs/licenses/TextPair-numpy-13-LICENSE.md": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+    "docs/licenses/TextPair-numpy-14-LICENSE.md": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+    "docs/licenses/TextPair-numpy-15-LICENSE.md": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+    "docs/licenses/TextPair-numpy-16-LICENSE.md": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+    "docs/licenses/TextPair-scipy-0-LICENSE.txt": "60a7d05d729ed5c763852a324a1cb4223d665d4ad3f4b8a0c130ae5c60c93e49"
+  },
+  "catalog_mutations": 0
+}

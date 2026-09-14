@@ -1,0 +1,19 @@
+{
+  "applied": true,
+  "trust_tier": 3,
+  "rows_created": 153,
+  "idempotent_repeat_rows_created": 0,
+  "served_provider_versions": 5,
+  "served_execution_cdgs": 1,
+  "served_cdg_count": 71,
+  "version_id": "57c74f12-a6db-547c-8991-30a919a53a0c",
+  "graph_sha256": "126471f8fb4d6ba85909bccc37199376f369d369874bd910c405501b7fb89387",
+  "source_version_id": "325c30ff-ea2a-515c-8d40-110a5fd6991d",
+  "original_intake_status": "draft",
+  "catalog_graph_source_comparison": "passed",
+  "synthetic_only": true,
+  "publication_scripts_sha256": {
+    "scripts/promote_hubmap_execution.py": "082ba6abbdcb1b4cdc9faaa49d75f206549495a9f005dc72ecb8e3681483de3a",
+    "scripts/verify_hubmap_publication.py": "8ed7806e91553ec68afe515786c4d293c3f2989988491aaf44c5568ce5c19584"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "pretrained_weights_used": false,
+  "backbone_parameters": 17673823,
+  "total_parameters": 17682788,
+  "batchnorm_layers_frozen": 96,
+  "source_inference_match": true,
+  "full_resolution_training_step": true,
+  "head_and_backbone_updated": true,
+  "batchnorm_weights_unchanged": true,
+  "scope": "Untrained topology diagnostic in reference runtime; no pretrained provenance, population adaptation or complete lifecycle qualification.",
+  "sha256": {
+    "sciona/cassava_efficientnet_weights.py": "15145907da545ab8501f2c0fef025b7957f12d815260888fa78047fc610b4091",
+    "sciona/cassava_efficientnet_model.py": "56ba01b91cfb069ee7e8165a6a2494eafe1a2e757a22af2eabb3504d2de97ae6",
+    "scripts/validate_cassava_efficientnet_model.py": "c9255a2fee38d4d59c7ae018adfadb7b9e21dba7dff1d20c12f0f459e103034a",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

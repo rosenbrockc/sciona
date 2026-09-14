@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/LAL/trackml-library",
+  "commit": "53a165e15a2c885f54c2bef1bd1ed53db6ed9648",
+  "source_files": {
+    "LICENSE": "03a56802f793e909a12051a6360fdd6eec92d90a208806e30b94bf6c19fbe0b0",
+    "trackml/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "trackml/dataset.py": "638dd5d0547c452a8cf8485a07594cf66b308b100f3819a54b56515bfb7bee2f",
+    "trackml/score.py": "83ca2c30215ba02081dde8ef4b7b3c6dbc89f9c527f2ced63b990fc6e5988ab5"
+  },
+  "scope": "Library implementation code only; no input data fetched."
+}

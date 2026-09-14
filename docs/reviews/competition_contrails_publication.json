@@ -1,0 +1,25 @@
+{
+  "publication": {
+    "applied": true,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "24d14e4e0e49effaf298813fa0eea18e55f8e7d448fccf61acea6c8209bc4388",
+    "version_id": "d87014a1-f827-53af-aaf7-388f69c7fe8b"
+  },
+  "idempotent_reapply": {
+    "applied": true,
+    "rows_created": 0,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "24d14e4e0e49effaf298813fa0eea18e55f8e7d448fccf61acea6c8209bc4388",
+    "version_id": "d87014a1-f827-53af-aaf7-388f69c7fe8b"
+  },
+  "rollback_rows_previously_verified": 40
+}

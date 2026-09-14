@@ -1,0 +1,31 @@
+{
+  "format": "dfdc-evaluation-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "dependency": {
+    "scikit_learn": "1.8.0"
+  },
+  "checks": {
+    "source_validation_loop_cases": 6,
+    "independent_clip_and_class_weighting": true,
+    "invalid_validation_rejections": 4,
+    "validation_loader_group_positions": true
+  },
+  "semantics": [
+    "Average sigmoid predictions within each clip, then class-specific clip logloss, then equal class mean.",
+    "No confidence heuristic in validation; that belongs to final inference.",
+    "evaluate_val uses strict lower loss for improvement, despite best_dice filename; outer checkpoint lifecycle remains to implement."
+  ],
+  "adaptations": [
+    "Positional clip groups replace media-name parsing; no prediction files or identity outputs.",
+    "Require both classes, consistent per-clip labels and finite probabilities.",
+    "CPU source loop adaptation; both paths use installedsklearn clipping behavior."
+  ],
+  "limits": "Synthetic models/populations and actual validationDataset preparation. No full B7 validation lifecycle, historicalsklearn binary or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_evaluation.py": "c958b081fedfe55f857126a54cc4309f07d06350898b8cc05cee89cfb836fe94",
+    "sciona/dfdc_dataset.py": "757b5f8442b1681551d3b711a256b864dc3712a92d5ee212a4f4ccbc8d8691a6",
+    "scripts/validate_dfdc_evaluation.py": "626fd38d84673c12b0a15f8b899a287445db9c0b6c8e50af86688130fc48ab5c",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

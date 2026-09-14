@@ -1,0 +1,26 @@
+{
+  "source_commit": "b3abb178b9a9d558fdd5a7de49ae50425576a011",
+  "legacy_sklearn_commit": "8d04380d474723467b5a717328efd0c9fc5bd898",
+  "sweeps": [
+    {
+      "method": "make_simple_inference",
+      "pca_fits": 240,
+      "distinct_preprocessed_inputs": 2,
+      "finite_scaled_scores": true
+    },
+    {
+      "method": "make_tuned_inference",
+      "pca_fits": 480,
+      "distinct_preprocessed_inputs": 4,
+      "finite_scaled_scores": true
+    }
+  ],
+  "threshold_argument_ignored_reproduced": true,
+  "legacy_precision_inverse_covariance_check": true,
+  "modern_precision_max_abs_difference": 7.808908462524414,
+  "directivity_strict_bounds": true,
+  "finite_tuned_directivity_blend": true,
+  "inputs_unchanged": true,
+  "scope": "Original source simple/tuned sweeps and directivity on synthetic float32 input, using pinned historical PCA class. Only np.int and array validation interface adaptations. Source threshold/filter-forwarding bugs remain uncorrected.",
+  "validator_sha256": "be956fa31fea98a0f91f07a990c3a9182f76bfa97a5ebfb41c1649a76c2f9950"
+}

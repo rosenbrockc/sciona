@@ -1,0 +1,13 @@
+{
+  "references": [
+    {
+      "title": "scikit-learn SGDRegressor documentation",
+      "url": "https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html"
+    },
+    {
+      "title": "scikit-learn FeatureHasher documentation",
+      "url": "https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.FeatureHasher.html"
+    }
+  ],
+  "scope": "Primary API references consulted; numerical evidence uses the pinned installed environment, not the current stable documentation version."
+}

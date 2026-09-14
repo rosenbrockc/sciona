@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "a4e012f4a74bfa7352457f7ebf4f77c366d095a1db573fe75bfcbd334ecb8fbd",
+  "provider_sha256": "87758fe336d46795825d686e5c4db8524540f3bd678a4c5c8b135474a6ef0ec8",
+  "code_sha256": {
+    "sciona/physical_operator_contract.py": "55d12e0b7f143896f03efb104df67e5978efa4cb2f0d791f65611ac6dd6b7f97",
+    "sciona/physical_operator_graph.py": "a0de53536c5156cfd4f274ab142efcf960e215b36e5e5b911da910c4717b5212",
+    "sciona/physical_operator_network.py": "1ec25a6498b57a468a377e878c39f5759fa05544a151e18f5b983105fbf8156b",
+    "sciona/physical_operator_projection.py": "31b5630cc9877ce93577d251d949b7326d666cd7995dda39c56d1fa855cdea0d",
+    "sciona/physical_operator_state.py": "281c5e3358c3357e0c32c1af37678271cb13be326a9a2e6d70f98625bf35160a",
+    "sciona/physical_operator_training.py": "120ef52d9cdc1013f3a15585cd3e8e5759aa451de1d7609f692dcc73246f2842",
+    "scripts/physical_operator_synthetic.py": "7ff1c06ea05333a67256db2ce44a9a6be86d26f005fafa73501c6a6fbc2cb45a",
+    "scripts/validate_physical_operator_graph_execution.py": "0d4ca544d545b89f1696c6e1fc98e56756caf6ade4b9ec88ac597e26b40095f3"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 8,
+    "validation_rows": 4,
+    "query_rows": 2,
+    "epochs": 60,
+    "grid_points": 16,
+    "nonnegative_mass_conservation": true,
+    "training_improved": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual synthetic five-stage state/Fourier-training/checkpoint/projection/smoothing execution; no served publication or historical accuracy claim."
+}

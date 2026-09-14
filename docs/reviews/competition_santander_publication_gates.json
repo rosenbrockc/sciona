@@ -1,0 +1,15 @@
+{
+  "format": "santander-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "d2a0ae817a43cc6e5feecca19181cbe5f41cd15e69545e706ad1c401ba04c85f",
+  "validator_sha256": "f93265df4065df1f344bcfbcd4358f18d6cec75e5e583048a341c0a47c76c26a",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

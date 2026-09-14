@@ -1,0 +1,230 @@
+{
+  "format": "arc-source-execution.v1",
+  "status": "preliminary_synthetic_execution_passed",
+  "source_commit": "9407072659de1270358c2ba34c527785214dd68b",
+  "source_pins_sha256": "aebb89e39091fe6ac6f8e9d1718c088d90a1a87b0efd0adfe8c88c39176b68fc",
+  "validator_sha256": "14af913cbd177164833d906c0d7feb8c0bcfd391f1882b512d0b4a29e0d3bfc6",
+  "verified_source_files": 53,
+  "compiler": "Apple clang version 16.0.0 (clang-1600.0.26.4)",
+  "flags": [
+    "-std=c++17",
+    "-O2",
+    "-fsigned-char",
+    "-Iheaders"
+  ],
+  "translation_units": [
+    "read",
+    "core_functions",
+    "image_functions",
+    "image_functions2",
+    "visu",
+    "normalize",
+    "tasks",
+    "runner",
+    "score",
+    "load",
+    "evals",
+    "brute2",
+    "deduce_op",
+    "pieces",
+    "compose2",
+    "brute_size",
+    "efficient",
+    "main"
+  ],
+  "portability_patches": [
+    {
+      "path": "src/read.cpp",
+      "before_sha256": "1ab1854de355f802d8f1d1e029e875fd24a7f36b8aa0028929c6eccc51e5ed27",
+      "after_sha256": "11d925d78b25e99a016d46e8e47f38d147ade955101e18026f3e17bd069e9888",
+      "replacements": [
+        [
+          "<experimental/filesystem>",
+          "<filesystem>"
+        ],
+        [
+          "experimental::filesystem::",
+          "filesystem::"
+        ]
+      ]
+    },
+    {
+      "path": "headers/precompiled_stl.hpp",
+      "before_sha256": "f18c6a0ba94ab95e534221209a45086c1caa612aa48e4da23d61066abd6694a5",
+      "after_sha256": "59e8e9d47fcb8a5e01a12df33819708482b4461ede6c0a983508d14ad106770c",
+      "replacements": [
+        [
+          "#include <vector>",
+          "#include <map>\n#include <chrono>\n#include <vector>"
+        ]
+      ]
+    }
+  ],
+  "compiler_warning_count": 18,
+  "observed_binary_sha256": "064eff8fca578e940287faf8beabc1211f2b4f0aea8d180b4b4b254770d47171",
+  "checks": [
+    {
+      "synthetic_case": "identity",
+      "argument": 2,
+      "search_cost_limit": 20,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.1976,
+      "scores": [
+        1.99999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "identity",
+      "argument": 3,
+      "search_cost_limit": 30,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0241,
+      "scores": [
+        1.99999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "identity",
+      "argument": 23,
+      "search_cost_limit": 30,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0301,
+      "scores": [
+        2.0000050000250003
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "identity",
+      "argument": 33,
+      "search_cost_limit": 30,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0263,
+      "scores": [
+        2.0000050000250003
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "identity",
+      "argument": 4,
+      "search_cost_limit": 40,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0288,
+      "scores": [
+        1.99999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "identity",
+      "argument": 12,
+      "search_cost_limit": 20,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0066,
+      "scores": [
+        1.99999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "transpose",
+      "argument": 2,
+      "search_cost_limit": 20,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0082,
+      "scores": [
+        1.89999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "transpose",
+      "argument": 3,
+      "search_cost_limit": 30,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0424,
+      "scores": [
+        1.89999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "transpose",
+      "argument": 23,
+      "search_cost_limit": 30,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0766,
+      "scores": [
+        1.95000475002375
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "transpose",
+      "argument": 33,
+      "search_cost_limit": 30,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0773,
+      "scores": [
+        1.95000475002375
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "transpose",
+      "argument": 4,
+      "search_cost_limit": 40,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.1437,
+      "scores": [
+        1.89999
+      ],
+      "test_output_omitted": true
+    },
+    {
+      "synthetic_case": "transpose",
+      "argument": 12,
+      "search_cost_limit": 20,
+      "candidate_count": 1,
+      "expected_in_top_three": true,
+      "expected_rank": 1,
+      "seconds": 0.0097,
+      "scores": [
+        1.89999
+      ],
+      "test_output_omitted": true
+    }
+  ],
+  "limits": [
+    "Synthetic checks establish execution only, not competition accuracy or Tier 3 approval.",
+    "Original evaluation runner used with absent test labels; its diagnostic verdict is not an inference correctness measure.",
+    "No original nine-hour adaptive safe_run scheduler executed or reproduced.",
+    "No historical GCC binary equivalence, sanitizer clearance, provider contract, or served graph validation established.",
+    "Signed char explicitly preserves negative image sentinels and parser EOF on ARM."
+  ]
+}

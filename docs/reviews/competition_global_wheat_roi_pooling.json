@@ -1,0 +1,150 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "f3f65f56bf3a3e2fe9b0d5e9082b779fd8344e7ed4b5fb2a8fcb5215ca5af1aa",
+  "cases": [
+    {
+      "dtype": "torch.float32",
+      "padded_canvas": [
+        800,
+        800
+      ],
+      "mixed_empty_image": false,
+      "output_shape": [
+        30,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float32",
+      "padded_canvas": [
+        800,
+        800
+      ],
+      "mixed_empty_image": true,
+      "output_shape": [
+        15,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float32",
+      "padded_canvas": [
+        832,
+        1344
+      ],
+      "mixed_empty_image": false,
+      "output_shape": [
+        30,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float32",
+      "padded_canvas": [
+        832,
+        1344
+      ],
+      "mixed_empty_image": true,
+      "output_shape": [
+        15,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float64",
+      "padded_canvas": [
+        800,
+        800
+      ],
+      "mixed_empty_image": false,
+      "output_shape": [
+        30,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float64",
+      "padded_canvas": [
+        800,
+        800
+      ],
+      "mixed_empty_image": true,
+      "output_shape": [
+        15,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float64",
+      "padded_canvas": [
+        832,
+        1344
+      ],
+      "mixed_empty_image": false,
+      "output_shape": [
+        30,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    },
+    {
+      "dtype": "torch.float64",
+      "padded_canvas": [
+        832,
+        1344
+      ],
+      "mixed_empty_image": true,
+      "output_shape": [
+        15,
+        256,
+        7,
+        7
+      ],
+      "all_four_levels_exercised": true,
+      "levels_scales_outputs_and_feature_gradients_exact": true,
+      "cached_scale_repeat_exact": true
+    }
+  ],
+  "validator_sha256": "141ffd7745ac66cc40934953ca2f505503a9cbfb227ac8f16c5563c309314599",
+  "limits": [
+    "Historical pooler dispatch uses installed ROIAlign and box-area kernels; historical native-kernel equivalence is not claimed.",
+    "Float32/float64 CPU eager execution only; full detector execution remains pending."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_software_sha256": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22",
+  "checks": {
+    "source_schedule_comparisons": 126,
+    "parameter_levels": 14,
+    "quantiles": 9,
+    "quantile_weights": 9
+  },
+  "sha256": {
+    "sciona/m5u_training.py": "1904d50f0ae7e733fe4e9ab3dab6b13bd6f51a310cfb911be2c19ddac476db4a",
+    "tests/test_m5u_training.py": "41aae52833e4f1954907fd54d66702b01c319663348ec996bd652be9d1333e15",
+    "scripts/validate_m5u_training_parameters.py": "b62bb407ecd8d287a5f93032b3dca051e28eb2be6f550cd70a4029e191c05066",
+    "docs/reviews/competition_m5_uncertainty_source_pins.json": "c3983bbe6fd393ed10ee094f0d014c129fd6724e97006c5bee4ec55ca925adff"
+  },
+  "scope": "Pinned numerical configuration and expressions; explicit independent random streams and aggregate normalization correction remain."
+}

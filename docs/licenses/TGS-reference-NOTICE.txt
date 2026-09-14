@@ -1,0 +1,24 @@
+TGS conditional Community Tier 3 reconstruction — qualification in progress
+
+Method attribution: Yauhen Babakhin and the B.e.s. / Phalanx first-place
+TGS solution, ybabakhin/kaggle_salt_bes_phalanx commit
+2f81d4dd8d50a01579e5f7650259dde92c5c3b8d, and the associated author paper
+https://arxiv.org/abs/1904.04445v3.
+
+The intake review did not establish an explicit repository-wide license grant.
+The numerical reconstruction does not vendor the winning repository or infer
+reuse permission from public visibility. Reviewed departures and source defects
+are recorded in competition_tgs_source_triage.json. Historical Keras and
+TensorFlow sources are external mathematical/runtime references; the current
+implementation executes with separately installed modern dependencies.
+
+External pretrained models are caller-supplied runtime inputs. Full checksums
+identify the exact reviewed references, but do not establish usage or
+redistribution rights. Callers must supply artifacts they are entitled to use.
+Neither pretrained weights, dependency wheels, nor competition records are
+bundled by this reconstruction. Any future bundling requires separate review
+of the relevant model, software and native component terms.
+
+This notice is not a promotion approval, Tier 1 certification, historical GPU
+equivalence claim, or competition-performance claim. Full execution evidence,
+dependency qualification and canonical publication gates remain required.

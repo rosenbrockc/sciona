@@ -1,0 +1,10 @@
+{
+  "applied": false,
+  "rows_rehearsed": 40,
+  "rollback_absence_verified": true,
+  "trust_tier": 3,
+  "provider_versions": 2,
+  "cdgs": 1,
+  "version_id": "bfb8ec22-0405-5906-85a8-0c16bfef77d6",
+  "graph_sha256": "cfcf1e74cc4efcb35064c0eab882bddb875a9cffce54a126b32ea0dc29df4f5e"
+}

@@ -1,0 +1,25 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "scoring_cases": 96,
+    "analytic_cases": 96,
+    "good": 3824,
+    "dubious": 4200,
+    "missing_map_rows": 1536
+  },
+  "implementation_sha256": {
+    "sciona/trackml_bayesian.py": "5ba0fe8cec6f7cd8d431e8096a634ca0b1c478fca7d5121523133c95b7f0b041",
+    "sciona/trackml_layer_functions.py": "b2f1b14b50a5061517c0c33fc0de90f624468ece764e0f5ac0b7c719a00dffa9",
+    "scripts/validate_trackml_bayesian.py": "4f9f9a1f45a3cba3bf35502f36b73eca5ab0c49d4fb715e05d029cfa2bfe04f6",
+    "scripts/validate_trackml_layer_integration.py": "4b6b5fbb5d0561f944ee245e91d0c170abfe2a0c356583b4ec540a2c7726e8b8",
+    "docs/reviews/competition_trackml_source_pins.json": "d61b598dbf97fb73d7b8546d0af99c4657f894e953e79cf82f2242dfcf90219f",
+    "docs/licenses/TrackML-BSD-2-Clause.txt": "00404581925abc4b8435bb7813eee07ac1df8b834326a33ee969d8315e9471fe"
+  },
+  "limitations": [
+    "Synthetic error/background grids, no learned uncertainty calibration or accuracy claim.",
+    "Source z=0 theta projection is zero; axis singularities remain source arithmetic.",
+    "Missing-map NaNs produce both flags false, not an automatic dubious flag.",
+    "Intersection candidate filtering/extension and track commitment remain."
+  ]
+}

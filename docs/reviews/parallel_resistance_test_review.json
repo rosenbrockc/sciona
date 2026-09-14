@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_parallel_resistance.py": "9a5d0bc6a31570ef88549cbe72572f6ab8de10c1ecc2be7cc13c92af9bae60be",
+    "tests/physics_ingest/test_parallel_resistance_proof.py": "37755ed5c70d7bbed67e624a8eb71d382799dc45bd4b4614688d7099fb6b3cf7"
+  },
+  "provider_sha256": "46d71203565ba6e4380ae26e9657bd7b44b9bcca3521efe2a6f29f381c5f4ee2",
+  "synthetic_only": true
+}

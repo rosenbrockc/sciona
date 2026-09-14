@@ -1,0 +1,59 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "aae151d53a6e3e8d13034596dc7d087f3e925179f4bf4b3ad8bb34ae707fbed0",
+  "provider_sha256": "bea11ef914d07371501e24123fc0c291cebc17b9d90c148e2da3456165ad951f",
+  "validation_sha256": "25c43458120c3ffc8e29ff9515a0998de715245612d635f931a8e2ddc9ca85a3",
+  "test_sha256": "7395544265d8590a61cb0e33fd3b6aa2a4d9afe42f404923893058a0d8c3e8d1",
+  "r_version": "R version 4.6.1 (2026-06-24)",
+  "package_versions": [
+    {
+      "package": "xgboost",
+      "version": "3.2.1.1"
+    },
+    {
+      "package": "glmnet",
+      "version": "5.0"
+    },
+    {
+      "package": "LiblineaR",
+      "version": "2.10.24"
+    },
+    {
+      "package": "R.matlab",
+      "version": "3.8.0"
+    },
+    {
+      "package": "Matrix",
+      "version": "1.7.5"
+    }
+  ],
+  "compiled_library_sha256": {
+    "data.table/libs/data_table.so": "6e962152fb01c19c68cffdce9558b3386e45072d7fc9ff16f0b90407877b944a",
+    "jsonlite/libs/jsonlite.so": "8fd0fc2fd2a8f153521f4096480956be7b435e9eb5dee01d72d6a96ef59d08a6",
+    "LiblineaR/libs/LiblineaR.so": "04d67d5803414a34be9213c9f0adaf4746e69b4bac97f3f4c1c03b6746ee4029",
+    "xgboost/libs/xgboost.so": "59dbefc2c54ad964b4448acd7ed2b249f2adb70060136c23cd3f2d932350577c",
+    "glmnet/libs/glmnet.so": "82f9f4ef3252ce0e6c7c4fd98e104b3f7ffd74288d376a0fe02f8932eb14e412",
+    "RcppEigen/libs/RcppEigen.so": "949a4204406a690f71c258a7db76b73431b3eca801ffd8bd6748ffbc09e12fcc",
+    "Rcpp/libs/Rcpp.so": "f05b7f2c9a5aeaa9125997c53ee3548eb6292f27cbda72ee9b9d8c78b7cf6e15"
+  },
+  "populations": 3,
+  "selectors_per_population": 1,
+  "rounds_per_selector": 1000,
+  "selected_features": 300,
+  "used_features": [
+    402,
+    418,
+    408
+  ],
+  "prediction_segments": 18,
+  "exact_window_probabilities": true,
+  "exact_scores": true,
+  "score_spread": 0.999999837846192,
+  "limitations": [
+    "Current pinned R engine; no historical 2016 XGBoost parity claim.",
+    "Source-shaped MATLAB row-vector labels explicitly converted to an R numeric vector for the current XGBoost API.",
+    "Source file I/O adapted to synthetic inputs; model saving/submission identifiers omitted; serial nthread=1 added.",
+    "Explicit one-based feature names supplied to current XGBoost importance API; source feature-index expression otherwise retained.",
+    "One three-population synthetic classification case; feature extraction, normalization and complete ensemble are separate."
+  ]
+}

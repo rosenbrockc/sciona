@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "All 33 first-level entries retained in source order",
+    "Five t-SNE features remain features instead of invented nine-class scores",
+    "All seven supplemental blocks included; raw eighth block reaches neural input only",
+    "Exact row identity and common five-fold alignment",
+    "Class-dependent distance blocks require aligned folds and nine-class nonnegative groups",
+    "Missing branches, wrong t-SNE width, nonfinite values and overlapping identities rejected"
+  ],
+  "sha256": {
+    "sciona/otto_meta_layout.py": "bf880395739b7436903b8c1f14de8a4826c762bf259b2fb490d213be518cd895",
+    "tests/test_otto_meta_layout.py": "8304d274eacf1bfb83e7578a88f557cd2bfaa831cce597a67c315bbe5f7294d6"
+  },
+  "limitations": [
+    "Explicit five-feature interpretation gives 293 first-level columns; historical 297-column claim remains unresolved.",
+    "Alignment declarations do not prove producer execution or heldout-label exclusion.",
+    "Supplemental metric/cluster multiplicities and full first-level runtime assembly remain pending.",
+    "No whole-stack or publication approval claim."
+  ],
+  "catalog_mutations": 0
+}

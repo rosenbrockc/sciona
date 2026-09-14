@@ -1,0 +1,25 @@
+{
+  "format": "march-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "wrong_pagerank",
+    "wrong_elo",
+    "future_leakage",
+    "calibration_refits_base",
+    "missing_calibration",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notice"
+  ],
+  "sha256": {
+    "scripts/review_march_execution.py": "42526181edb1088bed6d99aeb7bf4e076f4ce87f53e3b2a763a05f5a7da0728a",
+    "scripts/validate_march_review_gates.py": "480459bdd81f103599e02526c34a9ed6d625ef1f160ef446003ddccd1f2f8cca"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

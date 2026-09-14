@@ -1,0 +1,57 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "full_execution_passed": true,
+  "scope": "Original source execution probe; no model-quality or catalog approval claim.",
+  "compatibility": {
+    "as_matrix_calls": 3
+  },
+  "entered": {
+    "setupRun": 1,
+    "chooseLikelyFirstHits": 1,
+    "chooseLikelySecondHits": 1,
+    "filterInvalidTrackCandidates": 6,
+    "fitTracks": 4,
+    "chooseLikelyNextHits": 3,
+    "findPairs": 3,
+    "evaluateTracks": 3,
+    "dropRedundantTracks": 3
+  },
+  "completed": {
+    "setupRun": 1,
+    "chooseLikelyFirstHits": 1,
+    "chooseLikelySecondHits": 1,
+    "filterInvalidTrackCandidates": 6,
+    "fitTracks": 4,
+    "chooseLikelyNextHits": 3,
+    "findPairs": 3,
+    "evaluateTracks": 3,
+    "dropRedundantTracks": 3
+  },
+  "excluded_paths": [
+    "truth scoring",
+    "cell features",
+    "learned layer calibration",
+    "nonphysical postprocessing",
+    "hyperparameter optimization"
+  ],
+  "runtime_versions": {
+    "numpy": "2.4.2",
+    "pandas": "2.3.3",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0"
+  },
+  "evidence_sha256": {
+    "docs/reviews/tracking_source_pins.json": "212c4be8f733494d100710cf490ff6ff044d2106d5e4fdab50460c9094f89d8a",
+    "docs/reviews/tracking_library_pins.json": "c1d497b4e0ff7bf95b8afc2905e2594a07fd383216f67f7440ad5c086c978c9c",
+    "sciona/competition_dataframe_compat.py": "6e124f20ad25599937e38e6700d2f7e283477b86d476f0413a2159f4f4e55d80",
+    "scripts/validate_tracking_detector_geometry.py": "abd5963fc4f432034a41ef575d8b54a8c7dbe7f05ca0f76df363ee8adc89dc71"
+  },
+  "observation_count": 160,
+  "assigned_observations": 48,
+  "synthetic_helices_recovered": 8,
+  "synthetic_helices_total": 8,
+  "helix_membership_exact": true,
+  "commit_limit": 1000,
+  "validator_sha256": "533e6835e0dc117611d4a889cad07e93915a687a316aff9c7645e29970b910ce"
+}

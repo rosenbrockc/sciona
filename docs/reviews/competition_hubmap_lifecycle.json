@@ -1,0 +1,104 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "full_lifecycle_executed": true,
+  "inference_calls": [
+    {
+      "tta": 4,
+      "models": 1,
+      "foreground_pixels": 1178
+    },
+    {
+      "tta": 3,
+      "models": 1,
+      "foreground_pixels": 0
+    }
+  ],
+  "initial_epochs": [
+    {
+      "epoch": 18,
+      "training": {
+        "loss": 9.002413511276245,
+        "dice": 0.0827067643404007,
+        "examples": 8,
+        "population": 8
+      },
+      "validation": {
+        "loss": 3.1177920174598706,
+        "dice": 0.5941666960716248,
+        "numerator": 1426.0,
+        "denominator": 2400.0,
+        "examples": 5
+      },
+      "decision": {
+        "save": [
+          "best_loss",
+          "best_score",
+          "snapshot"
+        ],
+        "stop": false,
+        "step_scheduler": true
+      }
+    }
+  ],
+  "retraining_epochs": [
+    {
+      "epoch": 18,
+      "training": {
+        "loss": 7.807734568913777,
+        "dice": 0.13064779341220856,
+        "examples": 12,
+        "population": 12
+      },
+      "validation": {
+        "loss": 4.227966203689575,
+        "dice": 0.2797889709472656,
+        "numerator": 1538.0,
+        "denominator": 5497.0,
+        "examples": 5
+      },
+      "decision": {
+        "save": [
+          "best_loss",
+          "best_score",
+          "snapshot"
+        ],
+        "stop": false,
+        "step_scheduler": true
+      }
+    }
+  ],
+  "retained_checkpoints": 1,
+  "implementation_sha256": {
+    "sciona/hubmap_augmentation.py": "370f2ca831a8e8e4888802eeb60da5ac7781c4c45fe6068382744ead1db4e851",
+    "sciona/hubmap_batches.py": "f8fac1faece0bfa2fd7b127526ef7af820e6a11b909562acbf838854283aff3d",
+    "sciona/hubmap_checkpoint.py": "09f530be7192195dd1f37ae22cb4361818b1faf15efb3a4990741cc2e4ca4e9c",
+    "sciona/hubmap_checkpoint_policy.py": "9034386695a1c0369f441f6a674d0474eb97784ea25653f1307397428e1e1b39",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "sciona/hubmap_epoch.py": "92a61f859118f936de0fe1b943062f94dd8ec134780f6966fe9677b1a0022c50",
+    "sciona/hubmap_inference.py": "c30e4eb325b47bc4eeecfafaf858104d98fab1c4fecbdd10aeb82028ff0a4c9b",
+    "sciona/hubmap_inference_network.py": "9ca795aafd1da4661c8bb08075f4efd2a2262030bbe0ff7340dd095fbd333d2d",
+    "sciona/hubmap_inference_tiles.py": "8d1558a118885d6e9f636b4f85258a924a8e2d411a51e53bb5434ae352879909",
+    "sciona/hubmap_lifecycle.py": "76c746915a89e79446104dacf47fddd69d244a67cef021aff370245bf8182649",
+    "sciona/hubmap_loader.py": "f3bf1edd803d74aafad49cd7e0b8668baff6bbb7c32b3798c76e083f67156bd1",
+    "sciona/hubmap_losses.py": "46604b0f2221897bc9f146c5f0e6286637d0e2e250cfa3107b37ba9946fef03f",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "sciona/hubmap_preparation.py": "6d879b22aafa81cbbc091727a1d35078a4a8f885160e8cd258f8050a0406122c",
+    "sciona/hubmap_range.py": "998aa08b1444276db5d68330a88412fac4dae426c8aed570f44c42ca775bbc75",
+    "sciona/hubmap_raw_inference.py": "8f8670ef857263815caa8e92a4942603ef5a31b2baaf34220d0b67cf6e464179",
+    "sciona/hubmap_raw_population.py": "a32bacc34b571bd0452e2eebef41c73d6bfd84ec3f541302a441883c9c96752b",
+    "sciona/hubmap_raw_training.py": "605e089d2c233bc52b4417b86b58fb20bfc21e1dab7b2c602df26be9e5f2926c",
+    "sciona/hubmap_retraining.py": "ca98b27ef53c2dcd3f9ec67b30e29182a263ed4aeb5a8a32518bdfb7509f9c27",
+    "sciona/hubmap_sampling.py": "857661887790f1b7539cb99040bb1e593cbbd763797cb874301a8a74064bb961",
+    "sciona/hubmap_schedule.py": "4d9290aec4c8cf34308cee346eaed06b94e7ae904d01a19c816cb10ddc4231d6",
+    "sciona/hubmap_tiling.py": "514df1fdf3a50f97ff409bac085241345a9fb738c387d6bc319e4f7c9c540f8d",
+    "sciona/hubmap_training.py": "8bf03836ca9e1246ee03a9b4288504c619ad4a9ee1ead50446d480b4360a6e04",
+    "sciona/hubmap_validation.py": "8a12689e3f016deeb0459ae1da7dc59643f7dff6158a220defa3bd86095bf1f5",
+    "scripts/validate_hubmap_lifecycle.py": "b19ba28cc1916314fac3118b8dee7a4291b34f878e427b5b9778231ceba8b68d"
+  },
+  "limitations": [
+    "Full real numerical stages executed; this is an integration smoke check, not an independent entire-lifecycle source comparison.",
+    "Synthetic encoder state and one fold/epoch per stage at small tile/input sizes; source-sized stages have separate evidence.",
+    "Ordered multi-fold checkpoint routing and full serialized graph/provider/lineage approval gates remain."
+  ]
+}

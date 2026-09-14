@@ -1,0 +1,53 @@
+{
+  "read_only": true,
+  "synthetic_only": true,
+  "trust_tier": 3,
+  "provider_versions_verified": 1,
+  "served_cdg_count": 106,
+  "catalog_graph_runtime_execution": "passed",
+  "full_training_and_inference_budgets": true,
+  "model_fits": 115,
+  "tree_boosting_rounds": 111458,
+  "neural_optimizer_updates": 600000,
+  "graph_sha256": "ff451daaf8caf75339ec49105469fa7fe2a91ccaedd416a27c8de532657c235b",
+  "version_id": "238ca008-f9ec-5193-8a8b-74742ce42bc1",
+  "original_intake_status": "draft",
+  "served_runtime_validation": {
+    "passed": true,
+    "synthetic_only": true,
+    "catalog_mutations": 0,
+    "model_fits": 115,
+    "tree_boosting_rounds": 111458,
+    "neural_epochs": 150000,
+    "neural_optimizer_updates": 600000,
+    "source_sha256": {
+      "sciona/flavours_blend.py": "2d6952916c21f1121e8c5e0e261276594d44bc0f87f3fbdcb79c4afddf5ae49e",
+      "sciona/flavours_classifiers.py": "7135c4427a8b9ed14bba9bfe36c631633f8308a73f8bb08c309a3c477460b1f3",
+      "sciona/flavours_evaluated_execution.py": "b8b978a50bd009fdcfaeae616478ad6fd9c1bdba101f9b67590b4726416e918c",
+      "sciona/flavours_evaluation.py": "05c133af6a13d2852c985b4917922815fe33e21842733c5f2af9b7454fa26177",
+      "sciona/flavours_features.py": "cca33c8464249abcc34ac877d60d00066f0e13e8c0e967e93d811670bcb6d160",
+      "sciona/flavours_kinematics.py": "37d037cffbd758de93880e4a8b3dc5d3cf9f9e1017affe7787c3f9aab714f9cd",
+      "sciona/flavours_mass_correction.py": "68b1d27af6c035ac7d998e8ce582c289787b1e6f2848a1eba7a08d5e508a8f9d",
+      "sciona/flavours_neural.py": "47e91432fca725a7da057f66e8b718b8571636d00d2311b5d3cb5b90f6b983ff",
+      "sciona/flavours_pipeline.py": "4397878e8212f04f0d92e89c0b7f6fc60c4cbc596a8ffcb839d171099efc9a5c"
+    },
+    "neural_checkpoint_replays_exact": true,
+    "evaluation": {
+      "ks_agreement": 0.0,
+      "cvm_mass": 0.007556012500000001,
+      "truncated_weighted_auc": 0.9999999999999999,
+      "agreement_passed": true,
+      "correlation_passed": false,
+      "oof_scope": "Diagnostic only; upstream mass features are not nested within classifier folds"
+    },
+    "graph_execution": {
+      "serialized_graph_sha256": "ff451daaf8caf75339ec49105469fa7fe2a91ccaedd416a27c8de532657c235b",
+      "provider_sha256": "acede20ada6980627846d1c6128d035d0afc1490d4c76ba7ac82aa3a1cdcded5",
+      "actual_runner_nodes": 1,
+      "codec_roundtrip": true
+    },
+    "verifier_sha256": "f30c99d48f50804d2ec9e4534902fe5db339ae9a4080995e0a72364d3e6df266",
+    "scope": "Integrated physical features, mass regression, five classifiers, neural ensemble, final nonlinear scores and all source metrics. Identical agreement inputs intentionally test the zero-KS oracle. Serialized graph/provider execution included; no historical execution or competition accuracy claim."
+  },
+  "verifier_sha256": "4e4252db5557e7fdbeba0d30455316b48ff742fbbdd21a793415120a782a8421"
+}

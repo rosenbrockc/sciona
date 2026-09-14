@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Exactly five folds and complete OOF row coverage",
+    "Independent excluding-fold class-distance oracle",
+    "Heldout labels isolated from own-fold features",
+    "Query population isolated from OOF features",
+    "Five excluding references followed by full-training query reference",
+    "Duplicate identities and deficient fitting folds rejected before distance computation"
+  ],
+  "sha256": {
+    "sciona/otto_neighbor_crossfit.py": "1d3cac62677ee5c41bc99263dc1870f025ddcaa3a6e902f857339f70b5e5afc7",
+    "sciona/otto_neighbor_features.py": "ff96a5e315cf09e14d7773a59c896406c8d891dcb34aa69cfd18157351976742",
+    "tests/test_otto_neighbor_crossfit.py": "3f7cca6378be877552e1a07c93ea5965e6923afd9ca020a07d9a7d28349dfd73"
+  },
+  "scope": "Fixed-feature class-distance cross-fitting only; learned preprocessing and remaining 33-model stack pending.",
+  "catalog_mutations": 0
+}

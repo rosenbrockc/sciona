@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "complete_densenet121": true,
+  "source_classes": 264,
+  "adamw_amsgrad_resume_exact": true,
+  "model_only_continuation_preserves_weights_resets_optimizer": true,
+  "explicit_initialization_required": true,
+  "constructor_preserves_torch_rng": true,
+  "runtime_sha256": {
+    "cornell_model.py": "f314808e37c9188e371d022fd72fe613926011e0c04bb8fbd2fcae4c8a207a52",
+    "cornell_schedule.py": "b374deb86e605f8c3479e32ccaf614558225bc0382bab935410e1324163e71ea"
+  },
+  "validator_sha256": "91ec11da8407d9646e6d1aa71bcabc4c662f0061eec8b54ec4c64f84bc5677e3",
+  "scope": "Synthetic two-second waveforms, full source topology and two optimizer steps. Complete thirty-second population training, selection, thirteen-member lifecycle and pretrained provenance remain separate."
+}

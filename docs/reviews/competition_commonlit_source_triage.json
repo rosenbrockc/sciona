@@ -1,0 +1,47 @@
+{
+  "status": "teacher_source_recovered_license_and_method_resolution_pending",
+  "intake_version_id": "ff162d6b-3461-5b16-9cfb-37b1fe10c32e",
+  "intake_content_hash": "6548b22b8ee152464e74db753d05e8154c62f64f39da1b09e8ce5ad36324b744",
+  "repository": "mathislucka/kaggle_clrp_1st_place_solution",
+  "source_commit": "6145325986b46ae5b125029ea49ac72e62568a69",
+  "license": "MIT",
+  "source_pins": "docs/reviews/competition_commonlit_source_pins.json",
+  "primary_writeup": "https://www.kaggle.com/competitions/commonlitreadabilityprize/writeups/mathis-lucka-1st-place-solution-external-data-teac",
+  "intake_repository_status": "HTTP404 for AmedeoBova/CommonLit-Readability",
+  "primary_identity": "Winner-owned repository README explicitly identifies first-place solution and links corrected discussion. Original intake discussion260744 unreadable.",
+  "retained_source": "Five notebooks,100 code cells only, plus README and MIT notice. Notebook outputs/metadata discarded; no corpus files or model weights requested.",
+  "findings": [
+    "Included training adapts four AutoModelForSequenceClassification families using pseudo-labeled examples: ALBERT-xxlarge-v2, DeBERTa-large, RoBERTa-large, ELECTRA-large. MLM imports do not establish an executed masked-language-model adaptation stage.",
+    "No stochastic-weight-averaging implementation found in the pinned notebook code. Included model heads are library sequence-classification/regression heads; no custom attention-pooling implementation found.",
+    "Training tokenizes the entire provided text list with padding=True before dataset construction, not dynamic per-batch padding as asserted by intake.",
+    "Inference calls six configurations over six folds plus one full-data ALBERT and two additional DeBERTa bags:39 transformer states. Two ridge ensembles operate on model predictions, not transformer embeddings.",
+    "Final blend weights are3/8 first ridge ensemble,2/8 second ridge ensemble,3/8 special blend; special blend is65% single ALBERT plus35% mean of two DeBERTa predictions.",
+    "External examples selected using sentence-transformer semantic search and filtered by strict absolute pseudo-label difference below reference standard error. A separate linked Kaggle teacher notebook participates in the documented pipeline; source/license closure still needed.",
+    "Inference os.path.joun typo reproduced; second ridge ensemble trains five inputs but inference provides six, reproduced with synthetic fitted Ridge.",
+    "Additional static inconsistencies: repeated first DeBERTa in ridge training features versus second DeBERTa in inference; pretraining validation arrays reference training frame; some training call output variables differ from declared destinations; bootstrap comment versus ordinary fold directory."
+  ],
+  "source_probe": "docs/reviews/competition_commonlit_source_probe.json",
+  "next_steps": [
+    "Resolve exact teacher code reuse grant and training/checkpoint provenance; CommonLit cannot yet pass complete source/license review.",
+    "Resolve primary-writeup MiniLM versus notebook TinyBERT and earlier ridge/bootstrap/training inconsistencies in a documented corrected version.",
+    "Continue other uncovered competition candidates while these CommonLit source questions remain unresolved; no generic classifier substitution."
+  ],
+  "catalog_mutations": 0,
+  "primary_writeup_review": {
+    "verified": true,
+    "confirms": [
+      "External semantic retrieval, pseudo-label teachers and standard-error filtering",
+      "Pseudo-label adaptation followed by six-fold student fine-tuning",
+      "Two ridge ensembles plus full-data ALBERT and bootstrap models"
+    ],
+    "difference": "Primary writeup names paraphrase-MiniLM-L6-v2 retrieval; pinned notebook defaults use paraphrase-TinyBERT-L6-v2. Preserve this uncertainty in reconstruction."
+  },
+  "teacher_review": "docs/reviews/competition_commonlit_teacher_source_review.json",
+  "teacher_findings": [
+    "Recovered author-linked public teacher notebook version3,16code cells, codeSHA256e8a198ca555ca947a36ee7d74eb37c94512bb41daa1750da98b03ec1dbb91350.",
+    "Teacher includes RoBERTa attention pooling and a distinct pooled-output layernorm/regression branch. These upstream teacher heads are distinct from the39final student states.",
+    "Original teacher attention weights include padding positions; synthetic hidden-state probe reproduces positive padding weights and finite head gradients.",
+    "Second teacher evaluator squeezes singleton batch prediction to scalar and attempts list concatenation; TypeError reproduced after explicit CPU transfer adaptation.",
+    "No teacher license established from retrieved public metadata, notebook notices or page. Do not extend repository MIT grant by assumption."
+  ]
+}

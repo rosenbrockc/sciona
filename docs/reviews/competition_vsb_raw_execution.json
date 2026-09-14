@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "models": 125,
+  "query_measurements": 8,
+  "query_signal_decisions": 24,
+  "raw_preprocessing": true,
+  "full_training_limits": true,
+  "strict_json": true,
+  "sha256": {
+    "sciona/vsb_baseline.py": "3c38d41b990c15ee5addc94bab28c87f451a146b3b89ebb36c7864cfda5f5f97",
+    "sciona/vsb_descriptors.py": "381df7f3a2f41d688144d8c292d045e3aeff469b3ae74cead48ecd7ebe2cba4c",
+    "sciona/vsb_execution.py": "d7c2106eed8516523a45e547424f0fa5d434cca86cc736fa707c8c8b99de7856",
+    "sciona/vsb_measurement.py": "f8607a107d000ec57d770a31604adb52164dbc0365503ee284faf40d931452a6",
+    "sciona/vsb_peaks.py": "a7c33f4894401cd80e346eed64b23b34570b9a7d3a41121bc172b15e2985ed41",
+    "sciona/vsb_threshold.py": "972523f96b4cbefe62b1b037e389700fe8c4a022b6452d15ff2c8f6598b952b9",
+    "sciona/vsb_training.py": "193a56675d23098abe0175a2aecd45f16e88d401b5990c361292124e8b8b654d",
+    "scripts/vsb_synthetic.py": "e187bb8692093357144160f3400d01cb971585a9e510f528a1fe8b4e0be54e40",
+    "scripts/validate_vsb_raw_execution.py": "f58a581a2888a6a0b76c80a3031f19ae0744e99e0eda128d11721ef4e38769e2"
+  },
+  "limits": [
+    "Synthetic raw signals at generalized input length; serialized graph and historical precision/accuracy remain unqualified."
+  ]
+}

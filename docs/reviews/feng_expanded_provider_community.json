@@ -1,0 +1,105 @@
+{
+  "atoms": [
+    {
+      "artifact_id": "c36ab3d8-1091-5195-a33f-10622bacdeaa",
+      "version_id": "45353401-c86d-533a-a638-e541d1b9bfca",
+      "fqdn": "sciona.atoms.ml.sklearn.linear_model.feng_glm.feng_glm_segment_probabilities",
+      "runtime_fqdn": "sciona.atoms.ml.sklearn.linear_model.feng_glm.feng_glm_segment_probabilities",
+      "source_sha256": "1492f00125d6a8d903986b8e9f898030f536a310afe9d9dbc4834125b95a2009",
+      "intake_evidence_sha256": "05270a7ffda2c022a1e420146d07de7424d6598dc457410c470aa7cb4a58fe67",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves float32 loading, negative-infinity-only cleanup, training-scaler reuse, L2/C=.6 logistic regression and mean scores. Nine contract tests and fifteen exact source cases pass with explicit current LBFGS defaults; rejects nonconvergence.",
+      "review_limitations": [
+        "Community Tier3 automated review only; no Tier1 certification or Tier2 usage claim.",
+        "Current numerical libraries, including LBFGS for unspecified source GLM solver; no historical-engine, clinical or performance claim.",
+        "Source fixed-duration/channel feature contract; KNN batch scaling and GLM training-scaler reuse have distinct missing-value handling.",
+        "Two source models only; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "f7fd84a0-3cb0-56e2-9f94-7fd1517bbfa8",
+      "version_id": "6f18ab9b-aba1-5ac6-99d6-ea9969d831eb",
+      "fqdn": "sciona.atoms.ml.sklearn.neighbors.feng_expanded_knn.feng_expanded_knn_segment_probabilities",
+      "runtime_fqdn": "sciona.atoms.ml.sklearn.neighbors.feng_expanded_knn.feng_expanded_knn_segment_probabilities",
+      "source_sha256": "dce93a2400951bae2b2ca0a3cfce01289d9124ce4056c53a2c0f5e14a5e32f38",
+      "intake_evidence_sha256": "93f09a28feed0e6ac243745fa81978d4813c27cc3e7071a927c72c31b69cc6d8",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves float32 row scaling, negative-infinity/NaN cleanup, separate prediction scaler, forty distance-weighted Manhattan neighbors and mean window scores. Eight contract tests and fifteen exact source cases pass.",
+      "review_limitations": [
+        "Community Tier3 automated review only; no Tier1 certification or Tier2 usage claim.",
+        "Current numerical libraries, including LBFGS for unspecified source GLM solver; no historical-engine, clinical or performance claim.",
+        "Source fixed-duration/channel feature contract; KNN batch scaling and GLM training-scaler reuse have distinct missing-value handling.",
+        "Two source models only; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "706c4970-1d11-59ad-a130-20be5f4993ca",
+      "version_id": "3e9e7bf9-8395-5a0f-b915-b567de6a0e3d",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_expanded_features.feng_expanded_features",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_expanded_features.feng_expanded_features",
+      "source_sha256": "46226bec7e284a10b6e320b1039f37f721c839cc1b3512335709528ffc70965e",
+      "intake_evidence_sha256": "22af17a1cc6fb0766d0fc2164331b8386f3a404ef178f18d78a222041569218e",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves source 384-column spectral/time-correlation/frequency-correlation layout, 50-second windows, 16 channels, across-channel scaling and C-contiguous float64 time buffers. Seven tests and nine exact source cases pass after resolving roundoff amplification.",
+      "review_limitations": [
+        "Community Tier3 automated review only; no Tier1 certification or Tier2 usage claim.",
+        "Current numerical libraries, including LBFGS for unspecified source GLM solver; no historical-engine, clinical or performance claim.",
+        "Source fixed-duration/channel feature contract; KNN batch scaling and GLM training-scaler reuse have distinct missing-value handling.",
+        "Two source models only; full eleven-model ensemble remains incomplete."
+      ]
+    },
+    {
+      "artifact_id": "8211406b-3445-5fb3-84b8-f761ad11c562",
+      "version_id": "f3ac4477-a52b-5f75-bf0d-32fce86517ec",
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_expanded_partitions.feng_expanded_partitions",
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_expanded_partitions.feng_expanded_partitions",
+      "source_sha256": "38b32f7ebc6e46e331a7895a765870ca9464aac65a3f24844dded820d0d62991",
+      "intake_evidence_sha256": "c727eaded8911e6da9f14a7adb76a3b407ef2e185a6962288f6fadcb54ddf13e",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Requires nonempty ordered full-duration 16-channel partitions, stacks twelve windows and 384 features per segment. Five boundary/graph tests and three full serialized source cases pass; exact numerical dependency recorded.",
+      "review_limitations": [
+        "Community Tier3 automated review only; no Tier1 certification or Tier2 usage claim.",
+        "Current numerical libraries, including LBFGS for unspecified source GLM solver; no historical-engine, clinical or performance claim.",
+        "Source fixed-duration/channel feature contract; KNN batch scaling and GLM training-scaler reuse have distinct missing-value handling.",
+        "Two source models only; full eleven-model ensemble remains incomplete."
+      ]
+    }
+  ],
+  "tests_passed": 29,
+  "test_source_hashes": {
+    "test_feng_expanded_features.py": "f011d47b29644bd6e44366bf7ceff07aed65748cb76d5767d7ba789371bae49e",
+    "test_feng_expanded_partitions.py": "8d2daa4b9e523df560f661daf82c0175c98bd029ef7601240a94e6b6d0dd33c4",
+    "test_feng_expanded_knn.py": "8fd1f13811e3467a28c8f014ba140e7d606267dcacf1f2cb3636406703357aa9",
+    "test_feng_glm.py": "c4c3b59007e4ca8f5ff3bf2d5639c53e51d0ce5b873137c38ec07fa38e7d57fa"
+  },
+  "execution_evidence": "feng-expanded-execution-intake.v1",
+  "scope": "Four exact providers for the expanded Feng KNN/GLM component, reusing approved filtering."
+}

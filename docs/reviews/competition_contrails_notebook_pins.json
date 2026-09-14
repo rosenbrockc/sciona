@@ -1,0 +1,78 @@
+{
+  "commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "notebooks": [
+    {
+      "path": "notebook/contrails-submit-v43.ipynb",
+      "source_sha256": "8471a9db785c3e0ca05cecdd1a4c21f16fc8116eb1c1cd1a2798dfea86358998",
+      "code_sha256": "a48fffaeb161c3b99cd561e5c38c115875c7204c838387cada06fbad519866f6",
+      "inventory": [
+        {
+          "cell": 1,
+          "definitions": [
+            "not_plain_python"
+          ],
+          "lines": 3
+        },
+        {
+          "cell": 2,
+          "definitions": [],
+          "lines": 8
+        },
+        {
+          "cell": 4,
+          "definitions": [],
+          "lines": 26
+        },
+        {
+          "cell": 6,
+          "definitions": [],
+          "lines": 13
+        },
+        {
+          "cell": 7,
+          "definitions": [
+            "not_plain_python"
+          ],
+          "lines": 4
+        }
+      ]
+    },
+    {
+      "path": "notebook/contrails-submit-v47.ipynb",
+      "source_sha256": "79990439d3c641612d8511835eaf361d60aaf890bd1cab784b6e1fed60782b24",
+      "code_sha256": "84cb8f30ded64604c57b89ff5ccf7ea033df1d9a9c98bd2633151f65443f2db5",
+      "inventory": [
+        {
+          "cell": 1,
+          "definitions": [
+            "not_plain_python"
+          ],
+          "lines": 3
+        },
+        {
+          "cell": 2,
+          "definitions": [],
+          "lines": 9
+        },
+        {
+          "cell": 4,
+          "definitions": [],
+          "lines": 26
+        },
+        {
+          "cell": 6,
+          "definitions": [],
+          "lines": 13
+        },
+        {
+          "cell": 7,
+          "definitions": [
+            "not_plain_python"
+          ],
+          "lines": 4
+        }
+      ]
+    }
+  ],
+  "retained": "Public code cells only. Outputs and notebook input metadata not retained."
+}

@@ -1,0 +1,43 @@
+{
+  "format": "adversarial-graph-execution-validation.v1",
+  "result": "passed",
+  "approved": false,
+  "checks": {
+    "actual_runner_nodes": 2,
+    "actual_full_models": 5,
+    "complete_targeted_large_steps": 20,
+    "neural_batch_size": 10,
+    "real_entries": 1,
+    "padded_entries": 9,
+    "encoded_caller_states": true,
+    "normalized_projection_bound": true,
+    "only_real_source_scaled_PNG": true,
+    "post_discovery_rng_unchanged": true
+  },
+  "serialized_graph_sha256": "2e7db7d5d1134a6df3e1b6c91f27b343ce02af56accd21173a57a52da21f9dd5",
+  "provider_sha256": "4f3c569667377520c79c8fd937f1e5f311c664caa010fb340002578219f5fc2e",
+  "sha256": {
+    "sciona/adversarial_ensemble.py": "454f159958dfeb3a5ececfffdeb3c176be5348a30e1dc0534519a018566521eb",
+    "sciona/adversarial_graph.py": "1d154b164bfd2012622222821769ad0b61bacad2736adcfb14145b8796167f29",
+    "sciona/adversarial_image_boundary.py": "8d7fcbb8d939e81441d98367a0c22dfcbcebce250024b466868a95d7ada90566",
+    "sciona/adversarial_inception_ops.py": "2af2b4abb03548fc79a9421496da40e1fc9972afd0f919850ed544c690eb10b7",
+    "sciona/adversarial_inception_resnet.py": "22364cb662b390ebc1d53830ee76d37ded16c61daed09b44b760778c75cdb0b5",
+    "sciona/adversarial_inception_v3.py": "cf2adb7d1b3309bd3665013f8cf0c847302353be52c677b8f619efc7c7b97b71",
+    "sciona/adversarial_inception_v4.py": "2f98b52b06d85aabf2a8d616c4a3e09888fe95c5f15731d9e23934a25c77fc3a",
+    "sciona/adversarial_lifecycle.py": "19c0bb800a9030b2937cef485d80f5e3ee4e72d8bde124a6a3eebb2517ab3fd5",
+    "sciona/adversarial_losses.py": "125541dea59d890c0dabb3241536391841567e3c6581af119038c20bd04d355b",
+    "sciona/adversarial_normalization.py": "3af9580ea7f45eb3e56b71c8a7bfb308819363f9f9a08a933ca6ec67186aad92",
+    "sciona/adversarial_resnet.py": "5a60047ce948db4e88f75784da8d767afbc14ef7031a7b2c4fde6358110a092b",
+    "sciona/adversarial_resnet_spatial.py": "023d6fe17962eea7025a8472ea028f9ee7fac8e3836f74d6d0e64ca66a3bfb39",
+    "sciona/adversarial_rgb_attack.py": "36e6cfd383b530a2bf239476d47dbf86ac446994ffd669d4153e431a5718b689",
+    "sciona/adversarial_runtime.py": "b843a45806c923971374547701142a0868732a35849a1d2fa9459290269adbea",
+    "sciona/adversarial_state_mapping.py": "138758b19da6ffed43fb17e0065322e34732a3eb4d1cc16637f6c9f6e6ad8a3e",
+    "sciona/adversarial_updates.py": "7fb8d70efd285d9f43edceacaa9e348aace10e0eddcf97b410c28012931c45aa",
+    "sciona/adversarial_inception_resnet_topology.json": "c2da0c58a5542e8b9aabee0897b58dc3b263acdf059ee6372c60a9087ca54903",
+    "sciona/adversarial_inception_v3_topology.json": "59052d911d13a47fb8c9e048e4de3e7fa66d8b4439d715caa1959ad0229c79ed",
+    "sciona/adversarial_inception_v4_topology.json": "f33a8109dc4c934b29dbc6677fdb19b23f15fc5583086d90ad60c67af92ae8a4",
+    "scripts/validate_adversarial_graph_execution.py": "9b37ee8a3a99863c3ab4157e10e71cac21cdbb02ba5a845816efb1f6c6871379",
+    "sciona/dfdc_codec.py": "4256101fe8c78ad8df1eec4ff6db08ae53a7291a4506e73784ffad25ad39b15a"
+  },
+  "limits": "Actual runner/providers with synthetic supplied states, BNbeta=.1; no pretrained quality or TF binary equivalence. Cold provider discovery occurs before RNG baseline. Intermediate values captured only in memory. No served catalog/publication claim."
+}

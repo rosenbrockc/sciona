@@ -1,0 +1,84 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751",
+  "cases": [
+    {
+      "feature_dtype": "torch.float16",
+      "canvas": [
+        800,
+        800
+      ],
+      "batch_size": 2,
+      "anchors_per_image": 159882,
+      "output_dtype": "torch.float32",
+      "repeated_calls_exact": true
+    },
+    {
+      "feature_dtype": "torch.float16",
+      "canvas": [
+        832,
+        1344
+      ],
+      "batch_size": 2,
+      "anchors_per_image": 279279,
+      "output_dtype": "torch.float32",
+      "repeated_calls_exact": true
+    },
+    {
+      "feature_dtype": "torch.float32",
+      "canvas": [
+        800,
+        800
+      ],
+      "batch_size": 2,
+      "anchors_per_image": 159882,
+      "output_dtype": "torch.float32",
+      "repeated_calls_exact": true
+    },
+    {
+      "feature_dtype": "torch.float32",
+      "canvas": [
+        832,
+        1344
+      ],
+      "batch_size": 2,
+      "anchors_per_image": 279279,
+      "output_dtype": "torch.float32",
+      "repeated_calls_exact": true
+    },
+    {
+      "feature_dtype": "torch.float64",
+      "canvas": [
+        800,
+        800
+      ],
+      "batch_size": 2,
+      "anchors_per_image": 159882,
+      "output_dtype": "torch.float64",
+      "repeated_calls_exact": true
+    },
+    {
+      "feature_dtype": "torch.float64",
+      "canvas": [
+        832,
+        1344
+      ],
+      "batch_size": 2,
+      "anchors_per_image": 279279,
+      "output_dtype": "torch.float64",
+      "repeated_calls_exact": true
+    }
+  ],
+  "installed_default_difference_observed": true,
+  "implementation_sha256": {
+    "sciona/wheat_anchors.py": "b0bc3215a42cdb3b9439b7fd29bfa037d909bea82aede5e8b12c8079d8fcb53d",
+    "scripts/validate_wheat_anchors.py": "807885397c889fdd16a284a7d03d7571f325b869630c2b69775143ad13c86aac"
+  },
+  "limits": [
+    "Anchor arrays only; proposal matching, sampling and filtering remain separate.",
+    "CPU eager execution; no CUDA, tracing or historical native-kernel equivalence claim."
+  ]
+}

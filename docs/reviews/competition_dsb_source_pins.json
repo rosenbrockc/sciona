@@ -1,0 +1,27 @@
+{
+  "commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "files": {
+    "LICENSE": "64d34f2f3bb958ff78a0375330c150d1443079bc61e93f09f7151a3fa1ade3bc",
+    "split_combine.py": "29037c0dc5a2829e864985e1206c84fabc79a597e7e96e547a4c41942901d409",
+    "net_detector.py": "669fd6a22b5193fff1ff0aa49e48a98015b07cddff22a1c9cb178ce011e9e232",
+    "net_classifier.py": "15b20ad5ed522dbcd8e010476baa83b15fff50eaa985f1d9a1bdd6715ad83f12",
+    "data_detector.py": "47e0e40a63cd086e0809b3ba3ccbe260a659bcdb08af25697050db1de7bd64a6",
+    "data_classifier.py": "ecf4b5a29fc2fa32e188acbd5a410d3e10399744077ed010f2c10ebe26c9f992",
+    "layers.py": "0f7e14dd4f64ec40928bf37b8d7706aab2391c230904117e163bc1fd4beffbb5",
+    "preprocessing/full_prep.py": "dddbe023396b9e2948a724bf212b33b9e39d1ce5b848223e7e019311eaf453a2",
+    "preprocessing/step1.py": "6acd99d9502d2a4467f04c28792c54a458dea85bd3ab600cb0fad3bc0cc27510",
+    "training/classifier/main.py": "97b381d1c3dfb2f98f08b594caa62a6a164610086d41327c352543ccb5eabe18",
+    "training/classifier/trainval_classifier.py": "f0b865b4db72220975099f63dfd1b3de35efbb81c1e42067db65d4aa40494a95",
+    "training/run_training.sh": "e2271fde036655ab22e71cc3d0382ea975560a7b14c8c9e002769216039ad919",
+    "training/classifier/net_classifier_3.py": "0dc25bf9689ca80b519fe8977d5b6c48dc436cb0781074cc48367fc891a0261c",
+    "training/classifier/net_classifier_4.py": "c28544271659ecaa1dce1ffdcbb2837ea39fcf56f81b069d520a4f086992fef2",
+    "training/classifier/net_detector_3.py": "ee8473c919acc08c8a591a162f9c287035bb89f99f5662eb6e7d3d479d01a75a",
+    "training/classifier/trainval_detector.py": "b3a7a90841f6e08c3373ca94e53b702c16ec26112f03008a0fe8d30ab366906a",
+    "training/classifier/data_detector.py": "aedc15116636c91df327ad483a7dd3257a34daa48d71c147094c0ce4aeb18c53",
+    "training/classifier/data_classifier.py": "2e34e4aee616ecfbbfdb123d127330e15c90c0641e96aa259fcd1b1f40704ae0",
+    "training/classifier/layers.py": "0f7e14dd4f64ec40928bf37b8d7706aab2391c230904117e163bc1fd4beffbb5",
+    "training/prepare.py": "a0954ff25679dec23dfa3828d625b4814ad952009f148ca9e75b9e9f0624f393",
+    "training/classifier/adapt_ckpt.py": "1927c301e708148025e18fa0547ca0f833e997cb992f1e3ba03d8acc6bb98c2a"
+  },
+  "repository": "https://github.com/lfz/DSB2017"
+}

@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "dae_controls": {
+    "hidden": [
+      1500,
+      1500,
+      1500
+    ],
+    "feature_layers": [
+      0,
+      1,
+      2
+    ],
+    "epochs": 1000,
+    "batch_size": 128,
+    "learning_rate": 0.003,
+    "decay": 0.995,
+    "swap_probability": 0.07,
+    "momentum": 0.0
+  },
+  "neural_controls": {
+    "hidden": [
+      1000,
+      1000
+    ],
+    "epochs": 200,
+    "batch_size": 128,
+    "learning_rate": 0.0001,
+    "decay": 0.995,
+    "l2": 0.05,
+    "momentum": 0.0,
+    "dropout": 0.5,
+    "input_dropout": 0.1,
+    "dropout_scaling": "inverted"
+  },
+  "learned_features": 4500,
+  "dae_population_rows": 136,
+  "initial_dae_mse": 0.4896356463432312,
+  "final_dae_mse": 0.002367220353335142,
+  "initial_classifier_training_loss": 0.7004801630973816,
+  "final_classifier_training_loss": 0.6959924101829529,
+  "sha256": {
+    "sciona/porto_neural_branch.py": "80fc09cbb950c338d37c44a5fbfe8f13dd95017bc00a3219591dbc724d7c6c4f",
+    "sciona/porto_autoencoder.py": "37bdf15751d6b85ab00cadd467aa5762d09af4c39de32ef3f91a924c1bf67a3f",
+    "sciona/porto_neural.py": "3cbd9ff5505a4b007b1de65969921e05df58e1875c25d6d7b57c2eb1845e0d79",
+    "sciona/porto_transforms.py": "17c18948efca3d0872697496d8176942e4b0bf7de7fbbdd51611964dc11e0d0c",
+    "scripts/validate_porto_recovered_branch.py": "c9bb45ade7d0280c24e6da20a85e7d4481123e3c2fa422e9583362d07ace8aca"
+  },
+  "limits": [
+    "One recovered configuration with independent SGD, dropout scaling and all-hidden extraction.",
+    "Dimensions/epochs and actual feature-only integration verified; classifier accuracy is not a pass criterion or a historical performance claim.",
+    "Four synthetic inputs, no historical training volume/GPU qualification; remaining ensemble configurations unresolved."
+  ]
+}

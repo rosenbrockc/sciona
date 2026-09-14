@@ -1,0 +1,25 @@
+{
+  "format": "video_multilabel-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "calibration_leakage",
+    "missing_f1_validation",
+    "query_population_leakage",
+    "missing_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_video_multilabel_execution.py": "db24e991364725d74b49aa1248d2ca45237ca062bbe9b313884f035662be32ff",
+    "scripts/validate_video_multilabel_review_gates.py": "2011d7af012c7e5bf0d054a273461c394efde9024f17d8fb2dbae8ae64397908"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

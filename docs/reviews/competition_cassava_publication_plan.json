@@ -1,0 +1,453 @@
+{
+  "approved": false,
+  "applied": false,
+  "catalog_mutations": 0,
+  "runner_version": "cassava-execution-community.v1",
+  "publication_ready": false,
+  "required_actions": [
+    "Complete pipeline_validation",
+    "Complete graph_execution_validation",
+    "Incorporate reference-scope conditions into final semantic approval",
+    "Pass transactional publication gates and verify served graph execution"
+  ],
+  "providers": [
+    {
+      "artifact_id": "e6a120a7-1bc3-5862-804c-367419418e7e",
+      "version_id": "b9cb738b-797c-5b4b-8c1e-5eeab81b6ba9",
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_fold_plan",
+      "content_hash": "aa5eac1f03b78ae3e6bd8b02cea39a4fbe4b7085ec320849174a008cc046e63e",
+      "fingerprint": "3b3fbe10ac20fdf68f4d51ddd3bba12ff5aae1656b17feceaf0825f58677486e",
+      "semver": "0.0.0+local.aa5eac1f03b7",
+      "target_trust_tier": 3,
+      "description": "Validate unique runtime keys and aligned class/fold ordinals 0 through 4. All five validation folds must exist and every training complement must contain all five classes. The caller resolves aliases of physical images.",
+      "import_module": "sciona.atoms.ml.cassava_execution",
+      "source_symbol": "cassava_fold_plan",
+      "source_sha256": "bf744f33fee70d6514edd40f3883a2cfacc5d2b94de7929329bd4c029ef24453",
+      "signature": "(sample_keys: list, labels: list, assignments: list) -> object",
+      "owner_id": "33ed07a2-1bea-5b17-8b71-d6d0e590fdd9",
+      "source_repo_id": "27b787a0-27ed-4760-92b7-ad8e8b4b815c",
+      "io_specs": {
+        "input": [
+          {
+            "name": "sample_keys",
+            "type_desc": "list",
+            "constraints": "Nonempty unique runtime strings; physical-image aliases resolved by caller",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "labels",
+            "type_desc": "list",
+            "constraints": "Aligned integer class ordinals 0..4; bool rejected; all classes in each training complement",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "assignments",
+            "type_desc": "list",
+            "constraints": "Aligned integer held-out fold ordinals 0..4; bool rejected; all five folds nonempty",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ],
+        "output": [
+          {
+            "name": "plan",
+            "type_desc": "object",
+            "constraints": "Validated Cassava FoldPlan; revalidated at execution",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ]
+      }
+    },
+    {
+      "artifact_id": "3b7ead2f-dd28-5692-b1c0-13354873a0f3",
+      "version_id": "118b7c98-609d-5e8a-bfd8-72203378a721",
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_train_ensemble",
+      "content_hash": "e16788187b2183ef2e79a00fa4ca695cb91e03f053c01d582471446874b1df6f",
+      "fingerprint": "4f910bfea8bc8079026bcdafe8945b87b5643ee7fd20fffaf7d8e1c9580dc5c2",
+      "semver": "0.0.0+local.e16788187b21",
+      "target_trust_tier": 3,
+      "description": "Train 15 CV models, refit B4 for 14 epochs, and blend with frozen CropNet. Source/query rows contain keyed encoded 600x800 RGB images; prepared B4 rows contain keyed encoded 512x512 RGB images. The caller establishes the preparation relationship. References supply local model paths and reviewed hashes for all four families; model downloads are not implicit. Output directory must not exist. Runtime results include private keys, scores (row sum 3, not probabilities), class ordinals, histories and checkpoints. CPU batch sizes and worker count are explicit. Source corrections and qualified reference-artifact limits are documented in the CDG metadata.",
+      "import_module": "sciona.atoms.ml.cassava_execution",
+      "source_symbol": "cassava_train_ensemble",
+      "source_sha256": "bf744f33fee70d6514edd40f3883a2cfacc5d2b94de7929329bd4c029ef24453",
+      "signature": "(plan: object, source_rows: list, efficientnet_rows: list, query_rows: list, references: dict, torch_batch_size: int, torch_workers: int, efficientnet_batch_size: int, output_directory: str) -> dict",
+      "owner_id": "33ed07a2-1bea-5b17-8b71-d6d0e590fdd9",
+      "source_repo_id": "27b787a0-27ed-4760-92b7-ad8e8b4b815c",
+      "io_specs": {
+        "input": [
+          {
+            "name": "plan",
+            "type_desc": "object",
+            "constraints": "Validated Cassava FoldPlan; revalidated at execution",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "source_rows",
+            "type_desc": "list",
+            "constraints": "Keyed encoded 600x800 RGB images; exact plan coverage; no identical decoded images",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "efficientnet_rows",
+            "type_desc": "list",
+            "constraints": "Keyed encoded 512x512 RGB images; exact plan coverage; caller proves preparation relationship",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "query_rows",
+            "type_desc": "list",
+            "constraints": "Nonempty unique keyed encoded 600x800 RGB images; no identical decoded images",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "references",
+            "type_desc": "dict",
+            "constraints": "Exactly vit, resnext, efficientnet and cropnet; local paths plus reviewed SHA-256 references; no implicit download",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "torch_batch_size",
+            "type_desc": "int",
+            "constraints": "Explicit positive integer; training and validation populations must supply retained batches",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "torch_workers",
+            "type_desc": "int",
+            "constraints": "Explicit nonnegative integer; qualified synthetic execution uses zero",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "efficientnet_batch_size",
+            "type_desc": "int",
+            "constraints": "Explicit positive integer; training population must supply at least one full batch",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          },
+          {
+            "name": "output_directory",
+            "type_desc": "str",
+            "constraints": "Caller-managed private checkpoint directory that must not already exist",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ],
+        "output": [
+          {
+            "name": "result",
+            "type_desc": "dict",
+            "constraints": "Private predictions (N x 5 scores summing to 3 and argmax labels), family outputs, histories, evaluations and checkpoint paths",
+            "data_kind": "",
+            "time_basis": "",
+            "provenance": "",
+            "required": true,
+            "default_value_repr": "",
+            "dim_signature": ""
+          }
+        ]
+      }
+    }
+  ],
+  "execution": {
+    "artifact_id": "520cc705-3a8a-59fd-841a-6bc8e6ea7819",
+    "version_id": "a8275111-4de0-5010-9494-ff24a5756cf0",
+    "fqdn": "cdg.competition.solution.kaggle.cassava_leaf_1st.execution",
+    "content_hash": "30fe0b129a99f14429acc3c583411ace824f6439db06b4c24aa2cc9feedb49fd",
+    "target_trust_tier": 3,
+    "nodes": [
+      {
+        "node_id": "fold_plan",
+        "parent_node_id": "",
+        "name": "fold_plan",
+        "description": "Validate aligned identities, classes and five disjoint held-out folds",
+        "concept_type": "custom",
+        "status": "atomic",
+        "matched_primitive": "sciona.atoms.ml.cassava_execution.cassava_fold_plan",
+        "type_signature": "{\"format\":\"sciona.execution_graph.v1\",\"graph\":{\"edges\":[{\"alignment_expectation\":\"\",\"data_kind\":\"\",\"edge_kind\":\"data_flow\",\"input_name\":\"plan\",\"loss_class\":\"preserving\",\"output_name\":\"plan\",\"provenance\":\"\",\"requires_glue\":false,\"source_id\":\"fold_plan\",\"source_type\":\"object\",\"target_id\":\"train_ensemble\",\"target_type\":\"object\",\"time_basis\":\"\"}],\"metadata\":{\"artifact_source\":\"competition_source_corrected_execution\",\"choices\":[\"ResNeXt 15 epochs per fold; ViT 10 epochs per fold\",\"EfficientNet fivefold CV up to 20 epochs with early stopping; separate 14-epoch full refit\",\"Frozen official CropNet reference; unknown-class mass distributed equally\",\"Half ViT/ResNeXt sum plus B4 plus CropNet; scores sum to three\",\"Disjoint ViT validation correction; explicit full-population B4 normalization adaptation\"],\"limitations\":[\"Caller establishes physical-image identity and prepared-view provenance\",\"Explicit CPU batch/worker settings; historical TPU and leaderboard equivalence unproven\",\"Historical-reference timm weights and official CropNet; exact winner runtime/cache identity unproven\",\"Synthetic execution evidence does not establish competitive accuracy\",\"Local reference artifacts and private checkpoints remain caller managed\"],\"num_edges\":1,\"num_nodes\":2,\"publication_status\":\"draft\",\"scope\":\"Corrected pretrained four-family CPU training and inference reconstruction.\",\"source_version_ids\":[\"735c71d1-6f8a-565b-a5c3-f1bcf3a89285\"],\"target_tier\":3},\"nodes\":[{\"action_class\":\"replace_stage\",\"boundary_kind\":\"none\",\"boundary_port_name\":\"\",\"children\":[],\"concept_type\":\"custom\",\"conceptual_summary\":\"\",\"critic_notes\":\"\",\"decomposition_rationale\":\"\",\"depth\":0,\"description\":\"Validate aligned identities, classes and five disjoint held-out folds\",\"fixed_point_convergence_field\":\"\",\"fixed_point_max_iterations\":0,\"inputs\":[{\"constraints\":\"Nonempty unique runtime strings; physical-image aliases resolved by caller\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"sample_keys\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Aligned integer class ordinals 0..4; bool rejected; all classes in each training complement\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"labels\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Aligned integer held-out fold ordinals 0..4; bool rejected; all five folds nonempty\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"assignments\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"}],\"is_external\":false,\"is_opaque\":false,\"is_optional\":false,\"map_hop_size\":0,\"map_window_size\":0,\"matched_primitive\":\"sciona.atoms.ml.cassava_execution.cassava_fold_plan\",\"name\":\"fold_plan\",\"node_id\":\"fold_plan\",\"outputs\":[{\"constraints\":\"Validated Cassava FoldPlan; revalidated at execution\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"plan\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"object\"}],\"parallelizable\":false,\"parent_id\":null,\"primitive_binding_confidence\":0.0,\"primitive_binding_source\":\"\",\"resolution_reason\":\"\",\"resolved_by\":\"\",\"status\":\"atomic\",\"type_signature\":\"\"},{\"action_class\":\"replace_stage\",\"boundary_kind\":\"none\",\"boundary_port_name\":\"\",\"children\":[],\"concept_type\":\"custom\",\"conceptual_summary\":\"\",\"critic_notes\":\"\",\"decomposition_rationale\":\"\",\"depth\":0,\"description\":\"Train three fivefold families, refit B4 and combine with frozen CropNet\",\"fixed_point_convergence_field\":\"\",\"fixed_point_max_iterations\":0,\"inputs\":[{\"constraints\":\"Validated Cassava FoldPlan; revalidated at execution\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"plan\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"object\"},{\"constraints\":\"Keyed encoded 600x800 RGB images; exact plan coverage; no identical decoded images\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"source_rows\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Keyed encoded 512x512 RGB images; exact plan coverage; caller proves preparation relationship\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"efficientnet_rows\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Nonempty unique keyed encoded 600x800 RGB images; no identical decoded images\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"query_rows\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"list\"},{\"constraints\":\"Exactly vit, resnext, efficientnet and cropnet; local paths plus reviewed SHA-256 references; no implicit download\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"references\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Explicit positive integer; training and validation populations must supply retained batches\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"torch_batch_size\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"int\"},{\"constraints\":\"Explicit nonnegative integer; qualified synthetic execution uses zero\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"torch_workers\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"int\"},{\"constraints\":\"Explicit positive integer; training population must supply at least one full batch\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"efficientnet_batch_size\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"int\"},{\"constraints\":\"Caller-managed private checkpoint directory that must not already exist\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"output_directory\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"str\"}],\"is_external\":false,\"is_opaque\":false,\"is_optional\":false,\"map_hop_size\":0,\"map_window_size\":0,\"matched_primitive\":\"sciona.atoms.ml.cassava_execution.cassava_train_ensemble\",\"name\":\"train_ensemble\",\"node_id\":\"train_ensemble\",\"outputs\":[{\"constraints\":\"Private predictions (N x 5 scores summing to 3 and argmax labels), family outputs, histories, evaluations and checkpoint paths\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"result\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"}],\"parallelizable\":false,\"parent_id\":null,\"primitive_binding_confidence\":0.0,\"primitive_binding_source\":\"\",\"resolution_reason\":\"\",\"resolved_by\":\"\",\"status\":\"atomic\",\"type_signature\":\"\"}],\"planning_artifact\":null},\"snapshot_hash\":\"30fe0b129a99f14429acc3c583411ace824f6439db06b4c24aa2cc9feedb49fd\"}"
+      },
+      {
+        "node_id": "train_ensemble",
+        "parent_node_id": "",
+        "name": "train_ensemble",
+        "description": "Train three fivefold families, refit B4 and combine with frozen CropNet",
+        "concept_type": "custom",
+        "status": "atomic",
+        "matched_primitive": "sciona.atoms.ml.cassava_execution.cassava_train_ensemble",
+        "type_signature": "{\"format\":\"sciona.execution_graph_ref.v1\",\"snapshot_hash\":\"30fe0b129a99f14429acc3c583411ace824f6439db06b4c24aa2cc9feedb49fd\"}"
+      }
+    ],
+    "edges": [
+      {
+        "source_id": "fold_plan",
+        "target_id": "train_ensemble",
+        "output_name": "plan",
+        "input_name": "plan"
+      }
+    ],
+    "bindings": [
+      {
+        "node_id": "fold_plan",
+        "bound_artifact_fqdn": "sciona.atoms.ml.cassava_execution.cassava_fold_plan",
+        "bound_version_content_hash": "aa5eac1f03b78ae3e6bd8b02cea39a4fbe4b7085ec320849174a008cc046e63e",
+        "binding_source": "cassava-execution-community.v1"
+      },
+      {
+        "node_id": "train_ensemble",
+        "bound_artifact_fqdn": "sciona.atoms.ml.cassava_execution.cassava_train_ensemble",
+        "bound_version_content_hash": "e16788187b2183ef2e79a00fa4ca695cb91e03f053c01d582471446874b1df6f",
+        "binding_source": "cassava-execution-community.v1"
+      }
+    ],
+    "metadata": {
+      "artifact_source": "competition_source_corrected_execution",
+      "publication_status": "draft",
+      "target_tier": 3,
+      "source_version_ids": [
+        "735c71d1-6f8a-565b-a5c3-f1bcf3a89285"
+      ],
+      "scope": "Corrected pretrained four-family CPU training and inference reconstruction.",
+      "choices": [
+        "ResNeXt 15 epochs per fold; ViT 10 epochs per fold",
+        "EfficientNet fivefold CV up to 20 epochs with early stopping; separate 14-epoch full refit",
+        "Frozen official CropNet reference; unknown-class mass distributed equally",
+        "Half ViT/ResNeXt sum plus B4 plus CropNet; scores sum to three",
+        "Disjoint ViT validation correction; explicit full-population B4 normalization adaptation"
+      ],
+      "limitations": [
+        "Caller establishes physical-image identity and prepared-view provenance",
+        "Explicit CPU batch/worker settings; historical TPU and leaderboard equivalence unproven",
+        "Historical-reference timm weights and official CropNet; exact winner runtime/cache identity unproven",
+        "Synthetic execution evidence does not establish competitive accuracy",
+        "Local reference artifacts and private checkpoints remain caller managed"
+      ],
+      "num_nodes": 2,
+      "num_edges": 1
+    },
+    "io_specs": {
+      "input": [
+        {
+          "name": "sample_keys",
+          "type_desc": "list",
+          "constraints": "Nonempty unique runtime strings; physical-image aliases resolved by caller",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "labels",
+          "type_desc": "list",
+          "constraints": "Aligned integer class ordinals 0..4; bool rejected; all classes in each training complement",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "assignments",
+          "type_desc": "list",
+          "constraints": "Aligned integer held-out fold ordinals 0..4; bool rejected; all five folds nonempty",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "source_rows",
+          "type_desc": "list",
+          "constraints": "Keyed encoded 600x800 RGB images; exact plan coverage; no identical decoded images",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "efficientnet_rows",
+          "type_desc": "list",
+          "constraints": "Keyed encoded 512x512 RGB images; exact plan coverage; caller proves preparation relationship",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "query_rows",
+          "type_desc": "list",
+          "constraints": "Nonempty unique keyed encoded 600x800 RGB images; no identical decoded images",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "references",
+          "type_desc": "dict",
+          "constraints": "Exactly vit, resnext, efficientnet and cropnet; local paths plus reviewed SHA-256 references; no implicit download",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "torch_batch_size",
+          "type_desc": "int",
+          "constraints": "Explicit positive integer; training and validation populations must supply retained batches",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "torch_workers",
+          "type_desc": "int",
+          "constraints": "Explicit nonnegative integer; qualified synthetic execution uses zero",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "efficientnet_batch_size",
+          "type_desc": "int",
+          "constraints": "Explicit positive integer; training population must supply at least one full batch",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        },
+        {
+          "name": "output_directory",
+          "type_desc": "str",
+          "constraints": "Caller-managed private checkpoint directory that must not already exist",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        }
+      ],
+      "output": [
+        {
+          "name": "result",
+          "type_desc": "dict",
+          "constraints": "Private predictions (N x 5 scores summing to 3 and argmax labels), family outputs, histories, evaluations and checkpoint paths",
+          "data_kind": "",
+          "time_basis": "",
+          "provenance": "",
+          "required": true,
+          "default_value_repr": "",
+          "dim_signature": ""
+        }
+      ]
+    },
+    "mandatory_source_dependency": {
+      "dependency_artifact_fqdn": "cdg.competition.solution.kaggle.cassava_leaf_1st",
+      "dependency_content_hash": "c74ce39f2cea94fe168690a36ac59be792dad72a02f705424dea7a8f24cc2218",
+      "optional": false,
+      "scope": "Conceptual provenance; original intake is not invoked and remains draft"
+    }
+  },
+  "review_conditions": [
+    "Automated Tier 3 Community candidate; no Tier 1 human certification or Tier 2 usage qualification.",
+    "Corrected CPU reconstruction; historical TPU execution, exact historical timm runtime and leaderboard equivalence are unproven.",
+    "Caller establishes physical-image identity and prepared-view provenance. Exact decoded duplicates and key mismatch reject; near-duplicate identities are not inferred.",
+    "ViT validation is kept disjoint from training; B4 final normalization explicitly adapts the full supplied training population.",
+    "Explicit historical-reference timm weights and official CropNet are used; exact winner cached artifacts are not universally proven.",
+    "Synthetic full-resolution execution with batch one and zero torch workers does not establish competitive accuracy or original population-scale performance.",
+    "Caller supplies local reference artifacts and manages private checkpoint outputs; no model artifact is bundled by these provider wrappers.",
+    "Final five-class scores sum to three and are not probabilities. Each invocation retrains the complete workflow.",
+    "Retain the source and supplemental notices with the reconstruction.",
+    "Caller supplies model artifacts they are entitled to use; integrity checks do not establish usage rights.",
+    "The winner converted EfficientNet artifact remains unapproved for redistribution; no independent weight grant is inferred from software attribution.",
+    "Review any future distribution of external model files or dependency wheels separately.",
+    "Official CropNet and historical-reference timm scope remain explicit; winner runtime/cache equivalence is unproven."
+  ],
+  "sha256": {
+    "scripts/prepare_cassava_publication.py": "c530a33d9785306e22d9d32b8f4ee0080f5a07ffa5fa2aa537409dd254f59fa2",
+    "scripts/build_cassava_execution_graph.py": "86f3a15f955cd6cc340070065bc951e17b55337b1456727c76d0f478baa60356",
+    "docs/reviews/competition_cassava_source_review.json": "9c6fdf2705ffe40c7bf984b86c98f85123280a22fe4dae736d33f80f51d5d8e3"
+  }
+}

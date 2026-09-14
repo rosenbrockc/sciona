@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "matrices_compared": 21,
+  "maximum_absolute_error": 0.0,
+  "scope": "Pinned historical affine constructors and imgaug center composition; translation composition uses installed SimilarityTransform.",
+  "limits": [
+    "Full pixel pipeline and historical RNG identity remain unqualified.",
+    "Exact notebook environment remains unknown."
+  ],
+  "implementation_sha256": "5ef93678c593a8163c837c41983a099604e7258322744747af922ddd4b9cdfe1",
+  "superseded_for_sampled_precision": true,
+  "superseding_report": "docs/reviews/competition_bengali_font_pixel_validation.json"
+}

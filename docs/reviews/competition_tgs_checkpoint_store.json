@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "checks": [
+    {
+      "branch": "keras",
+      "optimizer_updates": 1,
+      "loaded_tensor_count": 351,
+      "prediction_max_error": 0.0
+    },
+    {
+      "branch": "pytorch",
+      "optimizer_updates": 1,
+      "loaded_tensor_count": 322,
+      "prediction_max_error": 0.0
+    }
+  ],
+  "limits": [
+    "One-update storage handoff diagnostic only; not full source-budget phase training or optimizer resume.",
+    "Runtime checkpoint files removed after verification; no weights or input arrays embedded."
+  ],
+  "sha256": {
+    "sciona/tgs_checkpoint_store.py": "a6e91767185492bf52ebe0d0fc1f6f609a054b9f9ac9fb60ccbf774cbf7fc7d9",
+    "tests/test_tgs_checkpoint_store.py": "220ba459946982fd7bab7be826503cdd7aa9923e50d661b50ef8795a777e1e15"
+  }
+}

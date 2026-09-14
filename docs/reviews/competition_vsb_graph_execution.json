@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "d79e40e4-45b0-5e74-a83c-c68c91f12afb",
+  "source_content_hash": "565e511ee8d20ce0b32adf5c8cc726150f235b1f97d5502d62c96cfe339f5ac1",
+  "serialized_graph_sha256": "33fa3095e0d940b9efc1b5ace745b635c43c2812ad166821490de32295d1050a",
+  "provider_sha256": "341740c6dd842f0da44289792402206281fcb6dac55b951b4c184437bf0d1a68",
+  "code_sha256": {
+    "sciona/vsb_baseline.py": "3c38d41b990c15ee5addc94bab28c87f451a146b3b89ebb36c7864cfda5f5f97",
+    "sciona/vsb_descriptors.py": "381df7f3a2f41d688144d8c292d045e3aeff469b3ae74cead48ecd7ebe2cba4c",
+    "sciona/vsb_execution.py": "d7c2106eed8516523a45e547424f0fa5d434cca86cc736fa707c8c8b99de7856",
+    "sciona/vsb_graph.py": "be60560892b11ab7caec12f8283f28dd321cef52775179340d45308ae5556245",
+    "sciona/vsb_measurement.py": "f8607a107d000ec57d770a31604adb52164dbc0365503ee284faf40d931452a6",
+    "sciona/vsb_peaks.py": "a7c33f4894401cd80e346eed64b23b34570b9a7d3a41121bc172b15e2985ed41",
+    "sciona/vsb_threshold.py": "972523f96b4cbefe62b1b037e389700fe8c4a022b6452d15ff2c8f6598b952b9",
+    "sciona/vsb_training.py": "193a56675d23098abe0175a2aecd45f16e88d401b5990c361292124e8b8b654d",
+    "scripts/vsb_synthetic.py": "e187bb8692093357144160f3400d01cb971585a9e510f528a1fe8b4e0be54e40",
+    "scripts/validate_vsb_graph_execution.py": "d76be9cba8a632c21ba48c0d7c7730bb5593a93c6efc983b4ded68c1251d0739"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "models": 125,
+    "raw_preprocessing": true,
+    "full_training_limits": true,
+    "synthetic_query_rows": 8,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true,
+    "code_unchanged_during_execution": true
+  },
+  "scope": "Independent full CPU pipeline on synthetic raw signals at generalized signal length. Historical precision, unbiased validation and competitive accuracy unqualified."
+}

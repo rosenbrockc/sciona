@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "passed": 15,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_brewster_angle_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_brewster_angle_proof.py": "53d904fd159d8db0f3db4e514ebae0ddcc83cecb356f0a7358082461abd2a0ec",
+    "sciona/physics_ingest/brewster_angle_proof.py": "5b137638a63b4f1c06f065fe3e5378ecc76d9d688282246ada89ca967050bc0f"
+  }
+}

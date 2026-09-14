@@ -1,0 +1,13 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_lorentz_boost_proof.py",
+  "test_results": {
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_lorentz_boost_proof.py": "2a99ef4487f1a45bcc21394526ab427bc6b147745475cf1f48498c86584429a0"
+  }
+}

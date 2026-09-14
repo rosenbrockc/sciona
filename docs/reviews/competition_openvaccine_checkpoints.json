@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "tensorflow_version": "2.20.0",
+  "families": [
+    {
+      "family": "gru",
+      "autoencoder_transfer_exact": true,
+      "checkpoint_prediction_exact": true,
+      "next_deterministic_step_exact": true,
+      "optimizer_state_exact": true
+    },
+    {
+      "family": "lstm",
+      "autoencoder_transfer_exact": true,
+      "checkpoint_prediction_exact": true,
+      "next_deterministic_step_exact": true,
+      "optimizer_state_exact": true
+    },
+    {
+      "family": "forward",
+      "autoencoder_transfer_exact": true,
+      "checkpoint_prediction_exact": true,
+      "next_deterministic_step_exact": true,
+      "optimizer_state_exact": true
+    },
+    {
+      "family": "wave",
+      "autoencoder_transfer_exact": true,
+      "checkpoint_prediction_exact": true,
+      "next_deterministic_step_exact": true,
+      "optimizer_state_exact": true
+    }
+  ],
+  "scope": "Autoencoder base transfer and full model/Adam restoration with dropout disabled and BatchNorm inference mode for deterministic replay; stochastic training replay and complete lifecycle remain unverified.",
+  "validator_sha256": "20e0d7ab4cd64e577461db3abdee47a28cc3e8b7c4495128bd88a468ee95ebfe",
+  "setup_sha256": "c5ed1f2d895a9ddde14b6a4c653f082b5b677e9be7cb5eaca8f87d7665d75e78"
+}

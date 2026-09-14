@@ -1,0 +1,27 @@
+{
+  "format": "dfdc-training-lifecycle-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_outer_loop_cases": 4,
+    "connected_optimizer_updates": 16,
+    "model_optimizer_scheduler_snapshots_metrics_exact": true,
+    "caller_rng_restored_success_and_sink_failure": true
+  },
+  "adaptations": [
+    "CPU float32, workers zero, no distributed/freeze/resume.",
+    "Explicit Python/Torch seeding and caller RNG isolation.",
+    "In-memory unwrapped tensor snapshots; no raw prediction output."
+  ],
+  "limits": "Source outer loop is executed unchanged with separately validated inner epoch/evaluation adapters. Actual sample preparation and augmentation on synthetic records, small classifier. Full B7 connected lifecycle, historical encoder and checkpoint suffix-40 provenance remain unverified.",
+  "sha256": {
+    "sciona/dfdc_training.py": "8112e22c58d88ecc8d0fabf7fa77d1e793974a7a8ed2f7252bf3b54575d6d3ce",
+    "sciona/dfdc_dataset.py": "757b5f8442b1681551d3b711a256b864dc3712a92d5ee212a4f4ccbc8d8691a6",
+    "sciona/dfdc_evaluation.py": "c958b081fedfe55f857126a54cc4309f07d06350898b8cc05cee89cfb836fe94",
+    "sciona/dfdc_epoch.py": "460a8625582029fa6296124a491baf3cbd90c599426fbf537ba6d358067bb6e5",
+    "sciona/dfdc_checkpoints.py": "9ca3767560f98ae256e3288e496d48e3fabf45b00e250565c915d57e8e7bc154",
+    "sciona/dfdc_scheduler.py": "a7e2cc97acb8e6e2c3ba7d0e464e12c99d80a4da8ce570c5e85724f8921a5a54",
+    "scripts/validate_dfdc_training.py": "64314e400a2348d334ae7a2ca9d509827d1f8d0238c6628e15c24387705cfabd",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

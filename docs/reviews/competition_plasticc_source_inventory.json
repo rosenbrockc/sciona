@@ -1,0 +1,105 @@
+[
+  {
+    "file": "avocado/__init__.py",
+    "classes": [],
+    "functions": []
+  },
+  {
+    "file": "avocado/astronomical_object.py",
+    "classes": [
+      "AstronomicalObject"
+    ],
+    "functions": []
+  },
+  {
+    "file": "avocado/augment.py",
+    "classes": [
+      "Augmentor"
+    ],
+    "functions": []
+  },
+  {
+    "file": "avocado/classifier.py",
+    "classes": [
+      "Classifier",
+      "LightGBMClassifier"
+    ],
+    "functions": [
+      "get_classifier_path",
+      "evaluate_weights_flat",
+      "evaluate_weights_redshift",
+      "fit_lightgbm_classifier",
+      "weighted_multi_logloss"
+    ]
+  },
+  {
+    "file": "avocado/dataset.py",
+    "classes": [
+      "Dataset"
+    ],
+    "functions": []
+  },
+  {
+    "file": "avocado/features.py",
+    "classes": [
+      "Featurizer"
+    ],
+    "functions": []
+  },
+  {
+    "file": "avocado/instruments.py",
+    "classes": [],
+    "functions": [
+      "get_band_central_wavelength",
+      "get_band_plot_color",
+      "get_band_plot_marker"
+    ]
+  },
+  {
+    "file": "avocado/plasticc.py",
+    "classes": [
+      "PlasticcAugmentor",
+      "PlasticcFeaturizer"
+    ],
+    "functions": [
+      "find_time_to_fractions",
+      "create_kaggle_predictions",
+      "write_kaggle_predictions"
+    ]
+  },
+  {
+    "file": "avocado/settings.py",
+    "classes": [],
+    "functions": []
+  },
+  {
+    "file": "avocado/spcc.py",
+    "classes": [
+      "SPCC_SN_data",
+      "SpccAugmentor"
+    ],
+    "functions": []
+  },
+  {
+    "file": "avocado/utils.py",
+    "classes": [
+      "AvocadoException"
+    ],
+    "functions": [
+      "_verify_hdf_chunks",
+      "_map_column_name",
+      "read_dataframes",
+      "read_dataframes_query",
+      "write_dataframe",
+      "_create_csi_index",
+      "read_dataframe",
+      "download_file",
+      "download_zenodo"
+    ]
+  },
+  {
+    "file": "setup.py",
+    "classes": [],
+    "functions": []
+  }
+]

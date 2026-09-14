@@ -1,0 +1,13 @@
+{
+  "test_results": {
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_ideal_gas_expansion.py": "587927c1b1e24f62a2ea29178d3072d5a65c37f75ebd17f6471a465c6cf50434"
+  },
+  "provider_sha256": "9764f7ba98eb210ceea2e11960271b37e1f72a8b83989f752d525f1f1183564f",
+  "synthetic_only": true
+}

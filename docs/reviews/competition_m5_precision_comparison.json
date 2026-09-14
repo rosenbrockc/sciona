@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_commit": "18e4e776cfa1ded3b387fabe008c6c2c44922007",
+  "source_software_sha256": "a3d669ed6aaf55b7d15f57cee1922dfa9e9fc3308a0bda9599114b44c4ce96b5",
+  "checks": {
+    "synthetic_only": true,
+    "source_comparisons": 139,
+    "exact_values_and_dtypes": true
+  },
+  "sha256": {
+    "sciona/m5_precision.py": "7606b0ce072e14bdca3b711562af56386143ea1652ffa779df9f64a733ff64d4",
+    "tests/test_m5_precision.py": "07e4963aa876aca38baa8f181cb569458efca65edb5f9105b6fe26f83682ac5e",
+    "scripts/validate_m5_precision_comparison.py": "fc0076f158148a62ef7cb4d56f9651d2ddc2ca3869a90546ae025c6488138f4b",
+    "docs/reviews/competition_m5_source_pins.json": "a93a67eae696d54dfaf735e598935cab9ba0f44e185cc4d5c700f55f086c171d"
+  },
+  "scope": "Column precision only; no full preprocessing or model qualification."
+}

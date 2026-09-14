@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 29,
+  "aggregation_before_clipping": true,
+  "current_and_future_target_feature_invariance": true,
+  "period_prefix_invariance": true,
+  "complete_tpe_early_stopping_refit": true,
+  "model_based_tpe_sampling_exercised": true,
+  "deterministic_repeated_prediction": true,
+  "hashes": {
+    "sciona/future_sales_features.py": "ed275594ec8e2a81dceef57fa4b981dded2ca887d200e7a11a65ced32c2b58e1",
+    "sciona/future_sales_training.py": "39a81d674481df6ea3e33d0a7027a27a35c8c17ab1e05aa93b0f740f35ebe1a2",
+    "tests/test_future_sales_features.py": "e69165ab304dfc000cee964515e03b76bfaa122eac55beeac16a53477d5f8b7a",
+    "tests/test_future_sales_training.py": "1df2bd5b2af7edff022d0e22a9a9ed2de1bcdfae302a85c682c7bc4233e6396b",
+    "sciona/future_sales_contract.py": "5af0f45358949919eb2310938a2a64b22eb35fb42dfb1a58330900fe31dd4b34",
+    "sciona/future_sales_worker.py": "a77232bdb88568ed0af39f6312d86a67bed1682a4d8889e907d08868ec8a6894",
+    "tests/test_future_sales_contract.py": "f414f57ee024111eff50c672f51c78ad09afa7c3571edc2e3ba8438b1f87d357"
+  },
+  "versions": {
+    "numpy": "2.4.2",
+    "lightgbm": "4.7.0",
+    "optuna": "4.8.0"
+  },
+  "scope": "Synthetic feature, full search/refit/forecast and isolated worker boundary tests. Serialized graph execution is separately evidenced; no served publication or historical accuracy claim.",
+  "serialized_boundary_tests": 12,
+  "isolated_worker_matches_direct": true,
+  "worker_failure_timeout_and_response_guards": true
+}

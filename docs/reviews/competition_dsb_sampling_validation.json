@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "source_table_exact_parity": true,
+  "exact_selection_and_rng_cases": 120,
+  "all_three_branches_exercised": true,
+  "corrected_source_box_association_cases": 18,
+  "corrections": [
+    "Explicit global image index fixes source filtered-index box lookup.",
+    "Integer epoch length floors source float expression; not a literal __len__ equivalence claim."
+  ],
+  "limitations": [
+    "Source file/clock operations replaced with integer identity stubs and explicit RNG.",
+    "This validates selection and table construction, not trained model quality."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_sampling.py": "14f57225bcda1679f3ce37e217151d35fa1e04670a0c5fad1fbd8e0081ee5922",
+    "sciona/dsb_training.py": "7ad662bd73073152f8d0e582ee2a86d6c6fc7a75816343f13ba729eadf448524",
+    "tests/test_dsb_sampling.py": "00ebc61b20f801dbfdaa23c8154b7295712de04385f08ef3bf434e1c3cb340ba",
+    "scripts/validate_dsb_sampling.py": "e87e512fb7d9eb63743dcb33cb9f504cddb72823788b59fa94fce4171c52ca4a"
+  }
+}

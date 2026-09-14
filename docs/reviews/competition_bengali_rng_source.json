@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "duplicate_references_same_rng": true,
+  "duplicate_count": 11,
+  "derived_seed_replay_exact": true,
+  "legacy_and_modern_draws_differ": true,
+  "modern_bit_generator": "SFC64",
+  "sources": [
+    {
+      "module": "imgaug/random.py",
+      "sha256": "8e11e876592ae53a0014ae7bb732f3e7ea678719708b3b439a9544802d27d33a"
+    },
+    {
+      "module": "imgaug/augmenters/meta.py",
+      "sha256": "9d6b08e86d1f93adb0c82905b5796cc55258b3b25e95cc10e4f04776039f5ff9"
+    }
+  ],
+  "findings": [
+    "Albumentations creates a deterministic imgaug processor on each update_params call.",
+    "imgaug deterministic conversion derives an RNG from the augmenter state.",
+    "Affine duplicate(11) aliases one RNG; parameter draw order and per-parameter state advancement must be retained.",
+    "NumPy1.17+ uses SFC64 with SeedSequence spawning; legacy derivation uses RandomState."
+  ],
+  "limits": [
+    "RNG helper probe only; full wrapper draw sequence is not yet reproduced.",
+    "Installed NumPy executes historical helper source; original notebook NumPy version remains unknown."
+  ]
+}

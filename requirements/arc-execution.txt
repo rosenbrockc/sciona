@@ -1,0 +1,2 @@
+# Process monitor used by the source-faithful ARC scheduler adapter.
+psutil==7.0.0

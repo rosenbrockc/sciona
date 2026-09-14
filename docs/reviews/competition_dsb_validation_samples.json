@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "exact_sample_cases": {
+    "classifier": 9,
+    "detector": 9
+  },
+  "exact_dtypes_and_rng_continuation": true,
+  "adaptations": [
+    "Clock reseeding replaced by explicit RNG; array loads use synthetic stubs.",
+    "Python 2 integer dimensions and mutable range ported."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_intake.py": "24f91f470c7f642ca03433fec6df8de0dff13fd2c187b1b07fc93a10a0b3e3b4",
+    "sciona/dsb_components.py": "0fd1509064a803e71c479821065946799c1485a8aaff0cd304797afb21d3e89c",
+    "sciona/dsb_detector_crop.py": "95cf1a3e0d6498276139c78d3f210f524b59fc794c7cac87d8ba5908c72789be",
+    "sciona/dsb_anchor_mapping.py": "0ad06f4f883ba1e841544099b41129eb1ed12ca8dacc4e537d8448670cbf936b",
+    "scripts/validate_dsb_validation_samples.py": "55de1261b4b66f4b7bb90069aad15ed286979ede52dc2f9263c5ff1e6935c975"
+  }
+}

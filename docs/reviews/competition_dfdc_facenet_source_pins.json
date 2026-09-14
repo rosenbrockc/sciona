@@ -1,0 +1,29 @@
+{
+  "format": "dfdc-facenet-source-pins.v1",
+  "repository": "https://github.com/timesler/facenet-pytorch",
+  "commit": "787da06156087cd6b616fe6608213722bddc30cd",
+  "selection": "Four public software/license files only; no images, observations, model weights or notebooks fetched.",
+  "historical_match": "Not established: DFDC container installs facenet-pytorch without a version. This pin is a candidate explicit dependency adaptation, not a claimed competition-era version.",
+  "files": [
+    {
+      "path": "LICENSE.md",
+      "sha256": "9fac5781e1529f4dd1a045716e1859436038d2def9e108d101b6df20c5a11318",
+      "git_blob_sha1": "501bd498d650c10cb8b383fccba35a2e55c617cb"
+    },
+    {
+      "path": "models/mtcnn.py",
+      "sha256": "29a965963337313068ab335cbc48f4a4facc2e5857756ef7b9ab11e5c1d6b620",
+      "git_blob_sha1": "13b33a938fa8fc9ac42eb83a38a31c2ea26d4e0d"
+    },
+    {
+      "path": "models/utils/detect_face.py",
+      "sha256": "e227e79fe84df242bc3cb12578957ed8225978147a0949ae9a36157aeba6e04d",
+      "git_blob_sha1": "5d144864e05cf0af6bbbf67f2dd1c560c596909e"
+    },
+    {
+      "path": "setup.py",
+      "sha256": "b9b8948c1f9c8f1a58a9adb7e94ff37dbdbe392142c201c50e5c697a679bef5f",
+      "git_blob_sha1": "1864989b5c43c3d1bd57d4200b1c7eed7309ac02"
+    }
+  ]
+}

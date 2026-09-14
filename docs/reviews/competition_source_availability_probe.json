@@ -1,0 +1,42 @@
+{
+  "read_only": true,
+  "scope": "Public software repository metadata probe; license presence does not establish complete source fidelity.",
+  "repositories": [
+    {
+      "repo": "edwinst/trackml_solution",
+      "branch": "to-github",
+      "license": "BSD-2-Clause"
+    },
+    {
+      "repo": "Arturus/kaggle-web-traffic",
+      "branch": "master",
+      "license": "MIT"
+    },
+    {
+      "repo": "bestfitting/kaggle-petfinder",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "repo": "mjahrer/porto-seguro",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "repo": "SpaceNetChallenge/SpaceNet_Roads_Competition",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "repo": "jarfo/cause-effect",
+      "branch": "master",
+      "license": null
+    },
+    {
+      "repo": "asutera/kaggle-connectomics",
+      "branch": "master",
+      "license": null
+    },
+    {
+      "repo": "ChristofHenkel/kaggle-birdsong-1st-place",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ]
+}

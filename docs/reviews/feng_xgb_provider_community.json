@@ -1,0 +1,33 @@
+{
+  "atoms": [
+    {
+      "artifact_id": "f40fe843-f591-5fee-8882-d9e2d232eb69",
+      "version_id": "ec716c87-fdc1-5c85-87d9-d43900a95db1",
+      "fqdn": "sciona.atoms.ml.xgboost.feng_xgb.feng_xgb_segment_probabilities",
+      "runtime_fqdn": "sciona.atoms.ml.xgboost.feng_xgb.feng_xgb_segment_probabilities",
+      "source_sha256": "eda82c9b82cce00fb35bc066c9d70b6727ac5b9809007f9eb38349cdbd51a43f",
+      "intake_evidence_sha256": "f7ed12e05207373092ca529ff0579aa0386f15a87afc86c68eaf485e632033f0",
+      "publication_tier": 3,
+      "review_source": "automated",
+      "review_status": "approved",
+      "structural_status": "pass",
+      "runtime_status": "pass",
+      "semantic_status": "pass",
+      "developer_semantics_status": "pass",
+      "review_required_actions": [],
+      "review_notes": "Preserves source float32 loading, ordered segment/window rows, unscaled features, NaN missing values and mean window scores with 500 source-configured boosting rounds. Seven contract tests, fifteen exact source classifier cases and three full-duration serialized graph cases pass.",
+      "review_limitations": [
+        "Community Tier 3 automated review; no Tier 1 certification or Tier 2 usage claim.",
+        "Current XGBoost defaults for unspecified parameters, serial execution and legacy silent mapped to verbosity; no historical-engine or predictive-performance claim.",
+        "Source has no scaling or KNN cleanup; infinities are rejected and NaNs remain missing values.",
+        "One population/model branch only; full eleven-model ensemble remains incomplete."
+      ]
+    }
+  ],
+  "tests_passed": 7,
+  "test_source_hashes": {
+    "test_feng_xgb.py": "4780ee9c8405619d44fac6baf7bd05327e8015ffc743b20d84b6658c448ddf89"
+  },
+  "execution_evidence": "feng-xgb-execution-intake.v1",
+  "scope": "One exact classifier version reusing four approved Feng preprocessing providers."
+}

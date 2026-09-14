@@ -1,0 +1,29 @@
+{
+  "format": "dfdc-epoch-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "original_loop_cpu_transfer_edits": 3,
+    "original_loop_sync_removals": 1,
+    "source_epoch_comparisons": 8,
+    "source_parameters_gradients_momentum_scheduler_exact": true,
+    "full_B7_source_resolution_updates": 2,
+    "full_B7_parameters_finite": true
+  },
+  "adaptations": [
+    "CPU float32 execution; source fp16=False branch and no distributed/Apex synchronization.",
+    "Prepared tensors supplied explicitly; empty epoch and invalid inputs rejected.",
+    "Return aggregate loss/update counts and learning-rate observations rather than source progress logs."
+  ],
+  "limits": "Loop parity uses synthetic linear models. Actual B7 executed two synthetic batch1 updates at380resolution, not full default2500batches/40epochs or data-preparation lifecycle. No historical AMP/distributed equivalence, pretrained quality, checkpoint selection or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_epoch.py": "460a8625582029fa6296124a491baf3cbd90c599426fbf537ba6d358067bb6e5",
+    "sciona/dfdc_loss.py": "f7a09a92025bd40dc053f108d137750521433c3912c80ae16de3fc0a2b8f57a9",
+    "sciona/dfdc_scheduler.py": "a7e2cc97acb8e6e2c3ba7d0e464e12c99d80a4da8ce570c5e85724f8921a5a54",
+    "sciona/dfdc_classifier.py": "42ca019c485a64bb652ff19ddda160ff7c342800ad6ede712bd7ebe854d10c56",
+    "sciona/dfdc_stochastic_depth.py": "e6d6426c069d152fff3ee5dfb0f1cd138cf2b10e42729650de8efbf10e7a60bc",
+    "docs/reviews/competition_dfdc_stochastic_depth.json": "85abda6157592b34e47d302a6a24b385e0cc2525481711da50b646d9e3ecd023",
+    "scripts/validate_dfdc_epoch.py": "2e34e94b8b58f241d4b3d4b7917911ffaf32ee3171924ffc370b4b818c4c0a02",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

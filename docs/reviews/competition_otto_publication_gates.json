@@ -1,0 +1,15 @@
+{
+  "format": "otto-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "17303ca5c2a98689c1fbc9b1b5d4b9151cac4fc070d46e9b02ecc9d426534240",
+  "validator_sha256": "c4eae1824472601ba0b93b28f830370d9a209d83b142853a8a041da4f8e0ee18",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

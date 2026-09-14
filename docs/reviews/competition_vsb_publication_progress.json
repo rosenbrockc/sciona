@@ -1,0 +1,43 @@
+{
+  "rollback": {
+    "applied": false,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "33fa3095e0d940b9efc1b5ace745b635c43c2812ad166821490de32295d1050a",
+    "version_id": "feab5779-925c-5fe0-850b-c865942833ba"
+  },
+  "rollback_absence_verified": true,
+  "apply": {
+    "applied": true,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "33fa3095e0d940b9efc1b5ace745b635c43c2812ad166821490de32295d1050a",
+    "version_id": "feab5779-925c-5fe0-850b-c865942833ba"
+  },
+  "reapply": {
+    "applied": true,
+    "rows_created": 0,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "33fa3095e0d940b9efc1b5ace745b635c43c2812ad166821490de32295d1050a",
+    "version_id": "feab5779-925c-5fe0-850b-c865942833ba"
+  },
+  "inventory": {
+    "environment": "configured local Supabase",
+    "served_cdgs": 100,
+    "intake_count": 142,
+    "covered_intakes": 33,
+    "remaining_intakes": 109
+  }
+}

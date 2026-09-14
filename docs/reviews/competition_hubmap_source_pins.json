@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/tikutikutiku/kaggle-hubmap",
+  "commit": "615444e86f4fb5ab916c0b66d311a307f4e4dd27",
+  "files": {
+    "LICENSE": "85e62bd99b606cefa99d910481f45adc47892603e3e9b217e85013e3e3a81579",
+    "requirements.txt": "cb38da4e869e4e3c3da96fd1aafe7a017a11f89253c72a1b8b151863c5bb005f",
+    "src/01_data_preparation/01_01/data_preparation_01_01.py": "78f6678bf8e5870c3dc4c61edcc07b4560acc2bb2d0e26cc5c78953301bf0ded",
+    "src/01_data_preparation/01_02/data_preparation_01_02.py": "22b5c5fda525f66a3ae61c96b0fc5a31f04e782779882858ceafe21f9e3359dd",
+    "src/02_train/dataset.py": "1722d5c0e6d6120ecccca22d30fe0757bc56691421401f6e24fe7bf5d328c6e3",
+    "src/02_train/get_config.py": "dc9821e3cc23f86d0d289a9213cecb6cc3f02f98487b496fa81a255aaacc01eb",
+    "src/02_train/run.py": "bb5a6a5071333c183b577a284cc2eca7125a27a98d52818f3e52ac50190ad082",
+    "src/02_train/train_02.py": "d51ac04994f8068a9634995ac3bd152e6101c544387671d7e62a7ab8bbff4558",
+    "src/02_train/transforms.py": "c23ab5895f0832c4296604af73f5b438dcfaa5016560a8e795fa39cdb98cf588",
+    "src/05_train_with_pseudo_labels/dataset.py": "1722d5c0e6d6120ecccca22d30fe0757bc56691421401f6e24fe7bf5d328c6e3",
+    "src/05_train_with_pseudo_labels/get_config.py": "71dc071323a86bbf5eefd72ceae10367feb42ad771d0e6dfd93e80512ba25217",
+    "src/05_train_with_pseudo_labels/run.py": "bb5a6a5071333c183b577a284cc2eca7125a27a98d52818f3e52ac50190ad082",
+    "src/05_train_with_pseudo_labels/train_05.py": "a10fc65964f692d9fd7cc8e228da799e767556c31bff07a522de1e95194eea8f",
+    "src/05_train_with_pseudo_labels/transforms.py": "da3e532e39d949688011dacc4e46e237de5c1eee6f9ee6ca10b9ff4d184ca7d2",
+    "src/models.py": "f8d8196e8b650c44a27b32c164670849e9ca4c81708e6c96aecc833352421949",
+    "src/losses.py": "a920ee741bedda197eae539b1d146f1a81081d2428a97c1921add9db5f0d2f53",
+    "src/lovasz_loss.py": "797a1d52c118b38a7c8fb11959d9d1d3a82ceaf5be652e185cf16d968cff5fed",
+    "src/metrics.py": "82494aef1e6ff73fc5ba94ae5cae3411225d8b08c1efcb3a71a247431c038413",
+    "src/scheduler.py": "5458974acf4e7f0f02cfe9af9b7e666f13e1d625c6c6591212be7bf42596d41d",
+    "src/utils_data_generation.py": "4fccc34fa08017de425b8c03eb11f35cf7aa8d46653901646b9ddf3fc432c16d",
+    "src/pretrained-models.pytorch-master/pretrainedmodels/models/senet.py": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243",
+    "src/pretrained-models.pytorch-master/LICENSE.txt": "d2e55e943a5b0ae82161e09cfcbe2d11f67013be50af957944314679184cc5fc"
+  }
+}

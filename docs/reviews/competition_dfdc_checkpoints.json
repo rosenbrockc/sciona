@@ -1,0 +1,25 @@
+{
+  "format": "dfdc-checkpoint-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_save_order_cases": 18,
+    "snapshot_isolation": true,
+    "independent_metadata_order": true,
+    "invalid_metadata_rejections": 5
+  },
+  "semantics": [
+    "Numbered and initial last snapshots contain the previous best loss.",
+    "Strict validation improvement writes best_dice; every validation overwrites last.",
+    "Snapshot epoch metadata is zero-based loop epoch plus one."
+  ],
+  "adaptations": [
+    "CPU unwrapped state dictionaries; in-memory snapshot events; no pickle or raw prediction output."
+  ],
+  "limits": "Synthetic linear model. No historical weights, optimizer resume, full training lifecycle or suffix-40 provenance claim.",
+  "sha256": {
+    "sciona/dfdc_checkpoints.py": "9ca3767560f98ae256e3288e496d48e3fabf45b00e250565c915d57e8e7bc154",
+    "scripts/validate_dfdc_checkpoints.py": "62b8843051e2e932fec48ef3244349ae668d6253628847fd850bb182c30b5964",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

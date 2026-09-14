@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+  "source_content_hash": "5ee3659042611115b7a83dbf165f7b44355a0f09ff346514ce4dd2a15e66340b",
+  "scope": "Generic six-stage large-scale temporal tabular ensemble; bounded streaming sparse realization planned.",
+  "implemented": [
+    "One-pass bounded output chunks in CSR",
+    "Fixed-width unsigned entity/category hashing",
+    "Strict-past per-entity rolling mean, latest-timestamp mean, age/count and seasonal features",
+    "Pending same-time labels kept invisible across chunk boundaries",
+    "Explicit entity/history/pending-label capacity limits"
+  ],
+  "checks": [
+    "Chunk-size invariant causal features",
+    "Future-label isolation",
+    "Same-time input-order independent latest lag",
+    "History expiration and unlabeled inference",
+    "Lazy bounded source consumption",
+    "History/entity/pending capacity and time-order rejection"
+  ],
+  "pending": [
+    "Streaming ensemble training and forward validation with frozen held-out history",
+    "Metric postprocessing and strict source/boundary controls",
+    "Full serialized graph and Tier3 review/publication"
+  ],
+  "sha256": {
+    "sciona/temporal_sparse_features.py": "4dc40b7909d9fb8b4516a7256da1ad4c15022c0e7a939286c4cfd4d224f5b450",
+    "tests/test_temporal_sparse_features.py": "d02eabe9c165027e211bb5e475695b7eb73e903e1451f0320d3c79071dd91679"
+  },
+  "limitations": [
+    "Targets assumed available immediately after event time; delayed labels not yet supported",
+    "Hash collisions intentional",
+    "Capacity exhaustion fails closed rather than evicting history",
+    "No measured large-volume throughput qualification"
+  ],
+  "catalog_mutations": 0
+}

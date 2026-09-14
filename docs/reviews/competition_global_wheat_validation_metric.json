@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "dd9e40d9a5ecdef68eac2055a3026b065e8aab7afeafc106fd2024298279053b",
+  "exact_batch_score_cases": 128,
+  "images_per_batch": 3,
+  "inclusive_coordinates_and_strict_score_threshold": true,
+  "prediction_order_preserved": true,
+  "input_arrays_unchanged": true,
+  "implementation_sha256": {
+    "sciona/wheat_validation_metric.py": "7f38d5f3f735f96e9d4dfd9b4575eaa85029232d08b4593efa8bf63a2ac94ccc",
+    "scripts/validate_wheat_validation_metric.py": "02623802aa77e2aaf9a36f6298f06b3c9e77e7aa246c4a4ed6f2cdc41b0d1546"
+  },
+  "limits": [
+    "Source Python scoring arithmetic; historical Numba compiler equivalence is not claimed.",
+    "Synthetic predictions only; full detector training and validation populations remain pending."
+  ]
+}

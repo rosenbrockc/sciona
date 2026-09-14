@@ -1,0 +1,212 @@
+{
+  "intake_version_id": "93a2518a-7446-5bef-af23-87f8e39085f7",
+  "intake_content_hash": "cfc82e2f6ac90e977a2a6190b35b9710a182821cc683f98357d685a41d3adcca",
+  "status": "deferred_explicit_reuse_license_unresolved",
+  "target_tier": 3,
+  "primary_writeup": "https://www.kaggle.com/competitions/chaii-hindi-and-tamil-question-answering/writeups/hold-my-chai-1st-place-solution",
+  "author_link_source": "https://community.wandb.ai/t/7-chai-time-kaggle-talks-with-chaii-hindi-tamil-qa-competition-winner-darek-kleczek/1379",
+  "repository": "kldarek/chaii",
+  "commit": "e0a1805b205c1474589b25a0c41c04bd95229579",
+  "pins": [
+    {
+      "software_path": "README.md",
+      "git_blob_sha1": "da22d94ef209652376e46f37bddbc5534c0c61b7",
+      "sha256": "9a4442edccc376a64a89e10a28c14e61273fed362f6d3cc8b7680f340c67310d"
+    },
+    {
+      "software_path": "requirements.txt",
+      "git_blob_sha1": "1f7f97a750c5463320265a5b62f4cce33be31d37",
+      "sha256": "bd2a4524bf21c27c8534ad7bedde37e23041cb05c0cf4577a0476a1d16a37dd7"
+    },
+    {
+      "software_path": "training_notebooks/MURIL_pretraining71.ipynb",
+      "git_blob_sha1": "b90948d8afba9b5a93b0774ff9f92f01290680f8",
+      "extracted_code_sha256": "0c6e86981cabbffab9d5b72493bc252f26c3fcdb8242f580dd2ace8942659811",
+      "code_cells": 32,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/MURIL_pretraining73.ipynb",
+      "git_blob_sha1": "3e5e2a383d1e830612154bf09022b0c0480c71ce",
+      "extracted_code_sha256": "e8cecf707b756338ba064247a7e7a30062a996684ce9822a2d9eab049442801e",
+      "code_cells": 33,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/MUR_pretraining122f02.ipynb",
+      "git_blob_sha1": "51ab8d07d4f19c10260a9e8e02d14876039191dc",
+      "extracted_code_sha256": "af56b3e00a8b7eadb1762a70c88efe4d453e8818ee624f69274d32ef430f1bda",
+      "code_cells": 36,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/REMBERT_pretraining77.ipynb",
+      "git_blob_sha1": "24747886963707a1d29e0d372053c9353b85bf34",
+      "extracted_code_sha256": "14c311f55d4b235009764f963111b5dd726a22a076546c87bae87fd4f9e7b9d3",
+      "code_cells": 35,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/REMBERT_pretraining78.ipynb",
+      "git_blob_sha1": "1189c500990e359025b9dd669cf23ba16c839873",
+      "extracted_code_sha256": "e846946bee5ce4ae977c263d2c2a7c2e5ec084192ae87d40accf51150833116f",
+      "code_cells": 36,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/REMBERT_pretraining79.ipynb",
+      "git_blob_sha1": "47ef5e5a675edb7b6056d4d2c32fb7c3caaf15e0",
+      "extracted_code_sha256": "4900dd42a7e6c36be9a5fc4ed3d1dc65b4eb19d404da218673a4a8c50cf39817",
+      "code_cells": 34,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/REM_pretraining126.ipynb",
+      "git_blob_sha1": "a0ab98beafc1f6819961b1611225f7c0779ac375",
+      "extracted_code_sha256": "8e67ec6ba81d178980aba0cb412a93d4635e28fceb90b13b18493869c9dfca07",
+      "code_cells": 40,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/XLMR_pretraining116.ipynb",
+      "git_blob_sha1": "74bfa5de181fc69b389bff593cd8ded016e5ca5a",
+      "extracted_code_sha256": "cdfcad2337350d0fe00d8ba90a85d82e2c004235d6b8610a2947d836fb650213",
+      "code_cells": 33,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/XLMR_pretraining119.ipynb",
+      "git_blob_sha1": "6ac2b819303e7e2015d264f2581077b39757e4b5",
+      "extracted_code_sha256": "e6a7a5236f6c532f7db3bf631abb1984ede32a078ad23e48e545f99baba879c7",
+      "code_cells": 34,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/XLMR_pretraining52.ipynb",
+      "git_blob_sha1": "df9e4f66b2146e910ea8f4229416a7864f91514f",
+      "extracted_code_sha256": "16d94da03605a1f184cac630054ecfb829509d022bd246a8a7e9c4233f9c55f7",
+      "code_cells": 36,
+      "outputs_discarded": true
+    },
+    {
+      "software_path": "training_notebooks/XLMR_pretraining68.ipynb",
+      "git_blob_sha1": "34a12e3bdc6b1b087bbbb9d05ddfbdc7873d749d",
+      "extracted_code_sha256": "4730ed261c2418ac601d208f8a469c24d5cffe7d917cf116016cfd79111c375e",
+      "code_cells": 34,
+      "outputs_discarded": true
+    }
+  ],
+  "inference": {
+    "reference": "thedrcat/chaii-ensemble-10postuning",
+    "id": 21995534,
+    "version": 1,
+    "code_cells": 20,
+    "extracted_code_sha256": "ecb382ea50a412f5c7f19ca0852ae7e5d602c603740f616620b4c5db9d9771b5",
+    "metadata_license_fields": {},
+    "outputs_discarded": true
+  },
+  "findings": [
+    "Author event links Kaggle thedrcat to GitHub kldarek; repository explicitly describes competition solution and final ensemble notebooks.",
+    "Eleven training notebooks recovered as code-only extracts; one inference notebook recovered through public pull endpoint. Outputs discarded and no notebooks executed.",
+    "Winner uses within-backbone blending then word-level majority voting across three backbone families.",
+    "Writeup describes sequential training recipes, progressive sequence lengths and negative sampling; generated intake omits these.",
+    "Winner says automated translation experiments did not help final recipe; intake claims heavy automated translation.",
+    "Repository API license is null and complete tree has no license-named file. Inference metadata has no license field. Exact grants remain unresolved."
+  ],
+  "next_steps": [
+    "Resolve explicit author reuse grant for training notebooks and inference code.",
+    "Review complete training recipes and all final checkpoints once reuse is established.",
+    "Preserve occurrence-voting semantics or document an intentional corrected version; guard empty punctuation boundary in any executable adapter."
+  ],
+  "catalog_mutations": 0,
+  "notice_review": {
+    "training": [
+      {
+        "software_path": "training_notebooks/MURIL_pretraining71.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/MURIL_pretraining73.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/MUR_pretraining122f02.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/REMBERT_pretraining77.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/REMBERT_pretraining78.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/REMBERT_pretraining79.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/REM_pretraining126.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/XLMR_pretraining116.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/XLMR_pretraining119.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/XLMR_pretraining52.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      },
+      {
+        "software_path": "training_notebooks/XLMR_pretraining68.ipynb",
+        "license_metadata": {},
+        "markdown_notices": []
+      }
+    ],
+    "inference_markdown_notices": []
+  },
+  "semantic_probe": {
+    "source_sha256": "ecb382ea50a412f5c7f19ca0852ae7e5d602c603740f616620b4c5db9d9771b5",
+    "scope": "Two selected source functions only; no imports, launchers, model loads or task data executed.",
+    "synthetic_checks": [
+      {
+        "case": "one_model_repeats_word",
+        "counts": {
+          "alpha": 2,
+          "beta": 1,
+          "gamma": 1
+        },
+        "voted_words": [
+          "alpha"
+        ],
+        "finding": "Occurrence counting permits repeated word from one backbone to pass; not distinct-backbone majority."
+      },
+      {
+        "case": "punctuation_only_postuning",
+        "result": "IndexError",
+        "finding": "Stripping all punctuation leaves empty string; unguarded indexing fails."
+      }
+    ],
+    "static_findings": [
+      "QA spans are limited to 30 tokens, not 100 characters.",
+      "Top 20 start and end candidates are paired; score is start plus end logit.",
+      "Within-family checkpoint logits are averaged before extracting text; families combine via word occurrence counts.",
+      "Voting preserves first encounter order across prediction strings and falls back to MURIL if overlap string is empty."
+    ],
+    "full_pipeline_executed": false
+  }
+}

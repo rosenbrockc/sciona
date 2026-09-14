@@ -1,0 +1,28 @@
+{
+  "format": "dfdc-convex-hull-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_body_ast_equal": true,
+    "source_image_rng_cases": 32,
+    "source_failure_cases": 2,
+    "independent_geometry_failure_tests": 7
+  },
+  "dependency_state": {
+    "dlib_installed": false,
+    "predictor_weights_loaded": false
+  },
+  "semantics": [
+    "Ordered source jaw/brow polygon rasterized, centroid truncated to int, one half zeroed in-place.",
+    "Two strict >0.5 draws select half/direction; function returns None.",
+    "Source caught detector/predictor/polygon failures leave the image unchanged in tested cases."
+  ],
+  "adaptation": "Detector and predictor passed explicitly instead of global pretrained objects; function body unchanged.",
+  "limits": "Synthetic68-point predictor outputs only. Actual dlib detector/predictor execution and explicit model-state handling remain outstanding. No pretrained landmarks, quality or full preparation/promotion claim.",
+  "sha256": {
+    "sciona/dfdc_convex_hull.py": "d3453cb21d8097764ddd2d698f5a67db76741a4cf4418fc1530e5ba7e805b0ec",
+    "tests/test_dfdc_convex_hull.py": "fb5df22ba83ebe9fa145f6106ab98f7698c4772cbe4dbbab8fbdbc5b235b446c",
+    "scripts/validate_dfdc_convex_hull.py": "4e2583693d34c3e38e8d0a29299ce123cd598f7227c32bfd32ad37b685dd5ad9",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

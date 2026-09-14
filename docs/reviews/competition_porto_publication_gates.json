@@ -1,0 +1,15 @@
+{
+  "format": "porto-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "c6ef66570f2bdec55bfa165f3753a21003ef2706b48ed5be5de95a879cf7b23f",
+  "validator_sha256": "8ba26c413ffc705c909a95bbd82a273a425faafaf7b4f6e7984e0b117bc38903",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

@@ -1,0 +1,32 @@
+{
+  "format": "bms-source-triage.v1",
+  "intake_version_id": "fd624850-a2a8-5993-ab38-6ed0b8c73a6c",
+  "intake_content_hash": "a072a1ea1d52341399477b66f20b15a834ea0c62b1283ff39fa1ae871e620877",
+  "status": "deferred_source_closure_unresolved",
+  "version_bound_writeup": "https://www.kaggle.com/c/bms-molecular-translation/discussion/243844",
+  "version_bound_repository": "https://github.com/kainsama/BMS-Molecular-Translation-1st-Place",
+  "repository_api_status": 404,
+  "intake_stage_ids": [
+    "image_preprocessing",
+    "cnn_encoder",
+    "transformer_decoder",
+    "decoding",
+    "ensembling"
+  ],
+  "excluded_candidate": {
+    "repository": "https://github.com/tugstugi/pytorch-bms",
+    "commit": "ddd0979eb01a08df1c7dee3c435b661c19df38fc",
+    "finding": "README explicitly identifies part of ninth-place solution, not the first-place intake. Repository API license field null; not reused."
+  },
+  "remaining": [
+    "Resolve first-place author/writeup and attributable complete software.",
+    "Verify source preprocessing, encoder/decoder, search and ensemble against the generated intake.",
+    "Establish license before reuse."
+  ],
+  "limits": [
+    "A 404 is not proof that the source never existed or is unavailable elsewhere.",
+    "No competition data, model states, images or archives downloaded.",
+    "No implementation or catalog approval performed."
+  ],
+  "writeup_followup": "Version-bound discussion243844 returned no readable content through current web access. Targeted searches did not resolve full winning source; no absence claim."
+}

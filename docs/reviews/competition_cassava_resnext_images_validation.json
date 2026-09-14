@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "training_transform_comparisons": 20,
+  "validation_transform_comparisons": 20,
+  "configuration_match": true,
+  "scalar_normalization_match": true,
+  "opencv_decode_match": true,
+  "input_unchanged": true,
+  "invalid_encodings_rejected": 3,
+  "runtime": {
+    "albumentations": "1.3.0",
+    "opencv": "5.0.0"
+  },
+  "scope": "Reference decoding and source transform parity; historical augmentation runtime and full fold lifecycle remain unverified.",
+  "sha256": {
+    "sciona/cassava_resnext_images.py": "c12e01fc43e07f6af5d039bac25e7f58fec9db0464ac862a4048b87301c3dd06",
+    "scripts/validate_cassava_resnext_images.py": "5609d71690e53d80f4cffd21c17c2ca409f9dcc1cb8a92368634a5d27283f528",
+    "scripts/validate_cassava_source_components.py": "dd65bce167e1712236c186630cb90cb01c050e2270e3e71d85fba6790d2a1054",
+    "docs/reviews/competition_cassava_winner_source_pins.json": "82004589f3b79d0de2cab20fce992f944a98e37e5e0d9199e55b4519551b574f"
+  }
+}

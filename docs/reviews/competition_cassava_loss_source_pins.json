@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/google/bi-tempered-loss",
+  "commit": "1c65c7770a3aa76a9515c67f15cfdbaad0e8cf88",
+  "files": {
+    "tensorflow/loss.py": "9bc825fb9e3a5dfa0eae642984c3cf10e7f56ed1c69c2a25390df08e6990c303",
+    "LICENSE": "c85ef5c9d96dd25436384402c52e79cfcd14aad66603e3ae10682f2b540d1e35",
+    "README.md": "a1d76e9fcdfd239bad3f53c9d886d5fa85caf5f8d35ecb0beb5acf435f43535c"
+  },
+  "approved": false,
+  "scope": "Loss reference only; not winning Cassava notebook provenance"
+}

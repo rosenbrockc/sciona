@@ -1,0 +1,15 @@
+{
+  "format": "arc-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph_execution:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "cb4c4116cf6b86668ba184f2c2af4e93390d78c8670c989e5e91d562c0ecf308",
+  "validator_sha256": "b052c94279dc4db56e9b0ad049258d8f31583c7a34171f3ff0a505e839cfaf0d",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

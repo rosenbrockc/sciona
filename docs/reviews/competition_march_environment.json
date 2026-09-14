@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "direct_runtime_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3",
+    "threadpoolctl": "3.6.0",
+    "networkx": "3.6.1"
+  },
+  "requirements_sha256": "1430da4e7d4a18b27f18def74a1551688fdf5c4a15d1990d5099d03dacb69e34",
+  "scope": "Provisioned Python 3.13 macOS arm64 worker, not clean installation or cross-platform qualification.",
+  "license_sha256": {
+    "March-sklearn-BSD.txt": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "March-NetworkX-BSD.txt": "3cf7c3a179d817b23b8b8568211769fefdf93797d207d984b8b2fa24d0220b33"
+  }
+}

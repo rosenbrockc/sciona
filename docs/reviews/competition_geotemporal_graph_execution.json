@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "cbe1b307959c62dc36744a3e1a4cb87573125a29297389774af52abef4727068",
+  "provider_sha256": "c0aebe33da0cc0564eb5da2dd2c0066aed6e321206a5c2325528bf2394bb3791",
+  "code_sha256": {
+    "sciona/geotemporal_contract.py": "23c7519f74c86094f7baff6d12cda49a4ff4411f67c91cf02719aefb328ea061",
+    "sciona/geotemporal_features.py": "56c192e429b985ec6bfaa82c4a9fbdf1a7d060ff315560ee1bbf4179681e5348",
+    "sciona/geotemporal_graph.py": "a05a4e5756bb5ecb57ddf9f7cab6b0bf3e12a850941b5760b20a5f7b9495c708",
+    "sciona/geotemporal_postprocess.py": "99f4e1aae492346823477a6d7161ac11b7503cb2347cde7e653b7d31b0049855",
+    "sciona/geotemporal_training.py": "1315c166505f11f2bb1f23c5780d7c91d6121806bce99ed98072373ed6700edb",
+    "sciona/geotemporal_validation.py": "82256afe9d38ad5570acbb77c0e91d630e2730fd7500e35d7fcbca551fdfa208",
+    "scripts/geotemporal_synthetic.py": "67c34c499c30779a771699dc24c4949d9f54532b0aea84793ad80547c8047bb5",
+    "scripts/validate_geotemporal_graph_execution.py": "3883d8b2c109f607d16c358c010750f5d248752bc566cdaf17d7f806fb38fc60"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 9,
+    "validation_rows": 6,
+    "warmup_rows": 3,
+    "query_rows": 2,
+    "folds": 2,
+    "trees": 32,
+    "feature_count": 11,
+    "nonnegative_predictions": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual synthetic five-stage causal-join/features/forward-validation/tree-fusion/smoothing execution; no served publication or historical accuracy claim."
+}

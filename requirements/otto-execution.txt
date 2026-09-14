@@ -1,0 +1,14 @@
+certifi==2026.2.25
+charset-normalizer==3.4.5
+h2o==3.46.0.8
+idna==3.11
+joblib==1.5.3
+numpy==2.4.2
+requests==2.32.5
+scikit-learn==1.8.0
+scipy==1.17.1
+six==1.17.0
+tabulate==0.10.0
+threadpoolctl==3.6.0
+urllib3==2.6.3
+xgboost==3.4.1

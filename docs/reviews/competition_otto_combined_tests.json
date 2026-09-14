@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "tests_passed": 75,
+  "approved": false,
+  "sha256": {
+    "tests/test_otto_classical_models.py": "fce54ed593d2232aead31b5f4187a12cfce7f5bc792cc9cb48c6b39b18fbcf6c",
+    "tests/test_otto_clustering.py": "0715b8b4164be14cf8546dc11c5b60c778c43169080ac51b01965d5c7eacedb9",
+    "tests/test_otto_final_blend.py": "a7601fe262adf4da860ff2cc5aefe727ac6711535bd491858653f8aaf5939ba4",
+    "tests/test_otto_knn_models.py": "8c894b2dd4c5b6bf80e4ff6274a570cc5a7676aee4320bd980bda6fa6ecdfc06",
+    "tests/test_otto_neighbor_crossfit.py": "3f7cca6378be877552e1a07c93ea5965e6923afd9ca020a07d9a7d28349dfd73",
+    "tests/test_otto_neighbor_features.py": "4f021c2370ed1addfa38028e174bc67d88abb67229cd5c8784bd7cccdb4ea2b2",
+    "tests/test_otto_preprocessing.py": "13c52ef9e48ea10d7b92a75c620c9f31650d92d0aba9b55b6b544f4bcf6f5897",
+    "tests/test_otto_tfidf.py": "ce67ea212b0fc926523a5f1bfe676d020812ce04af3023bdeb6cf1613c53859f",
+    "tests/test_otto_tfidf_crossfit.py": "a988cf8247f82940498e242fbff27f08d4fdb7388c1fbe25f000170d3c635e83"
+  },
+  "scope": "Combined component suite only; see full coverage audit for unimplemented stages.",
+  "catalog_mutations": 0
+}

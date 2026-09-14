@@ -1,0 +1,130 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "exact_content_or_fingerprint_duplicates": 0,
+  "catalog_atoms_scanned": 3583,
+  "candidate_pattern": "flavour|mass.correct|mass.proxy|cvm|ks.agreement|truncated.weight|flatness|noise.injection",
+  "reviewed_candidates": [
+    {
+      "fqdn": "sciona.atoms.ml.constrained_ml.decorrelation.compute_cvm_mass_decorrelation",
+      "signature": "(predictions: 'NDArray[np.float64]', protected_variable: 'NDArray[np.float64]', n_neighbours: 'int' = 200, step: 'int' = 50) -> 'float'",
+      "function_source_sha256": "959c74a9db858994235b744f5a8e6f67fbd9277cf82824055a83b4413501a326",
+      "decision": "reused",
+      "reason": "Existing metric is called directly by the evaluated execution."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.constrained_ml.decorrelation.compute_ks_agreement",
+      "signature": "(data_predictions: 'NDArray[np.float64]', mc_predictions: 'NDArray[np.float64]', weights_data: 'NDArray[np.float64]', weights_mc: 'NDArray[np.float64]') -> 'float'",
+      "function_source_sha256": "dce36bd155a7b8bec00a34b107659804011ebefb5f188d409512f8248047f61d",
+      "decision": "reused",
+      "reason": "Existing metric is called directly by the evaluated execution."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.constrained_ml.decorrelation.flatness_penalty_gradient",
+      "signature": "(predictions: 'NDArray[np.float64]', labels: 'NDArray[np.int64]', protected_variable: 'NDArray[np.float64]', n_bins: 'int' = 10, power: 'float' = 2.0, fl_coefficient: 'float' = 3.0, uniform_label: 'int' = 0) -> 'NDArray[np.float64]'",
+      "function_source_sha256": "2e144f346a239ae6f425a50d42fb66dc5cb925b6e3be7911676eb793194793ad",
+      "decision": "different_behavior",
+      "reason": "This intake-listed operation is absent from the recovered winning method; it does not implement the complete training/evaluation provider."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.constrained_ml.decorrelation.noise_injection_decorrelation",
+      "signature": "(predictions: 'NDArray[np.float64]', noise_level: 'float' = 0.4, random_state: 'int | None' = None) -> 'NDArray[np.float64]'",
+      "function_source_sha256": "e2c0c0bb4d83fc86a8d38bccc4ea122ce37aa9423301486e95fa3ab4667d4aba",
+      "decision": "different_behavior",
+      "reason": "This intake-listed operation is absent from the recovered winning method; it does not implement the complete training/evaluation provider."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.constrained_ml.decorrelation.roc_auc_truncated_weighted",
+      "signature": "(labels: 'NDArray[np.float64]', predictions: 'NDArray[np.float64]', tpr_thresholds: 'tuple[float, ...]' = (0.2, 0.4, 0.6, 0.8), weights: 'tuple[float, ...]' = (4, 3, 2, 1, 0)) -> 'float'",
+      "function_source_sha256": "3a977235347722c38f9d3f428d0dbd9d2b2f51fff49dd54b1b0b8e82ad7947da",
+      "decision": "reused",
+      "reason": "Existing metric is called directly by the evaluated execution."
+    },
+    {
+      "fqdn": "sciona.atoms.dl.image_augmentation.fold_ensemble_average",
+      "signature": "(predictions_matrix: 'NDArray[np.float64]', method: 'str') -> 'NDArray[np.float64]'",
+      "function_source_sha256": "55de18f72bdd284b8cad4c9f3ae2c04e6c02c6b008f695cba18d1598033d4894",
+      "decision": "different_behavior",
+      "reason": "Compatible arithmetic reduction suboperation only; does not implement nonlinear source blend or complete training lifecycle. No new generic averaging atom is proposed."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.ensemble.bagging_ensemble_workflow.fit_bootstrap_estimator",
+      "signature": "(estimator_template: 'Any', features: 'NDArray[np.float64]', targets: 'NDArray[Any]', bootstrap_indices: 'NDArray[np.int64]') -> 'Any'",
+      "function_source_sha256": "49021709ab9d63b8e7e801fc725109e51f034c00b3e4fa35ddb2f15851544874",
+      "decision": "different_behavior",
+      "reason": "Synthetic call fails: clone receives unsupported fitting arguments. The source uses fixed KFold training,not bootstrap estimator fitting."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.ensemble.stacking_crossfit_ensemble.compile_oof_meta_features",
+      "signature": "(base_estimators: 'Any', features: 'NDArray[np.float64]', targets: 'NDArray[Any]', cv_folds: 'list[tuple[NDArray[np.int64], NDArray[np.int64]]]') -> 'NDArray[np.float64]'",
+      "function_source_sha256": "5a7a7fe66498cefecb848e863f54a1862256d566084442cf949348a728b9ad0f",
+      "decision": "different_behavior",
+      "reason": "Synthetic call fails: unsupported cross_val_predict keywords. Even a repaired generic OOF matrix does not implement repeated mass regression,full classifier refits,neural ensemble and evaluation."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities",
+      "signature": "(training_features: list, training_labels: list, prediction_features: list, valid_prediction_rows: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "1ee15df03772a5a224b6b3f9c6df56858ae9a4d1ec2511db048254b92e8ad798",
+      "decision": "different_behavior",
+      "reason": "Three signal populations,R feature selection,glmnet/Liblinear and rank aggregation;different features,models and output contract."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities",
+      "signature": "(training_features: list, training_labels: list, prediction_features: list, valid_prediction_rows: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "826b63d84076f6ad867e6ea15d62959b7c7e3656ed36384cba569a2b7a133016",
+      "decision": "different_behavior",
+      "reason": "Signal population feature selection and R SVM window aggregation;different training objective and contract."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.model_selection.stratified_kfold_cross_validation.compute_stratified_kfold_indices",
+      "signature": "(targets: 'NDArray[Any]', n_splits: 'int', shuffle: 'bool', random_state: 'int' = None) -> 'list[tuple[NDArray[np.int64], NDArray[np.int64]]]'",
+      "function_source_sha256": "3970ffe33c7c5faf3a2adcc8ed8b41d0bbaf75fe79dc33248a6ff05997c0cac1",
+      "decision": "different_behavior",
+      "reason": "Synthetic call fails: unsupported StratifiedKFold targets constructor argument. Outer source folds are non-stratified; inner validation fold construction is only a suboperation."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities",
+      "signature": "(training_features: list, training_labels: list, prediction_features: list, valid_prediction_rows: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "cc13f817e5632700d33812431beea0fbcfc48852470d0d3b2eaf3f07ccb8476f",
+      "decision": "different_behavior",
+      "reason": "Five seeded R classifiers per signal population with19window max/rank aggregation;not repeated mass regression or Flavours refits."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.xgboost.competition_bagging.bagged_window_probabilities",
+      "signature": "(training_features: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], training_segment_indices: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], segment_labels: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], prediction_features: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], n_bags: int, n_estimators: int = 500) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]",
+      "function_source_sha256": "eae20860a9d59e67e68f8df3c0184769818fb355d399b7488f22c0e4a6b2031c",
+      "decision": "different_behavior",
+      "reason": "Sklearn bootstrap XGB classifiers with fixed depth4/eta0.01 and segment-index inputs;not source Flavours folds or parameters."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.xgboost.feng_xgb.feng_xgb_segment_probabilities",
+      "signature": "(training_features: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], segment_labels: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], prediction_features: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float32]]",
+      "function_source_sha256": "55a28e9e2ef89e7a379e06682b35b57ee8c5d533084d1243db6d2f4d2951f293",
+      "decision": "different_behavior",
+      "reason": "Single500round depth3 signal-window classifier with mean-window reduction;not any complete Flavours branch lifecycle."
+    }
+  ],
+  "proposed": {
+    "fqdn": "sciona.atoms.ml.flavours_execution.flavours_execute",
+    "content_hash": "100fd1f7bea704a48a246d1ae8ac41b639a6684290cf64e0db088dbff27405e5",
+    "fingerprint": "9f1961a94ba8df94a82ec633dbbf0e866be808937b976c9ac028e3ae9ab8f060"
+  },
+  "scope": "Exact identity across all catalog atom versions; targeted source/metric/tree/crossfit/fold candidate reviews and synthetic probes. Broad substring search also returns unrelated manifold/folding atoms; no universal equivalence proof.",
+  "synthetic_candidate_probes": [
+    {
+      "symbol": "compile_oof_meta_features",
+      "outcome": "TypeError",
+      "error": "missing a required argument: 'estimator'"
+    },
+    {
+      "symbol": "compute_stratified_kfold_indices",
+      "outcome": "TypeError",
+      "error": "StratifiedKFold.__init__() got an unexpected keyword argument 'targets'"
+    },
+    {
+      "symbol": "fit_bootstrap_estimator",
+      "outcome": "TypeError",
+      "error": "clone() got an unexpected keyword argument 'estimator_template'"
+    }
+  ]
+}

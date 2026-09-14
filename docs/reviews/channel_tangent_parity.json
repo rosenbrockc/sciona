@@ -1,0 +1,19 @@
+{
+  "synthetic_only": true,
+  "cases_passed": 10,
+  "maximum_absolute_error": 0.0,
+  "competition_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "pyriemann_revision": "38c3ec1fae7b2d414ebdc669938b4d00a92d50ee",
+  "source_hashes": {
+    "models.py": "38905d4d1bd61560b6c273876f060884c47156eedc500d9085e9ca5fe7c1889b",
+    "pyriemann_estimation.py": "6048dd6b1ad5f59b866088aa0d781ecf5d0dd62d917a12dcbd1e61c740600a22",
+    "pyriemann_utils_base.py": "cb97d9806133344b19e48ad23d54050173c72620a0607de372a40a9f3a391c12",
+    "pyriemann_utils_mean.py": "1545419ff4dfc1ac2a0d60ed5edb264a1ec096cde7f6640a809e3c308e9534b2",
+    "pyriemann_utils_tangentspace.py": "f18370271f9387da2f527bd34e24b5cfc5b1e238b88bd51d55c73ce029376edb",
+    "pyriemann_tangentspace.py": "720a810479e01d7a2e2e3e1c9a0f3817f17bb784db1b306090804a7c80ca4b8b"
+  },
+  "implementation_hash": "2285c5b1712da489859194428862fb0cedb29108cfce10a38ecccba5afb2d0e1",
+  "validation_script_hash": "4e64d695e76dee977db2c5600ff2801bd61f97a758a99bf0bf60622bd93721c8",
+  "reference_loading": "Unmodified selected AST definitions; imports injected; metric dispatch restricted to identity/logeuclid; source-configured n_jobs=8 using threading backend. The unused source n_jobs=1 transform path reverses arguments and fails.",
+  "limitations": "Same installed NumPy/SciPy/sklearn libraries; contemporaneous pyRiemann revision, not proven original environment. No classifier or predictive-performance validation."
+}

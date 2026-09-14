@@ -1,0 +1,32 @@
+{
+  "served_distinct_cdgs": 21,
+  "retrieved_version_hash": "b9713d2fc7ac20caccd2a75e186f4dec78a519719e51ee000f03640b244fc124",
+  "trust_tier": 3,
+  "verified_leaf_coverage": 1.0,
+  "retrieved_graph_equals_validated_graph": true,
+  "nodes": 15,
+  "edges": 40,
+  "boundary_ports": [
+    {
+      "direction": "input",
+      "name": "training_segments"
+    },
+    {
+      "direction": "input",
+      "name": "prediction_segments"
+    },
+    {
+      "direction": "input",
+      "name": "segment_labels"
+    },
+    {
+      "direction": "output",
+      "name": "combined_feature_segment_probabilities"
+    }
+  ],
+  "original_full_ensemble_status": {
+    "status": "draft",
+    "is_publishable": false
+  },
+  "scope": "Combined-feature source model branch; complete ensemble remains draft."
+}

@@ -1,0 +1,110 @@
+{
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "66ae627eb632b4d734ba846dfa167db0e01e354d0cbf96e1d576e632a0077d85",
+  "provider_sha256": "1492f00125d6a8d903986b8e9f898030f536a310afe9d9dbc4834125b95a2009",
+  "validation_sha256": "d316432e11a3aa1fa3e589cfaed98a627e1de634ff8f039b3fe39d641c6f6ecd",
+  "test_sha256": "c4c3b59007e4ca8f5ff3bf2d5639c53e51d0ce5b873137c38ec07fa38e7d57fa",
+  "libraries": {
+    "numpy": "2.4.2",
+    "sklearn": "1.8.0"
+  },
+  "cases_passed": 15,
+  "cases": [
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.9983522004716407
+    },
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 12,
+      "exact": true,
+      "prediction_spread": 0.9990016373774163
+    },
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9994478225471958
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.9985172706048536
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 12,
+      "exact": true,
+      "prediction_spread": 0.9989503776850959
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9993780660164371
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.9984271829464468
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 12,
+      "exact": true,
+      "prediction_spread": 0.9989113700856381
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.999393219432945
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.9984972748978155
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 12,
+      "exact": true,
+      "prediction_spread": 0.9989736524246497
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9993962871532804
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.9983953063996972
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 12,
+      "exact": true,
+      "prediction_spread": 0.9989261021108278
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9993362829029651
+    }
+  ],
+  "limitations": [
+    "Removed two Python2 diagnostic print statements; numerical bodies unchanged, with synthetic source-float32 loaders.",
+    "Source leaves solver unspecified; current sklearn LBFGS defaults used, not historical 2016 solver reproduction.",
+    "Training scaler is reused at prediction; only negative infinity is cleaned, NaNs rejected.",
+    "Complete serialized graph validation and catalog approval remain outstanding."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "format": "adversarial-image-boundary-validation.v1",
+  "result": "passed",
+  "checks": {
+    "source_scipy_AST_and_decoded_PNG_cases": 3,
+    "full_and_padded_tail_batches": 2,
+    "float64_normalize_then_float32_feed": true,
+    "padded_target_zero": true,
+    "only_real_entries_saved": true,
+    "source_minmax_stretch_and_constant_black": true
+  },
+  "limits": "PinnedSciPy0.19.1 functions executed with current NumPy/Pillow; removed tostring alias adapted to tobytes. Decoded pixels compared, not historical PNG byte identity. Public software and synthetic arrays only. Source saved pixel minmax stretching does not preserve the normalized attack epsilon guarantee. Padded full-neural lifecycle not yet validated.",
+  "sha256": {
+    "sciona/adversarial_image_boundary.py": "8d7fcbb8d939e81441d98367a0c22dfcbcebce250024b466868a95d7ada90566",
+    "scripts/validate_adversarial_image_boundary.py": "a432cddbda693f1c9d3e4774af7c2a5a94b3d339957e99eca20f97b0bd184f7e",
+    "docs/reviews/competition_adversarial_scipy_reference.json": "040b6f1bcade5f010f32363f0a6c7ee751bc7be8b0b4669fc0de11a74a49a7a9",
+    "docs/licenses/Adversarial-SciPy-reference-BSD.txt": "142b6deb0132be1adba8d9ba9f9027629f5a9573be3a829ed8a53733473ae0a1"
+  }
+}

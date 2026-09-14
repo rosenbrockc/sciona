@@ -1,0 +1,13 @@
+{
+  "format": "arc-build-gates.v1",
+  "status": "passed",
+  "checks": [
+    "modified_source_rejected_before_compilation_without_output",
+    "modified_manifest_rejected_before_compilation_without_output"
+  ],
+  "verified_source_files": 53,
+  "code_sha256": {
+    "sciona/arc_build.py": "0c384ec040cbf402ba0bc2de063bc14225f930c022d729675aea79f093bc592e",
+    "scripts/validate_arc_build_gates.py": "3cd506f9e4f9b725fc7c9be0a5cf4c219b9683860f4bfa1457dd2a9bf279d0ee"
+  }
+}

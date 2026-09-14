@@ -1,0 +1,38 @@
+{
+  "format": "dfdc-prediction-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_standin_ensemble_cases": 7,
+    "actual_detector_classifier_source_parity": true,
+    "actual_classifier_batch_shape": [
+      32,
+      3,
+      380,
+      380
+    ],
+    "empty_clip_fallback": true,
+    "configuration_and_nonfinite_rejections": 4
+  },
+  "adaptations": [
+    "Caller-decoded RGB, CPU tensor allocation, explicit model/detector initialization.",
+    "Fallback score .5 carries explicit status/reason instead of printing source error logs.",
+    "Empty models, training-mode models, invalid precision and nonfinite final score rejected."
+  ],
+  "limits": "Actual cascade-to-full-B7 inference used constructed synthetic detector states and random half-precision classifier, one checkpoint only. Seven-model orchestration uses stand-ins. Source comparison shares previously independently verified array frame selector. No media codec, pretrained quality, original checkpoint ensemble, training lifecycle or graph promotion claim.",
+  "sha256": {
+    "sciona/dfdc_prediction.py": "cc5e6f6e4592d5fb493e7ef37174b3c3977341bb4d3e6da947764aabe21251c8",
+    "sciona/dfdc_frame_sampling.py": "565d4b2d5d4fd6712f4061be03b3dfa57e6c4b0d34fe22c141c0d7aeda807191",
+    "sciona/dfdc_faces.py": "8852942a6a366dd0b8adb5af038cd6f42cc414c013fad24f265f21d954041a68",
+    "sciona/dfdc_classifier.py": "42ca019c485a64bb652ff19ddda160ff7c342800ad6ede712bd7ebe854d10c56",
+    "sciona/dfdc_stochastic_depth.py": "e6d6426c069d152fff3ee5dfb0f1cd138cf2b10e42729650de8efbf10e7a60bc",
+    "docs/reviews/competition_dfdc_stochastic_depth.json": "85abda6157592b34e47d302a6a24b385e0cc2525481711da50b646d9e3ecd023",
+    "sciona/dfdc_detector.py": "b44391c23d79d6c6724360e49e34450a9d073facba491075879f9bba0d2336a6",
+    "sciona/dfdc_mtcnn_networks.py": "f1f3c5d22e9aaddc753016b315281c1e38924e9f58528fbfc35d0935c7d417ec",
+    "sciona/dfdc_mtcnn_cascade.py": "056419d1f931902495d2778cb2e7b214c0a73599eedcdf917e48bbb78bf379a1",
+    "sciona/dfdc_inference_primitives.py": "034e91c430f0ace51acff217d76086514aedbc669165fb52872ad4736d4dbbaa",
+    "scripts/validate_dfdc_prediction.py": "03a1069ba93523bc8675820e73c8ecec764b9c37f37b01d1caf658a147fa3543",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871",
+    "docs/reviews/competition_dfdc_facenet_source_pins.json": "64c37605ad55ebdecf58bac2fd6d1df18a7a87b6e6c046c43c66961a91e1e2d8"
+  }
+}

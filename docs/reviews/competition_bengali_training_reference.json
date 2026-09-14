@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "compared_updates": 4,
+  "exact_losses_and_network_states": true,
+  "exact_replay_history": true,
+  "source_only_sha256": "600d64d01226bd5ca879a347ca06f148193fd73c88039222cee1832c847bc716",
+  "sha256": {
+    "scripts/validate_bengali_training_reference.py": "226756e32c6a4d8acff72ada8e8e5b0aa1c99a674dfaa5d0cc7a348b44d94dae",
+    "sciona/bengali_gan_training.py": "0c963b499915f651986d9ca8b11033e678897ea21999fba0ef994efd3ebbb441",
+    "sciona/bengali_gan_losses.py": "d77c9aff148cd8fc250d19dade50c4a380ddb04539b672e8a08d4d7bdc2cc4d5"
+  },
+  "limits": [
+    "Small synthetic networks qualify update mechanics only; full source architectures and winning budgets remain pending.",
+    "Replay pools remain below capacity in this probe; separate replay validation covers replacement behavior.",
+    "Classifier has no stochastic layers here; separate guidance tests qualify preservation of the source eval-mode behavior.",
+    "Both executions use the installed PyTorch runtime; historical runtime equivalence is not established."
+  ]
+}

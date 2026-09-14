@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 6,
+  "actual_runner_routing": true,
+  "scope": "Provider structure and routing tests use synthetic inputs and replace training only. Complete native graph training is separately verified.",
+  "test_cases": [
+    "test_registered_structure_and_symbolic_contract",
+    "test_malformed_graph_rejected[optional]",
+    "test_malformed_graph_rejected[constraints]",
+    "test_malformed_graph_rejected[order]",
+    "test_malformed_graph_rejected[provider]",
+    "test_real_runner_routes_population_and_controls"
+  ],
+  "junit_receipt_sha256": "7a793c7d13420da5d743b64e6f6e32b0eb2a31ec5fa5793cd12f0661d7c4c0bb",
+  "provider_sha256": "97953529d448b804912e47eee127293094de60fc63f12ecf05dfacab15c966ab",
+  "sha256": {
+    "tests/test_aptos_provider_contract.py": "417a84e22cae21566575c7afad8e92a4f93a37f3b8820fa3543431cdf9d0c382",
+    "scripts/audit_aptos_provider_contract.py": "670469e55df736e6f67db463f66c8ab98ce9b0d7968c26f9b44da523c5e0c368",
+    "scripts/aptos_graph_execution.py": "3a0e355ce3cd07abab83c236377dff549c5a031df7c9a7f34053ce246f824e20",
+    "scripts/build_aptos_execution_graph.py": "331b6f51f443887d00b8614884f5ead70d6bda38426a5691a5b81c3b4fcc8dc7"
+  }
+}

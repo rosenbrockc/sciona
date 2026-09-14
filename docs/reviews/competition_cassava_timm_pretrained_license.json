@@ -1,0 +1,18 @@
+{
+  "approved": false,
+  "scope": "Publisher model-card license declarations at immutable revisions. Original notebook environment and weight identity remain unverified.",
+  "references": {
+    "resnext50_32x4d.ra_in1k": {
+      "revision": "5f3db49db76b4ccb53aa11ad65f41647e8063426",
+      "model_card_url": "https://huggingface.co/timm/resnext50_32x4d.ra_in1k/raw/5f3db49db76b4ccb53aa11ad65f41647e8063426/README.md",
+      "model_card_sha256": "1f55049f18756a5c814fa2a45076be76797a7bcab27be279162a6b93f448dcad",
+      "license": "apache-2.0"
+    },
+    "vit_base_patch16_384.orig_in21k_ft_in1k": {
+      "revision": "b3a735915218fc1ae72bca2ae77189bd40bbad2c",
+      "model_card_url": "https://huggingface.co/timm/vit_base_patch16_384.orig_in21k_ft_in1k/raw/b3a735915218fc1ae72bca2ae77189bd40bbad2c/README.md",
+      "model_card_sha256": "690175d72952a582eee1116141c87c25c19986c40606e31197d4ebced2b88414",
+      "license": "apache-2.0"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "full_model_members": 20,
+  "reverse_averaging": true,
+  "stacked_reference_comparison": "passed",
+  "teacher_std_ddof": 0,
+  "symmetric_clipping_order_comparison": true,
+  "incomplete_duplicate_rejected": true,
+  "caller_inputs_unchanged": true,
+  "scope": "Full twenty-state topology inference with synthetic initialization; corrected all-member clipping and explicit teacher moments, not trained-state or historical-final-blend equivalence.",
+  "runtime_sha256": "a9503d45afcd57fab0ed29d5a0da468dc491fb379090b5829d02bb8565f45133",
+  "validator_sha256": "b4665c56c030eb067c4977ddd91adb5617283fca8c6fc80b2680b555a5e66596"
+}

@@ -1,0 +1,34 @@
+{
+  "format": "champs-graph-execution.v1",
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "cfcf1e74cc4efcb35064c0eab882bddb875a9cffce54a126b32ea0dc29df4f5e",
+  "provider_sha256": "50b9c31b0feaecb28520fbf58a971baeb339ae44e8394f7ca30f9fc504700f69",
+  "code_sha256": {
+    "sciona/champs_contract.py": "2f1e917e3a0787fc58e0f5c8a2941686fe6237919df472b212286067d4a4a0f3",
+    "sciona/champs_ensemble.py": "d088852ed47b849e620d93677b613655ad9904df6d6f0c1686cf2e8dcf428afd",
+    "sciona/champs_epoch_corrections.py": "f6e8345a02d8a739320f12f11320f0453acb3ab914eda46564044e6f1cd8e483",
+    "sciona/champs_graph.py": "6af553006c3ea494762c18c135ccb5e62f14306604386700d315c57f14c4feaf",
+    "sciona/champs_lifecycle.py": "bcdf4da023f58a8b33e5b20c0febd30edc00c5df8a67a89f5714b2fd45b0467c",
+    "sciona/champs_population.py": "d0bfbe1da139a76a0ec74163f92b7e9ad742fc134f9c92f21f33f9cc933f4d41",
+    "sciona/champs_prediction.py": "a46a92c246c286e9f6de34f2e27dcb203ccb0c09716fa742afa6abba18c03967",
+    "sciona/champs_preprocessing.py": "f2749374e6574832406ae45d6aceb1689b84ff2b0f52509be8d0616ac78cb5dd",
+    "sciona/champs_runtime.py": "d809cb75cd70af656c3d897e0b240f67b13003c814e26a8dbbbf0157aa77dbd6",
+    "sciona/champs_source_corrections.py": "da41df24e2d86dd9df31048d7502496b59e11517579f62ca1b5a1918656ccd10",
+    "sciona/champs_source_runtime.py": "62d91f96f600e9c852c7635995418c646ad86bbf39976f292b7d924885e84788",
+    "sciona/champs_training.py": "9c62553dc0ff76a72cc5dbb42ebeeaac938236fb188da3dc7b0ebe483f98ddd8",
+    "scripts/validate_champs_graph_execution.py": "dfc886ff8dfc00ecd54d4663a7cea866fea6e77511032cd43b035e5d681eeb8e",
+    "scripts/champs_synthetic.py": "b3c38748da94fffc1ec14be2e8e3599b008664d5060a04a2323fae02930f7929",
+    "requirements/champs-chemistry.txt": "9e16201ce4e8e792b191c3cdf9e41f949516334e55ae152f5c107837e9f7f428"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "full_model_lifecycles": 13,
+    "synthetic_predictions": 12,
+    "complete_checkpoint_reload": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "limits": "One synthetic SGD epoch per full model, full-population mode; no historical accuracy or served publication claim. Raw inputs/checkpoints/predictions remain temporary or in memory."
+}

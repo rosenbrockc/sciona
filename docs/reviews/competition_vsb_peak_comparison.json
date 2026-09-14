@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_version_id": "d79e40e4-45b0-5e74-a83c-c68c91f12afb",
+  "source_content_hash": "565e511ee8d20ce0b32adf5c8cc726150f235b1f97d5502d62c96cfe339f5ac1",
+  "source_code_cells_sha256": "ee289da71520cfa781723070f5face629c962e9430fd06bb4f2069a3b72a83b9",
+  "checks": {
+    "exhaustive_directional_cases": 9837,
+    "threshold_counter_cases": 300,
+    "full_selection_cases": 6
+  },
+  "sha256": {
+    "sciona/vsb_baseline.py": "3c38d41b990c15ee5addc94bab28c87f451a146b3b89ebb36c7864cfda5f5f97",
+    "sciona/vsb_peaks.py": "a7c33f4894401cd80e346eed64b23b34570b9a7d3a41121bc172b15e2985ed41",
+    "tests/test_vsb_baseline.py": "5b41bd75b24ba05af3c584aa758720f4d7027b9be44ec47f153394ae18b68a55",
+    "tests/test_vsb_peaks.py": "2c4767eb8866457990b3cb9d35ab718616c854f59230441cdf0f04244311e9f3",
+    "scripts/validate_vsb_peak_comparison.py": "415f9dd27392dde72499ae53ef37ea7b3aa8337e1773d10067511e41f0045868"
+  },
+  "limits": [
+    "Independent floating-point implementation compared to unaccelerated source functions on synthetic signals; native Numba and historical numerical parity unqualified.",
+    "Fewer than two candidate peaks explicitly reject because source convolution has an empty gradient.",
+    "Source tie sorting and negative knee slicing retained. No full feature, trainer or publication qualification."
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "format": "dfdc-classifier-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "dependency": {
+    "timm": "0.9.2",
+    "torch": "2.11.0"
+  },
+  "checks": {
+    "source_forward_ast": true,
+    "source_encoder_selection": true,
+    "parameters": 66350521,
+    "full_resolution_forward_backward": true,
+    "input_gradient_exact": true,
+    "parameter_gradients_exact": 711,
+    "inactive_source_encoder_head_tensors": 2,
+    "batchnorm_state_exact": true,
+    "clipped_sgd_updates": 1,
+    "eval_forward": true,
+    "full_state_restoration": true,
+    "encoder_state_restoration": true,
+    "nonfinite_state_rejected": true
+  },
+  "limits": "Synthetic 380x380 batch1 and explicit random weights. Both source-head oracle and adaptation use installed timm0.9.2 with separately source-validated historical stochastic depth. Full historical encoder CPU parity is in competition_dfdc_stochastic_depth.json; historical binary runtime equivalence is not claimed. Optimizer step is isolated, not full source class-balanced loss/scheduler/training lifecycle evidence. No pretrained accuracy claim.",
+  "sha256": {
+    "sciona/dfdc_classifier.py": "42ca019c485a64bb652ff19ddda160ff7c342800ad6ede712bd7ebe854d10c56",
+    "sciona/dfdc_stochastic_depth.py": "e6d6426c069d152fff3ee5dfb0f1cd138cf2b10e42729650de8efbf10e7a60bc",
+    "docs/reviews/competition_dfdc_stochastic_depth.json": "85abda6157592b34e47d302a6a24b385e0cc2525481711da50b646d9e3ecd023",
+    "scripts/validate_dfdc_classifier.py": "fe82cd7575d4a37a4466bb6f45eec576101988db491b47f90593946d92da6027",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

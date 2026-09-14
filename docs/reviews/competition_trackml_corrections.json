@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "state_updates": 32,
+    "displacement_cases": 48,
+    "analytic_displacements": 16,
+    "submasks": 32
+  },
+  "implementation_sha256": {
+    "sciona/trackml_corrections.py": "96770dae09ba1584b7bd7152187a1b96a7b51df9831eff539a0305cf4674b21b",
+    "sciona/trackml_geometry.py": "e8d16ed6c49222717a7ed55c50b220f17c0e29a0651d165c3b0e726aba7482cb",
+    "sciona/trackml_helix.py": "eb8f4c0895d7ae63618e4f143cc5f04badc4ee98e47622dee0e60fa7db984b05",
+    "scripts/validate_trackml_corrections.py": "0319ffcbb12074fbb9fe246b47f6eac10b7987d3a14b3a4acbccc4af58a5adcd",
+    "docs/reviews/competition_trackml_source_pins.json": "d61b598dbf97fb73d7b8546d0af99c4657f894e953e79cf82f2242dfcf90219f",
+    "docs/licenses/TrackML-BSD-2-Clause.txt": "00404581925abc4b8435bb7813eee07ac1df8b834326a33ee969d8315e9471fe"
+  },
+  "limitations": [
+    "Synthetic candidate context and displacement callbacks, not learned map interpolation.",
+    "Correction state and formulas only; intersection integration and full lifecycle remain."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "checkpoint_url": "https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b7-dcc49843.pth",
+  "checkpoint_sha256": "dcc49843b8ec5a097a8cb166eded1d7a09291093eff7735f603bcfcafce12c8e",
+  "checkpoint_bytes": 266860719,
+  "tensor_only_loading": true,
+  "branches": [
+    {
+      "branch": "ood",
+      "classes": 1295,
+      "checkpoint_tensors_exact": 1200,
+      "finite_loss": true,
+      "finite_input_and_parameter_gradients": true,
+      "nonzero_stem_and_task_head_gradients": true,
+      "original_imagenet_head_unused": true,
+      "checkpoint_state_unchanged": true
+    },
+    {
+      "branch": "seen",
+      "classes": 14784,
+      "checkpoint_tensors_exact": 1200,
+      "finite_loss": true,
+      "finite_input_and_parameter_gradients": true,
+      "nonzero_stem_and_task_head_gradients": true,
+      "original_imagenet_head_unused": true,
+      "checkpoint_state_unchanged": true
+    }
+  ],
+  "versions": {
+    "torch": "2.11.0",
+    "efficientnet-pytorch": "0.7.1"
+  },
+  "implementation_sha256": {
+    "sciona/grapheme_b7_initialization.py": "b2ec0447814afee02812243987660095765f26be354627c628e58d2f534179f6",
+    "sciona/grapheme_b7_head.py": "0fb0f04df66cb56394d611dd2bf3e636e5709e144e1131b58d2e8409102d0ba5",
+    "sciona/bengali_ood_loss.py": "ca3963b6f66ea4e5aa7a41432a9b22205bf3c727c799e0a1981431eaf0808814",
+    "scripts/validate_bengali_b7_initialization.py": "dedc1fbf20d68712a56cb6f3d5d5dd35200c9c82e8290c87f6652574d2978790"
+  },
+  "limits": [
+    "Publisher standard ImageNet checkpoint candidate; exact winner artifact identity is unproven.",
+    "Random task heads and synthetic unnormalized tensors; no recognition accuracy or training completion claim.",
+    "Original image normalization, warmup duration, dependency identity, artifact licensing and full publication remain pending."
+  ]
+}

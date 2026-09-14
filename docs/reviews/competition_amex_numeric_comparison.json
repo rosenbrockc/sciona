@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_software_sha256": "6de0a4d65a17a0a25e10c8fdf19fa8efca6babd94aef1f6aabf71a72334a8911",
+  "comparison_cases": 24,
+  "sha256": {
+    "sciona/amex_numeric.py": "aeefcd3e3aa1ccd52e904c79b99b52f348a4727fce78e73ecd03acb9cb0afa73",
+    "tests/test_amex_numeric.py": "39ed13962213f76b40e2a2b1d20ef7cbe67b0c623e35f1fc9352f31b56f1a5af",
+    "scripts/validate_amex_numeric_comparison.py": "7d859016fd2d423f6f043e3be0a8202e25ffb3cb5a33923f06fa7144c3640f07"
+  },
+  "limits": [
+    "Independent summaries compared on synthetic numeric sequences only; floating-point aggregation order may differ outside these cases.",
+    "Denoising categorical mappings, full manual/rank features, sequence/binning paths, learners, blend and graph remain pending. Original source reuse terms unresolved; no source code copied into repository."
+  ]
+}

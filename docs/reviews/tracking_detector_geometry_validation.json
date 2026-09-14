@@ -1,0 +1,17 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "f1a6e63969167159ef72c4ba32897e5aef7c3888",
+  "source_sha256": "e20657812744e5b86d8211bece1f2afbc55d791077c5273a7bfd76fd8d90d338",
+  "checks": {
+    "detector_construction": true,
+    "cylinder_radii_and_lengths": true,
+    "cap_clustering": true,
+    "cap_gaps_and_overlaps": true,
+    "input_preserved": true,
+    "row_permutation_invariant": true,
+    "combined_intersector_crossing": true
+  },
+  "scope": "Compatible generated geometry and one finite-layer intersection. No actual detector data, complete tracking execution or publication approval.",
+  "validator_sha256": "abd5963fc4f432034a41ef575d8b54a8c7dbe7f05ca0f76df363ee8adc89dc71"
+}

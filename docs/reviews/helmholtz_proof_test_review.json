@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "passed": 12,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_helmholtz_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_helmholtz_proof.py": "5205c217000381222bd98382022ad6496a7de9d5e8f92b5f33ab614cd8505b2f",
+    "sciona/physics_ingest/helmholtz_proof.py": "9f77e6b93c4f98a951be8140d5c9af1b20b78cee767e8bf6f5674736a00afa69"
+  }
+}

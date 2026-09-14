@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "synthetic_only": true,
+  "complete_preprocessing_cases": 4,
+  "node_channels": 55,
+  "adjacency_channels": 8,
+  "source_inputs_unchanged": true,
+  "source_boundary_failures": {
+    "length_one": "IndexError",
+    "multiple_rows": "ValueError"
+  },
+  "source_modified": false,
+  "tensorflow_executed": false,
+  "scope": "Full inference preprocessing given synthetic structure/probabilities; no folding or model/training execution.",
+  "validator_sha256": "b81248cfcef1753bb6eb81ffa4970dfbf9324e9a14596d70c2655f914acb0130"
+}

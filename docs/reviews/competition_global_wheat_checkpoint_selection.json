@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_decision_sequences_checked": 128,
+  "inherited_fallback_cases": 7,
+  "notebook_round2_destination_matches_round1_inference_artifact": true,
+  "source_runtime_sha256": "36551e0efd6b7d60778d2c4965a7dc4936e7101937bcde1cda4aeef1b9f5418b",
+  "source_notebook_sha256": "3ffd2f6dbc30822d6aeb104dd1ea6bae5856ed3f2c01a639f7fee27867d111ab",
+  "implementation_sha256": {
+    "sciona/wheat_checkpoint_selection.py": "65c76343b09ce1a4af804691ed7a638d62eaa097eb63f33021009c46e8fe8178",
+    "scripts/validate_wheat_checkpoint_selection.py": "7b43b722e9180cee24a4ca64f970d7d08672615dca77e687907a45cdfc5ce537"
+  },
+  "limits": [
+    "Selection and save-payload structure only; actual tensor/optimizer checkpoint provenance remains a caller responsibility.",
+    "Nonfinite validation metrics are rejected by reconstruction even though source comparison could silently ignore them.",
+    "Full training, inference, artifact qualification and publication remain pending."
+  ]
+}

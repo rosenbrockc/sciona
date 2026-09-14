@@ -1,0 +1,34 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_attribution_status": "conditional_pass",
+  "publication_scope": "Reconstruction source, provider contracts and CDG metadata; external model files and dependency wheels are not bundled.",
+  "dependency_packages": 85,
+  "bundled_notice_files": 120,
+  "supplemental_notice_packages": [
+    "flatbuffers",
+    "tensorboard-data-server",
+    "tf-keras"
+  ],
+  "model_redistribution_approved": false,
+  "conditions": [
+    "Retain the source and supplemental notices with the reconstruction.",
+    "Caller supplies model artifacts they are entitled to use; integrity checks do not establish usage rights.",
+    "The winner converted EfficientNet artifact remains unapproved for redistribution; no independent weight grant is inferred from software attribution.",
+    "Review any future distribution of external model files or dependency wheels separately.",
+    "Official CropNet and historical-reference timm scope remain explicit; winner runtime/cache equivalence is unproven."
+  ],
+  "sha256": {
+    "docs/licenses/Cassava-reference-NOTICE.txt": "209ceaa8a32e3e6460a2546f9b828f383090427e2a122a27f97fa9b543a12183",
+    "docs/licenses/Cassava-qubvel-efficientnet-Apache-2.0.txt": "e486cea90cab95bee73cbe32de74e5e8e84ba4e87228e837be71af9e41a55203",
+    "docs/licenses/Cassava-winner-notebooks-NOTICE.txt": "e814057b0892f0ce45eebef41db63d5c8b9c77c0e1f1d62fc3590a12da90a95c",
+    "docs/licenses/Cassava-winner-notebooks-Apache-2.0.txt": "c85ef5c9d96dd25436384402c52e79cfcd14aad66603e3ae10682f2b540d1e35",
+    "docs/licenses/Cassava-bi-tempered-Apache-2.0.txt": "c85ef5c9d96dd25436384402c52e79cfcd14aad66603e3ae10682f2b540d1e35",
+    "docs/reviews/competition_cassava_notebook_license_declaration.json": "ce06bc3719f70fd2cfd046a143de8107d349c5b864e16a38c66c599676aaebac",
+    "docs/reviews/competition_cassava_timm_pretrained_license.json": "3889869df2c957ced847e0e009f7b02fb3cc84fc0b9b5303e4669978e1585eaa",
+    "docs/reviews/competition_cassava_license_review.json": "befec0e7133ca029554f479239a669b78c6260f51933b20603f1cee7fad43a35",
+    "docs/reviews/competition_cassava_efficientnet_pretrained_review.json": "d0d5b394527d348ff62e0ffa8dc67bda6c2d26d91b0bf334ec17d7613188188a",
+    "docs/reviews/competition_cassava_dependency_notice_inventory.json": "5f0d5a405329ac25382fba16d1c6ed3c122a370c8705c0741480acff20b78501",
+    "docs/reviews/competition_cassava_supplemental_dependency_notices.json": "a8e85c1f98ec62d5bca9b2071010b0355b720366ae3757f8c9052ed96c22e137"
+  }
+}

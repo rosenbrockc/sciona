@@ -1,0 +1,19 @@
+{
+  "format": "adversarial-normalization-validation.v1",
+  "result": "passed",
+  "checks": {
+    "source_primitive_cases": 8,
+    "independent_input_derivatives": true,
+    "train_eval_and_state_immutability": true,
+    "strict_roundtrip_and_optional_gamma": true,
+    "reference_slim_center_true_scale_false": true,
+    "invalid_state_rejections": 2
+  },
+  "limits": "Explicit TF1.4 primitive arithmetic with Torch-op oracle; no historical binary/fused-kernel equivalence. CPU synthetic tensors, normalization only. Full backbone/attack validation remains.",
+  "sha256": {
+    "sciona/adversarial_normalization.py": "3af9580ea7f45eb3e56b71c8a7bfb308819363f9f9a08a933ca6ec67186aad92",
+    "scripts/validate_adversarial_normalization.py": "887efc9360ef401e40b88f2837ad6bc2eb5cf10de7bffa6133ab1283e7affe4c",
+    "docs/reviews/competition_adversarial_tensorflow_reference.json": "a6a8f94d91170a80fecb0c90c2dac44673e2c9a0a4ef911390130581eec75926",
+    "docs/licenses/Adversarial-TensorFlow-reference-Apache-2.0.txt": "d7c9068d896188264b60827b8cd1e25fdb9f5b5cad0b1589e90b96c87729c404"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "8224574f23ae68f559e7f9a5a33bbb9e207dfd5ed76f6145db16dfb38c02c84c",
+  "exact_dataset_cases": 128,
+  "cases_with_more_than_four_loads": 16,
+  "image_tensors_targets_load_order_and_rng_exact": true,
+  "all_four_sizes_both_networks_and_modes": true,
+  "implementation_sha256": {
+    "sciona/wheat_dataset.py": "f9bb2e9461dfb9325b472528e1f9814b2db59c1e6b72db50829da717834473e3",
+    "sciona/wheat_augmentation.py": "04e9176c3a4b921242e1ca297ff704ab80735e3294d51d39d11ff88e8d827edc",
+    "sciona/wheat_augmentation_compat.py": "c94c2d2e7d6972c8aeba94d3d059a1b826546a9e01e3adcefe370008f1a66a9b",
+    "sciona/wheat_crop.py": "6291dc130f41cd1173672448255dc03e3c46ff2d98b3ac78716ed0b62a318ab9",
+    "sciona/wheat_mosaic.py": "90308d23d8a4438a9130329cfea4f99caaa677749c0650637c66585c9548774d",
+    "scripts/validate_wheat_dataset.py": "cda7bf5fddfe8e54d7074fd188e36eafba9e0f1e40e9827ae45e3a599a045cd8"
+  },
+  "limits": [
+    "Runtime-array loader replaces file decoding; real auxiliary data and historical image codecs are not qualified.",
+    "Pinned historical augmentation packages use installed native dependencies; complete base fits remain pending."
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "source_commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "tensorflow_version": "2.20.0",
+  "legacy_keras": true,
+  "source_modified": false,
+  "full_topologies": [
+    {
+      "family": "autoencoder",
+      "parameters": 9658496,
+      "trainable_tensors": 564,
+      "optimizer_steps": 1,
+      "finite_gradients": true,
+      "weights_changed": true
+    },
+    {
+      "family": "gru",
+      "parameters": 10686542,
+      "trainable_tensors": 570,
+      "optimizer_steps": 1,
+      "finite_gradients": true,
+      "weights_changed": true
+    },
+    {
+      "family": "lstm",
+      "parameters": 10947662,
+      "trainable_tensors": 570,
+      "optimizer_steps": 1,
+      "finite_gradients": true,
+      "weights_changed": true
+    },
+    {
+      "family": "forward",
+      "parameters": 13558606,
+      "trainable_tensors": 580,
+      "optimizer_steps": 1,
+      "finite_gradients": true,
+      "weights_changed": true
+    },
+    {
+      "family": "wave",
+      "parameters": 11187246,
+      "trainable_tensors": 730,
+      "optimizer_steps": 1,
+      "finite_gradients": true,
+      "weights_changed": true
+    }
+  ],
+  "scope": "Full-width source autoencoder and four prediction families with one optimizer step each; no ensemble, checkpoint or complete training lifecycle claim.",
+  "validator_sha256": "c5ed1f2d895a9ddde14b6a4c653f082b5b677e9be7cb5eaca8f87d7665d75e78"
+}

@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "controls": {
+    "num_leaves": 4095,
+    "num_boost_round": 1024,
+    "stopping_rounds": 50
+  },
+  "rows": {
+    "training": 3142,
+    "validation": 3186
+  },
+  "best_iterations": {
+    "normal": 12,
+    "transformed": 12
+  },
+  "evaluated_iterations": {
+    "normal": 62,
+    "transformed": 62
+  },
+  "checks": {
+    "default_source_controls": true,
+    "selected_minimum_heldout_rmse": true,
+    "full_game_rounds": 2000
+  },
+  "sha256": {
+    "sciona/santa_boosting.py": "d6a525b6a80a335484d43f8fdf01b5e97bd0c9055ae2ef6262b77bfdab8c4779",
+    "sciona/santa_simulation.py": "b47b10574ab715befe688b2a2539192bae8cee0606931d448755c984298f357f",
+    "scripts/santa_synthetic.py": "fd899ac565279b3d7dfe3b03de2674dcd94c5939f41e3650c96c6476212118b4",
+    "scripts/validate_santa_default_training.py": "9960cd1eae672f2bd050e663d288766777c13d74cb3e4617a4db138b5805b937"
+  },
+  "scope": "Source-size controls on small synthetic populations; no historical data-volume, weights, strength or throughput claim."
+}

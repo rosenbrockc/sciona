@@ -1,0 +1,37 @@
+{
+  "repository": "DasLab/KaggleOpenVaccine",
+  "commit": "b95af835cc38bd7dc55ed6e7397d124787f86996",
+  "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit",
+    "node_id": "MDc6TGljZW5zZTEz"
+  },
+  "pins": [
+    {
+      "software_path": "LICENSE",
+      "sha256": "2cf381fc614bb01102e06f2e08b75c1d6a4d908426b306d18614089e044ae206"
+    },
+    {
+      "software_path": "README.md",
+      "sha256": "97c918f2974dfd52e3f9d37a22b38a43a3e3e2d25054508340d057b12d4d33c8"
+    },
+    {
+      "software_path": "requirements.txt",
+      "sha256": "e0e10a1fd6dc2bee8660335e0b998a3ef23b44baa32a5ddc4513503dc33a5461"
+    },
+    {
+      "software_path": "scripts/nullrecurrent_inference.py",
+      "sha256": "01f27b6401bceba9ad6742f680d799cea552d918adf5e322474f04f90223607e"
+    },
+    {
+      "software_path": "notebooks/README.md",
+      "sha256": "9ef9ef0efda942c8dc14ed24319d068e39dd3e81ab8d92ac18521a4442394287"
+    },
+    {
+      "software_path": "notebooks/nullrecurrent-inference/NN_predictions.code.json",
+      "sha256": "f4ce12aad46c1523ea17fef6d91c809d9ef5f60b34ad0f613f81db900cfe3155"
+    }
+  ]
+}

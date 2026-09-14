@@ -1,0 +1,9 @@
+{
+  "approved": false,
+  "checks": {
+    "exact_source_metric_cases": 6,
+    "undefined_score_rejection_and_mode_restoration": true
+  },
+  "implementation_sha256": "548ce8be26285531f8b4db7682ee1a09d8f37d3d78728b9d1c98e27ce77658a6",
+  "scope": "Synthetic mixed batch sizes, three thresholds and train/eval modes. Source BCE weighting0.05, global hard Dice and batch-weighted soft Dice preserved. Explicit error for undefined score; timing excluded."
+}

@@ -1,0 +1,24 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "component": "group_mean_target_bounding",
+  "source_example": {
+    "group_mean": 2.2,
+    "prediction": 1.1,
+    "lower_deviation": 0.5,
+    "refined_target": 1.7
+  },
+  "reference_contract": "Both lower and upper deviations must be supplied explicitly. Group labels encode the source four-level supplemental labels as 0..3. Symmetric 0.5 bounds are an explicit reconstruction choice; complete historical interval unproven. Means precede bounding; targets stay continuous and unclipped to ordinal range.",
+  "sha256": {
+    "sciona/aptos_group_refinement.py": "e6417e93ebeeb4d44556f73cca5309381aa5acf0ffe4b7e05a115068db309f2d",
+    "sciona/aptos_refinement.py": "2599304219bdb8e91bdda98633c96db30f0abe6abfcb115b06b3f7f0d3cdbae5",
+    "sciona/aptos_ensemble.py": "0ab67a978e17226c1f076dce8dc5368a51fe1af74d2dd061ddb5a17531072f22",
+    "tests/test_aptos_group_refinement.py": "3ba7d291e756c0de44e671923c3e048d113c54ea4f33cc7a0a1bf5f982bc4c95"
+  },
+  "validation": {
+    "passed": true,
+    "group_tests": 15,
+    "scope": "Source lower-bound example, independent group oracle, four-level boundary, alignment and numerical validation. No full workflow claim."
+  }
+}

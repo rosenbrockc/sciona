@@ -1,0 +1,40 @@
+{
+  "status": "passed",
+  "source_commit": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59",
+  "recipes": [
+    {
+      "variant": "default",
+      "sequence": [
+        "AddGaussianNoise",
+        "AddGaussianSNR",
+        "AddBackgroundNoise"
+      ],
+      "seeds": 24,
+      "all_positions_activated": true,
+      "exact_seed_replay": true
+    },
+    {
+      "variant": "background",
+      "sequence": [
+        "AddGaussianNoise",
+        "AddGaussianSNR",
+        "Gain",
+        "AddBackgroundNoise",
+        "AddShortNoises",
+        "AddGaussianNoise",
+        "AddGaussianSNR",
+        "Gain"
+      ],
+      "seeds": 24,
+      "all_positions_activated": true,
+      "exact_seed_replay": true
+    }
+  ],
+  "background_rms_repeat_reference": true,
+  "short_noise_fade_rms_reference": true,
+  "silent_background_nonfinite_reproduced": true,
+  "zero_fade_out_failure_reproduced": true,
+  "original_input_preserved": true,
+  "validator_sha256": "fbbc606a8ba784fcf2c24249dee9714bd3ae10ee8605c510ee263d20413d5d38",
+  "scope": "Original audiomentations0.11.0 classes and complete source recipes. Private I/O replaced with in-memory synthetic bank; caller RNG namespaces isolate randomness. No full training or resampling equivalence claim."
+}

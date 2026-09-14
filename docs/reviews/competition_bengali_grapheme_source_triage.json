@@ -1,0 +1,964 @@
+{
+  "format": "bengali-grapheme-source-triage.v1",
+  "intake_version_id": "0c0997e0-c5f7-509c-9068-dcf00a167f56",
+  "intake_content_hash": "d9dfe89a2b146a6ee459b864b7d93e998a2e368b6ac5154b8aa088f11cfd4c82",
+  "status": "winner_classifier_and_submission_code_recovered_review_pending",
+  "version_bound_writeup": "https://www.kaggle.com/c/bengaliai-cv19/discussion/135984",
+  "primary_interview": "https://medium.com/kaggle-blog/top-marks-for-student-kaggler-in-bengali-ai-a-winners-interview-with-linsho-kaku-dd321b324c74",
+  "author": "Linsho Kaku (deoxy)",
+  "primary_findings": [
+    "Official Kaggle Team interview confirms solo first-place winner and links to solution with code.",
+    "Winner explicitly says cropping and noise reduction were not used.",
+    "Unseen-class recognition drove a handwriting-to-font CycleGAN model connected to font-image classification.",
+    "PyTorch framework confirmed."
+  ],
+  "intake_discrepancies": [
+    "Mandatory inversion/bounding-box crop is not supported by the winner interview; cropping is explicitly contradicted.",
+    "Six-stage SE-ResNeXt/CutMix/MixUp/GridMask/OHEM/soft-voting description omits the central CycleGAN and unseen-class treatment. Component-paper citations do not prove those components formed the winning pipeline."
+  ],
+  "limits": [
+    "Original discussion body has now been recovered through the public topic endpoint; earlier unreadable-page observations are historical.",
+    "Primary CycleGAN illustration is pinned below; complete winning code and license qualification remain unresolved.",
+    "No images, weights, fonts, dataset records or archives downloaded.",
+    "Do not substitute lower-ranked grapheme or speech recognition solutions."
+  ],
+  "next": "Resolve complete OOD/seen/font-pretraining/inference source and source-versus-paper budgets; integrate and execute the complete corrected pipeline before promotion.",
+  "code_link_followup": "Official interview links back to discussion135984 with tracking parameters; still no readable body in current web access.",
+  "public_repository_audit": {
+    "accounts_checked": {
+      "Linsho": 21,
+      "linshokaku": 10
+    },
+    "candidate_repository": "https://github.com/Linsho/bengali-font-generator",
+    "commit": "f162db90cb8dd55db2d55279a5e68cbd085ed684",
+    "license": "Apache-2.0",
+    "scope": "README documents font-image generation only; full winning training/inference not established.",
+    "files_pinned": [
+      {
+        "path": "README.md",
+        "sha256": "bcb472f355a3cec3a4376ca32195b7319eb1bd9e52e8d00b2712926e28d9ff8f",
+        "git_blob_sha1": "c3c2cc1574b9631da3b13b2a228ab2c4a87c21f6"
+      },
+      {
+        "path": "LICENSE",
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "git_blob_sha1": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      },
+      {
+        "path": "docker/Dockerfile",
+        "sha256": "9abc030ce7dde04bed3a6fde584fe2a11d9a54f1efb1dc5856f901a24f7bd683",
+        "git_blob_sha1": "857859f897eb912aee72fce31aaf3f71e50afc80"
+      }
+    ],
+    "notebook_not_fetched": "Notebook may embed image outputs; no notebook/images/fonts/data fetched.",
+    "author_link": "Candidate account based on name and relevant project; exact Kaggle account ownership not yet independently established."
+  },
+  "primary_paper_followup": {
+    "url": "https://aclanthology.org/2023.banglalp-1.4/",
+    "pdf": "https://aclanthology.org/2023.banglalp-1.4.pdf",
+    "title": "Pipeline Enabling Zero-shot Classification for Bangla Handwritten Grapheme",
+    "authors": [
+      "Linsheng Guo",
+      "Md Habibur Sifat",
+      "Tashin Ahmed"
+    ],
+    "year": 2023,
+    "linked_training_notebook": "https://www.kaggle.com/code/linshokaku/cyclegan-training",
+    "findings": [
+      "Paper describes the top-ranked competition pipeline and cites the intake-bound discussion.",
+      "Architecture separates out-of-distribution detection, seen-class classification and CycleGAN/font-based unseen-class classification.",
+      "Paper links a concrete CycleGAN training notebook, resolving the earlier absence of a primary code lead."
+    ],
+    "limits": [
+      "Paper-linked CycleGAN notebook v4 is now pinned below; complete winning implementation is not established.",
+      "Full winning implementation and source-versus-paper differences remain to be established.",
+      "No fonts, images, weights or competition records fetched."
+    ]
+  },
+  "paper_linked_code_retrieval": {
+    "public_url": "https://www.kaggle.com/code/linshokaku/cyclegan-training",
+    "public_api": "https://www.kaggle.com/api/v1/kernels/pull/linshokaku/cyclegan-training",
+    "kernel_id": 8495288,
+    "version_number": 4,
+    "code_cells": 33,
+    "output_blocks": 0,
+    "source_only_sha256": "600d64d01226bd5ca879a347ca06f148193fd73c88039222cee1832c847bc716",
+    "verified": [
+      "Two9-block residual generators and two3-layer discriminators with instance normalization.",
+      "Frozen EfficientNet-B0 font classifier has1280 pooled features, LayerNorm and14784-way output.",
+      "Generator loss combines both GAN directions, L1 cycles weighted10 each, and supervised font-classification loss.",
+      "Adam learning rate0.0002 with betas0.5/0.999; rate remains flat for first half then decays linearly."
+    ],
+    "source_paper_discrepancies": [
+      "Public notebook uses1epoch and batch8; paper describes40epochs and batch32. Treat notebook as an illustration, not complete winning execution budget.",
+      "Public notebook classifier weight is1.0; paper discusses tuned settings and two-font final ensemble.",
+      "Paper font-classifier hidden width2560 conflicts with actual B0 classifier width1280 in linked source."
+    ],
+    "limits": [
+      "Complete OOD/seen/font-pretraining/inference code still missing.",
+      "Version4 is the retrieved public snapshot; exact competition-time artifact identity is not established.",
+      "Kaggle public notebook listing endpoint returned401; no authentication bypass attempted.",
+      "No image outputs, weights or fonts retained; source code remains a private reference and is not vendored."
+    ]
+  },
+  "remaining_code_search": {
+    "paper_linked_notebook_kernel_dependencies": 0,
+    "notebook_markdown_source_link": "https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix",
+    "additional_primary_training_or_inference_notebooks_found": false,
+    "scope": "Targeted public searches and linked notebook metadata; not proof that further code does not exist."
+  },
+  "font_guidance_progress": {
+    "component": "sciona/bengali_font_guidance.py",
+    "tests": "tests/test_bengali_font_guidance.py",
+    "scope": "Frozen/eval classifier gradient contract only, tested with a synthetic classifier; actual EfficientNet, full GAN lifecycle and complete intake still pending.",
+    "verified": [
+      "Parent train mode cannot re-enable font classifier training.",
+      "Classifier parameters and buffers remain unchanged while nonzero finite gradients reach generated images.",
+      "External classifier mode mutation and invalid joint-class labels fail."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/bengali_font_guidance.py": "58472d168b81c40b8e8d4ffc4a36aa5d04ad8b60601dfa06cbc3645dc8b720a2",
+      "tests/test_bengali_font_guidance.py": "9e42613eab56de268a837c739b76d537a98b1f6d836cd9a57110333326fd5a51"
+    }
+  },
+  "joint_label_progress": {
+    "component": "sciona/bengali_joint_labels.py",
+    "tests": "tests/test_bengali_joint_labels.py",
+    "source_dimensions": [
+      168,
+      11,
+      8
+    ],
+    "joint_classes": 14784,
+    "verified": [
+      "Exact source mixed-radix encoding; inverse covers every joint class without collisions.",
+      "Explicit eighth consonant state retained rather than inherited seven-state intake assumption.",
+      "Unsigned-small input conversion prevents arithmetic overflow; out-of-range/noninteger values rejected."
+    ],
+    "scope": "Index algebra only; no real glyph/class-name mapping or full classification/training claim.",
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/bengali_joint_labels.py": "b9c1a52d6458f23217d2e84aabc1ba50302eb8edc9a8c81e3a43ec9f2ed1cb1d",
+      "tests/test_bengali_joint_labels.py": "48e4194235c594e3c24bc269fc13746e1347340372d3e926c7bd786abc055eae"
+    }
+  },
+  "replay_pool_progress": {
+    "files": [
+      "sciona/bengali_image_pool.py",
+      "tests/test_bengali_image_pool.py",
+      "scripts/validate_bengali_replay_reference.py"
+    ],
+    "scope": "Replay history only; not full GAN execution.",
+    "verified": [
+      "Six queries totaling 265 synthetic images match the pinned source outputs and final histories exactly.",
+      "Snapshot restore reproduces future replay and RNG state; invalid query leaves state unchanged; history cannot alias caller data."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/bengali_image_pool.py": "9547a419e2e6c2c299a3e397e016059092f95e7c191f2ea96097928103cdf56d",
+      "tests/test_bengali_image_pool.py": "ddc55ae6ad05f54049448da70d43fc3cef932cfc48faaf4a61f6fa16e32119a0",
+      "scripts/validate_bengali_replay_reference.py": "f6277ea72fed8c885aaeadc70c5c5f3050eda749b3c325ced7a8a39fd136407d"
+    },
+    "reference_report": "docs/reviews/competition_bengali_replay_reference.json"
+  },
+  "gan_loss_progress": {
+    "files": [
+      "sciona/bengali_gan_losses.py",
+      "tests/test_bengali_gan_losses.py"
+    ],
+    "scope": "Analytic synthetic objective/gradient checks only; optimizer ordering, model integration and complete training remain pending.",
+    "verified": [
+      "Least-squares GAN labels are 1/0 with no sigmoid.",
+      "Both reconstruction losses carry weight 10; caller-supplied weighted font loss retains its gradient.",
+      "Each discriminator domain averages real and replayed-fake losses, then both domains are summed.",
+      "Analytic generator/discriminator values and gradients pass; invalid values and shape broadcasting are rejected."
+    ],
+    "catalog_mutations": 0,
+    "sha256": {
+      "sciona/bengali_gan_losses.py": "d77c9aff148cd8fc250d19dade50c4a380ddb04539b672e8a08d4d7bdc2cc4d5",
+      "tests/test_bengali_gan_losses.py": "337332c9f35bccd6ae0692b763e24f3208ea883a7d08c7173eb2d32f35247b99"
+    }
+  },
+  "component_test_result": {
+    "passed": 23,
+    "failed": 0,
+    "synthetic_only": true,
+    "approved": false,
+    "scope": "Font guidance, joint labels, replay pool, loss objectives and training-step lifecycle only."
+  },
+  "gan_training_step_progress": {
+    "files": [
+      "sciona/bengali_gan_training.py",
+      "tests/test_bengali_gan_training.py",
+      "scripts/validate_bengali_training_reference.py"
+    ],
+    "sha256": {
+      "sciona/bengali_gan_training.py": "0c963b499915f651986d9ca8b11033e678897ea21999fba0ef994efd3ebbb441",
+      "tests/test_bengali_gan_training.py": "29ba7ad324482d0d2304a46e1132359f8057b6abd337a9af9d876d5c523ad521",
+      "scripts/validate_bengali_training_reference.py": "226756e32c6a4d8acff72ada8e8e5b0aa1c99a674dfaa5d0cc7a348b44d94dae"
+    },
+    "reference_report": "docs/reviews/competition_bengali_training_reference.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Four synthetic updates match pinned source losses, network states and replay history exactly.",
+      "Generator/discriminator gradients are isolated; both optimizers update; discriminator sees pre-generator-update fake images.",
+      "Frozen classifier parameters and buffers remain unchanged, with eval mode preserved.",
+      "Adam uses source learning rate and betas, followed by flat-first-half linear decay; declared budget exhaustion is rejected.",
+      "Invalid labels fail before network, optimizer or replay mutations."
+    ],
+    "limits": [
+      "Explicitly supplied small synthetic networks only; full source architectures, initialization, populations and winning budgets remain unqualified.",
+      "No full competition-pipeline execution or approval.",
+      "Failure after an optimizer update is not transactional; caller must abort the run rather than continue from a partially completed step."
+    ]
+  },
+  "image_network_progress": {
+    "components": [
+      "sciona/bengali_gan_networks.py"
+    ],
+    "reference_report": "docs/reviews/competition_bengali_network_reference.json",
+    "integration_report": "docs/reviews/competition_bengali_full_network_step.json",
+    "verified": [
+      "Fixed 9-block 64-channel generator and 3-layer 64-channel PatchGAN match pinned source initialization, full 224-square forward outputs, input gradients and every parameter gradient exactly.",
+      "Two full-sized generators and two full-sized discriminators complete one integrated Adam update; all four networks update with finite parameters and a frozen synthetic classifier."
+    ],
+    "catalog_mutations": 0,
+    "limits": [
+      "EfficientNet font classifier, full populations, source budgets and winning inference remain pending.",
+      "One synthetic batch is an integration diagnostic, not training completion."
+    ],
+    "sha256": {
+      "sciona/bengali_gan_networks.py": "23cb1594e69493edddce30ef960c6eb2caf5a7d298d1ee59ae6a9534a70e4010",
+      "scripts/validate_bengali_network_reference.py": "38dd48743a96f6a794a5318063f34393b7f375c2e5624a7fcccd67681f5c013b"
+    }
+  },
+  "classifier_dependency_observation": {
+    "installed_efficientnet_pytorch": "0.7.1",
+    "qualification": "Installed package presence only; exact notebook dependency identity and payload remain unqualified."
+  },
+  "font_classifier_progress": {
+    "files": [
+      "sciona/bengali_font_classifier.py",
+      "scripts/validate_bengali_font_classifier.py"
+    ],
+    "sha256": {
+      "sciona/bengali_font_classifier.py": "3ffb988219fba2ae6c38b44030c9fbe93b2a161dab7369439d63db4a880330d9",
+      "scripts/validate_bengali_font_classifier.py": "d4eb0b6420ed4b5622dfa986ef0eeb07d442032432b4195e8165772b95916f69"
+    },
+    "reference_report": "docs/reviews/competition_bengali_font_classifier.json",
+    "integration_report": "docs/reviews/competition_bengali_b0_network_step.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Installed EfficientNet-B0 with source 1280-feature LayerNorm and 14784-class head matches source-head logits and input gradients exactly.",
+      "Actual B0 frozen/eval guidance retains finite nonzero image gradients while every classifier parameter and buffer remains unchanged.",
+      "Two full-sized generators, two full-sized discriminators and the B0 classifier complete one integrated Adam update on synthetic images."
+    ],
+    "limits": [
+      "Random classifier weights; neither trained font recognition nor pretrained checkpoint fidelity is established.",
+      "Original notebook EfficientNet dependency identity and installed payload qualification remain pending.",
+      "Single-batch diagnostic is not source-budget training or full winning pipeline completion."
+    ]
+  },
+  "source_review_correction": {
+    "source_only_sha256": "600d64d01226bd5ca879a347ca06f148193fd73c88039222cee1832c847bc716",
+    "finding": "The epoch loop immediately calls model.classifier.eval() after model.train(); previous claim that source training left classifier in train mode was incorrect.",
+    "effect": "FrozenFontGuidance enforces existing source behavior; it is not a correction to a demonstrated source training bug."
+  },
+  "remaining_work_contract": {
+    "status": "incomplete_unapproved",
+    "catalog_mutations": 0,
+    "required": [
+      {
+        "stage": "CycleGAN population",
+        "source_verified": "Apply aligned label corrections before joint encoding; independently sample both domains with replacement.",
+        "remaining": "Full-sized synthetic demonstration now exercises populations through checkpoints; winning-budget execution with a qualified trained classifier remains pending."
+      },
+      {
+        "stage": "CycleGAN preprocessing",
+        "source_verified": "Both domains center crop to width224 at original height137 then resize224 square; normalize RGB channels with mean/std0.5. Font domain alone receives padding, affine shear, shift/scale/rotation and random crop.",
+        "remaining": "Geometry, stochastic parameter reconstruction and population integration now implemented; exact historical environment and notebook worker-seed equivalence remain unqualified."
+      },
+      {
+        "stage": "CycleGAN budget",
+        "source_verified": "Pinned notebook demonstration uses1epoch batch8; paper describes40epochs batch32. Each epoch uses floor(max(domain_sizes)/batch_size) updates.",
+        "remaining": "Full40epoch batch32 synthetic fit is running with a checked synthetic B0 checkpoint; completion remains unproven."
+      },
+      {
+        "stage": "CycleGAN output",
+        "source_verified": "Epoch loop saves the handwriting-to-font generator only; no discriminator, optimizer, scheduler or replay state is checkpointed.",
+        "remaining": "Demonstration generator checkpoint reload matches in-memory outputs exactly; qualify trained inference checkpoints and any private restart state separately."
+      },
+      {
+        "stage": "Font classifiers",
+        "source_verified": "Two font branches described in paper; source CycleGAN loads a separately trained B0 classifier.",
+        "remaining": "First full60epoch synthetic B0 fit and selected-checkpoint replay completed; original font populations, second font branch and complete provenance remain pending."
+      },
+      {
+        "stage": "Seen and OOD classifiers",
+        "source_verified": "Paper specifies separate classifiers; full implementations not yet pinned.",
+        "remaining": "B7 heads, candidate publisher ImageNet initialization, OOD objective and SVHN policy checked. Exact winner artifact/dependency identity, normalization, warmup duration and full training/validation remain pending."
+      },
+      {
+        "stage": "Winning inference",
+        "source_verified": "Paper describes seen/unseen routing, ensemble and fallback.",
+        "remaining": "Resolve exact routing threshold selection, joint-class mapping and combination rules."
+      },
+      {
+        "stage": "Publication",
+        "source_verified": "Original intake is source-linked and remains draft.",
+        "remaining": "Complete execution, dependencies, fidelity, rejection/rollback/apply/idempotency and served-selection gates before Tier3 approval."
+      }
+    ]
+  },
+  "label_correction_progress": {
+    "files": [
+      "sciona/bengali_label_corrections.py",
+      "tests/test_bengali_label_corrections.py"
+    ],
+    "sha256": {
+      "sciona/bengali_label_corrections.py": "f34b64f59c1a78807e57dac5e9b3163bafb2016fc3da6048f6e82fe4d8623501",
+      "tests/test_bengali_label_corrections.py": "69c9523e54e7c0a31bad524c604d6c02fc52f72f2b9744a4e6391814958db9aa"
+    },
+    "verified": [
+      "Synthetic comparison matches source DataFrame.update alignment: reordered corrections match identities, original order stays fixed, NaN retains prior component and correction-only identities are ignored.",
+      "Correction application precedes joint encoding and supports the eighth consonant state without uint8 overflow.",
+      "Duplicate identities and invalid correction values are rejected without modifying input arrays."
+    ],
+    "tests_passed": 10,
+    "synthetic_only": true,
+    "catalog_mutations": 0,
+    "limits": [
+      "Runtime input identity alignment only; no actual label correction records or dataset metadata are bundled.",
+      "Duplicate-identity rejection is an explicit reconstruction boundary.",
+      "Full population sampling and training integration remain pending."
+    ]
+  },
+  "sampling_progress": {
+    "files": [
+      "sciona/bengali_sampling.py",
+      "tests/test_bengali_sampling.py"
+    ],
+    "sha256": {
+      "sciona/bengali_sampling.py": "fe6e3b33a43a734217f6179f17d0f880701c5b12f7b38b5a917e957b0124469f",
+      "tests/test_bengali_sampling.py": "d4ee15b1670dd67f621530fb5db8d588061dd118fb656216e331e1316f548e4b"
+    },
+    "tests_passed": 7,
+    "synthetic_only": true,
+    "catalog_mutations": 0,
+    "verified": [
+      "Two replacement samplers request max(domain_sizes)*epochs samples each and persist across epoch boundaries.",
+      "Consumed batches match source-style RandomSampler/DataLoader exactly for explicit equal seeds.",
+      "Source floor division is preserved, including unused whole batches and final partial tails.",
+      "Domain RNGs are explicit and independent of the global generator; invalid or zero-update budgets are rejected."
+    ],
+    "limits": [
+      "Separate explicit RNGs are a reproducibility boundary; historical unseeded sample identity is not claimed.",
+      "No image loading, transforms, training population materialization or complete fit has been executed by this module."
+    ]
+  },
+  "deterministic_preprocessing_progress": {
+    "files": [
+      "sciona/bengali_preprocessing.py",
+      "tests/test_bengali_preprocessing.py"
+    ],
+    "sha256": {
+      "sciona/bengali_preprocessing.py": "1a2cdb8f791a1a78d055ddca1f99b0a66b20e0f5d9c1e44dd556c92d9033e5b8",
+      "tests/test_bengali_preprocessing.py": "0898593a92e29aa6804d2c9dff5b1127ce5d44128bf78d9a4974c8b44fe50e64"
+    },
+    "tests_passed": 6,
+    "synthetic_only": true,
+    "catalog_mutations": 0,
+    "verified": [
+      "CycleGAN center crop removes six columns on each side and resizes uint8 RGB to224 square without inversion.",
+      "ToTensor followed by mean/std0.5 normalization matches installed torchvision exactly on synthetic inputs.",
+      "Crop/resize and normalization are separate to preserve intervening font-only augmentation.",
+      "Black/white endpoints, unchanged input arrays and invalid shape/dtype boundaries are verified."
+    ],
+    "runtime": {
+      "opencv": "4.13.0.92 qualified overlay",
+      "torchvision": "0.26.0"
+    },
+    "limits": [
+      "Historical Albumentations and OpenCV dependency identity is not established by these tests.",
+      "Full font-domain augmentation remains unresolved and unimplemented.",
+      "Main seen/OOD classifier preprocessing is not covered by this CycleGAN contract."
+    ]
+  },
+  "augmentation_dependency_followup": {
+    "report": "docs/reviews/competition_bengali_augmentation_candidates.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Three PyPI source distributions authenticated by publisher-index SHA256 without installation.",
+      "Relevant constructors and random-parameter sampling methods inspected; four geometry helper ASTs match across all three releases.",
+      "Random crop uses int((dimension-crop_size)*random_fraction), preserving the historical endpoint behavior."
+    ],
+    "remaining": [
+      "Exact notebook package identity remains unknown.",
+      "Explicit-parameter pixel composition is verified; qualify parameter sampling and integrate complete image populations."
+    ],
+    "affine_report": "docs/reviews/competition_bengali_affine_source.json"
+  },
+  "font_augmentation_progress": {
+    "files": [
+      "sciona/bengali_font_augmentation.py",
+      "tests/test_bengali_font_augmentation.py",
+      "scripts/validate_bengali_font_pixels.py"
+    ],
+    "sha256": {
+      "sciona/bengali_font_augmentation.py": "d5ee9776578f3c092c5b69adc85d878e84925125cc6ddf4357ebba1529d27c59",
+      "tests/test_bengali_font_augmentation.py": "5dbf521755584687ef489d4d67d2759a705c3fd628ca347eed4dd9c4a0d88720",
+      "scripts/validate_bengali_font_pixels.py": "c162ba544d1b6bce40784fc5b3bdf265418118af7caece5967b5536e12fd08bb"
+    },
+    "tests_passed": 8,
+    "matrix_report": "docs/reviews/competition_bengali_shear_matrix_validation.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Explicit parameters compose white padding, centered historical shear, shift/scale/rotation and historical random-crop offsets.",
+      "Identity threshold, center preservation, crop endpoint behavior and invalid parameter boundaries are covered.",
+      "Complete explicit-parameter padding/shear/shift-scale-rotate/crop composition matches pinned historical reference functions on32 synthetic RGB images with zero differing pixels.",
+      "After correcting source float32 sample/radian precision, all32 synthetic pixel comparisons still pass with zero differences."
+    ],
+    "limits": [
+      "Stochastic parameter sampling and original environment identity remain unqualified.",
+      "Not used for an approved full training run.",
+      "Pixel comparison uses a shared OpenCV runtime and RGB-only reference adapters; no historical binary equivalence claim."
+    ],
+    "pixel_report": "docs/reviews/competition_bengali_font_pixel_validation.json",
+    "matrix_report_status": "Earlier matrix-only report used float64 parameter lists; superseded for sampled precision by the corrected pixel validator."
+  },
+  "augmentation_sampling_precision": {
+    "verified": [
+      "Albumentations to_tuple maps shear5 to(-5,5), scale1 with lower1 to(1,1), and rotation0 to(0,0).",
+      "imgaug Uniform returns float32 for both sampled shear and constant zero rotation.",
+      "Joint np.deg2rad therefore runs in float32 before historical affine math; reconstruction and pixel validator now preserve this rounding."
+    ],
+    "source_sha256": {
+      "albumentations_core_transforms_interface": "be73629812e38d7810b569848c102063eefe3899b5ac59a6498fdc4db19e0437",
+      "imgaug_parameters": "f6e744f631a104a4dcea7979c6214a9302578e781721a0671fca885fe8db334c"
+    },
+    "catalog_mutations": 0,
+    "limits": [
+      "Full historical RNG splitting/reseeding and notebook environment identity remain pending."
+    ],
+    "rng_report": "docs/reviews/competition_bengali_rng_source.json"
+  },
+  "shear_sampling_progress": {
+    "component": "sciona/bengali_shear_sampling.py",
+    "sha256": "20884fb2d223fa6094f612e827d0351557c0d15b7a49ca8d52c3ba645d4bd3a1",
+    "report": "docs/reviews/competition_bengali_shear_sampling.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Source constant parameters advance RNG state; reconstruction retains all nine advances before shear and four after it.",
+      "64 consecutive shear samples per backend and100 following RNG draws match source parameter methods exactly for RandomState and SFC64."
+    ],
+    "limits": [
+      "Legacy reference requires explicit historical NumPy branch selection; current imgaug normalization otherwise converts RandomState to a newer generator.",
+      "Per-image processor derivation and Python-random transform decisions still need integration."
+    ]
+  },
+  "font_parameter_sampling_progress": {
+    "files": [
+      "sciona/bengali_font_sampling.py",
+      "tests/test_bengali_font_sampling.py"
+    ],
+    "sha256": {
+      "sciona/bengali_font_sampling.py": "72c76335386936f5ec99b3ddd18c385b2d3566cff49a9b787d4cae5bc81b3ad8",
+      "tests/test_bengali_font_sampling.py": "82aa71177fe091b2e03a0acaa9ae78887bc56357493c3b37352879acbcb7d0e7"
+    },
+    "tests_passed": 4,
+    "reference_report": "docs/reviews/competition_bengali_font_sampling.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Explicit per-image RNG derivation matches source helper functions for64 images on each of two backends, including subsequent parent RNG draws.",
+      "Python-random probability decisions are consumed for always-run transforms before sampled geometry and crop fractions.",
+      "Owned explicit seeds preserve global Python RNG and support repeatability."
+    ],
+    "limits": [
+      "Notebook worker seeding is not reproduced; seeds and backend must be declared in reconstruction evidence.",
+      "Exact historical environment and complete wrapper-object execution remain unqualified.",
+      "Integration with image populations and full training remains pending."
+    ]
+  },
+  "population_integration_progress": {
+    "files": [
+      "sciona/bengali_population.py",
+      "tests/test_bengali_population.py"
+    ],
+    "sha256": {
+      "sciona/bengali_population.py": "d72ac2ba1dac1f2ff3b0289779f4497f84931808ca5602e562630fb336b62889",
+      "tests/test_bengali_population.py": "769cc1105820701a00f8093a520755cca0f54a9b9f6b2ce6dcfe1b9d3acccd9e"
+    },
+    "catalog_mutations": 0,
+    "scope": "Private in-memory paired batches connecting label corrections, replacement indices, deterministic handwriting transforms and stochastic font transforms.",
+    "limits": [
+      "No complete trained classifier or source-budget GAN fit executed by this integration.",
+      "Caller must align image order with supplied identity order; no image provenance is inferred."
+    ]
+  },
+  "fit_lifecycle_progress": {
+    "files": [
+      "sciona/bengali_fit.py",
+      "tests/test_bengali_fit.py"
+    ],
+    "sha256": {
+      "sciona/bengali_fit.py": "3b760dbdca7c0332199f2e2ddb8a5afae523d3bdd871a4886911ab56dbeb64b8",
+      "tests/test_bengali_fit.py": "faf5be33d276d5dc2ba16968480073ab541cefbf07f6dad9121d267d9a54649a"
+    },
+    "catalog_mutations": 0,
+    "scope": "Declared fit loop connecting paired image populations, actual optimizer updates, epoch loss means and tensor-only generator checkpoints.",
+    "limits": [
+      "Synthetic small networks used to verify lifecycle; no full-sized source-budget fit has completed.",
+      "Epoch generator snapshots are inference artifacts, not resumable optimizer/replay state.",
+      "Classifier qualification and complete winning pipeline remain pending."
+    ]
+  },
+  "full_sized_demonstration_progress": {
+    "script": "scripts/run_bengali_demonstration_probe.py",
+    "sha256": "644296b22b52901b01b66946833d5e6baf6ebf2693c58b5a7a11ad22903d8ec9",
+    "report": "docs/reviews/competition_bengali_demonstration_probe.json",
+    "catalog_mutations": 0,
+    "approved": false,
+    "verified": [
+      "Complete image-population-to-checkpoint path executed with two full-sized generators, two full-sized discriminators and EfficientNet-B0 font head.",
+      "Notebook demonstration settings1epoch batch8 completed2updates over16synthetic images per domain.",
+      "All trainable networks updated, classifier remained frozen, and a fresh generator checkpoint reload produced exact matching outputs."
+    ],
+    "limits": [
+      "Random classifier weights; font pretraining and complete winning pipeline remain incomplete.",
+      "Paper winning CycleGAN budget40epochs batch32 has not been executed.",
+      "No historical worker seeding or environment-equivalence claim."
+    ]
+  },
+  "primary_code_followup_after_demonstration": {
+    "author_page": "https://tashinahmed.github.io/",
+    "paper": "https://aclanthology.org/2023.banglalp-1.4.pdf",
+    "additional_primary_code_found": false,
+    "scope": "Targeted public searches and paper/author-page links; not proof that remaining code does not exist."
+  },
+  "routing_progress": {
+    "files": [
+      "sciona/bengali_routing.py",
+      "tests/test_bengali_routing.py"
+    ],
+    "sha256": {
+      "sciona/bengali_routing.py": "5ef0f7003112b5bbd80a173e4461387546b3c44e4f4838b75a1e8026c9be3421",
+      "tests/test_bengali_routing.py": "ff60e354e37c247529a67cd6ed9a7d2fbcf0de779b9268160080c5edce247ee3"
+    },
+    "source": "https://aclanthology.org/2023.banglalp-1.4.pdf",
+    "source_scope": "Figure2 decision labels",
+    "catalog_mutations": 0,
+    "verified": [
+      "Unseen predictions selected only below the explicit OOD threshold.",
+      "If unseen branch predicts a member of the supplied seen-class set, fall back to seen-model prediction.",
+      "Threshold equality chooses seen branch; invalid confidence, class bounds and alignment fail."
+    ],
+    "limits": [
+      "Threshold fitting, class membership provenance, OOD model and unseen ensemble remain separate unqualified inputs.",
+      "No full-model inference or promotion claim."
+    ]
+  },
+  "original_winner_post_recovery": {
+    "endpoint": "https://www.kaggle.com/api/i/discussions.DiscussionsService/GetForumTopicById",
+    "topic_id": 135984,
+    "http_status": 200,
+    "body_sha256": "762fa0cf4ef4de04840a66ea83b023a29ed57ca6745e489e49f02986a9edcb07",
+    "public_url": "https://www.kaggle.com/c/bengaliai-cv19/discussion/135984",
+    "verified": [
+      "OOD1295-way BCE includes every positive target and only negative logits whose detached sigmoid exceeds0.1; loss normalizes selected positions per example before batch mean.",
+      "Both B7 models use AdamW lr0.001 betas0.9/0.999 eps1e-8 weight_decay0.01 amsgradFalse.",
+      "Font-classifier schedule is flat for half the training steps then linearly decays;60epochs batch32.",
+      "CycleGAN winning training uses40epochs batch32 and fixed/eval font classifier.",
+      "Winner provides label-to-grapheme composition code and names two final font sources; fonts and records have not been fetched."
+    ],
+    "limits": [
+      "B7 warmup duration remains unresolved; font-pretraining magnitudes have since been reconstructed from the classifier notebook.",
+      "Original notebook licensing and trained artifact provenance remain unqualified.",
+      "Full post remains a private reference; only paraphrased software findings are recorded here."
+    ]
+  },
+  "new_primary_notebooks": {
+    "artifacts": [
+      {
+        "public_url": "https://www.kaggle.com/code/linshokaku/cyclegan-classifier",
+        "kernel_id": 8477761,
+        "version_number": 3,
+        "code_cells": 24,
+        "discarded_output_blocks": 0,
+        "source_only_sha256": "80d11bb8c6ede9ce4a5cac2c772d295eef62cc3dd774cef2226e7d7ad7bab741"
+      },
+      {
+        "public_url": "https://www.kaggle.com/code/linshokaku/cyclegan-submission",
+        "kernel_id": 8522903,
+        "version_number": 1,
+        "code_cells": 25,
+        "discarded_output_blocks": 0,
+        "source_only_sha256": "c060484bb402246cb592fb8dd3027431fc441a4cf07d462b2065c1264f310383"
+      }
+    ],
+    "source": "Links in recovered original winner post",
+    "catalog_mutations": 0,
+    "scope": "Source-only extraction; no output blocks, fonts, images or pretrained weights retained. Full code review remains pending."
+  },
+  "recovered_notebook_review": {
+    "catalog_mutations": 0,
+    "classifier_findings": [
+      "Classifier notebook uses40epochs batch32 versus60epochs in winner writeup.",
+      "Font pretraining shear and rotation limits are20degrees, with one cutout hole of maximum112square and fill128.",
+      "Both training and validation use replacement samplers persistent across epochs; best checkpoint requires strict improvement over initial zero accuracy."
+    ],
+    "submission_findings": [
+      "Two softmax outputs are separately marginalized into root/vowel/consonant probabilities, then their marginals are added and independently argmaxed.",
+      "Internal consonant state7 is mapped to2 only at the submission boundary.",
+      "Reduced notebook supplies identical checkpoint paths to both font branches and omits seen/OOD models and routing; it cannot alone prove complete winning inference."
+    ]
+  },
+  "unseen_ensemble_progress": {
+    "files": [
+      "sciona/bengali_unseen_ensemble.py",
+      "tests/test_bengali_unseen_ensemble.py"
+    ],
+    "sha256": {
+      "sciona/bengali_unseen_ensemble.py": "cbbfbb59467c19a8e303cecc4380689ccece340cf0bc5ab9160620aa1c56bff5",
+      "tests/test_bengali_unseen_ensemble.py": "d448ff4c56be9f648b86e1ffd6aa17d853133a0553ef1a7f1969cbe62a77a90e"
+    },
+    "catalog_mutations": 0,
+    "scope": "Source reduced-notebook marginalization and submission remapping; full inference qualification pending.",
+    "reference_report": "docs/reviews/competition_bengali_unseen_reference.json",
+    "reference_report_sha256": "84df726af1f8f1a06ff3c0bac9d1a242b170d8e98f0ceb2903859009a8f82eba",
+    "source_cases": 66,
+    "source_examples": 162,
+    "joint_and_component_predictions_exact": true
+  },
+  "ood_loss_progress": {
+    "files": [
+      "sciona/bengali_ood_loss.py",
+      "tests/test_bengali_ood_loss.py"
+    ],
+    "sha256": {
+      "sciona/bengali_ood_loss.py": "ca3963b6f66ea4e5aa7a41432a9b22205bf3c727c799e0a1981431eaf0808814",
+      "tests/test_bengali_ood_loss.py": "83ba85d816f29af94a0d750229abbd6f82d86ced1aad2c0c396b1e9e6b9fc9eb"
+    },
+    "tests_passed": 6,
+    "reference_report": "docs/reviews/competition_bengali_ood_loss_reference.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Source hard-negative BCE reconstructed with strict detached sigmoid threshold0.1.",
+      "Every positive remains selected and normalization occurs per sample before batch mean.",
+      "Eight synthetic batches match the recovered original source expression exactly for loss and every logit gradient."
+    ],
+    "limits": [
+      "OOD model training and complete winning inference remain pending."
+    ]
+  },
+  "pretraining_augmentation_progress": {
+    "files": [
+      "sciona/bengali_pretraining_augmentation.py",
+      "tests/test_bengali_pretraining_augmentation.py"
+    ],
+    "sha256": {
+      "sciona/bengali_pretraining_augmentation.py": "a67434b9ccf16e8c00640874323936be1a5526229349aea018a7fa3fe9f3b398",
+      "tests/test_bengali_pretraining_augmentation.py": "577a31fdf920902b476aadd8d164ff66bc00aaeff92775bad9d1d9cb3b58d982"
+    },
+    "tests_passed": 8,
+    "catalog_mutations": 0,
+    "verified": [
+      "Source-confirmed pretraining angle limits20degrees reuse the existing historical affine geometry.",
+      "One fixed112square cutout is clipped around an inclusive0..224center and filled with128.",
+      "Boundary clipping, full-width angle acceptance, invalid parameters and input immutability pass synthetic tests."
+    ],
+    "limits": [
+      "Explicit-parameter pretraining transform only; stochastic sampler and classifier fit integration remain pending.",
+      "No font classifier training completed."
+    ]
+  },
+  "pretraining_sampling_progress": {
+    "files": [
+      "sciona/bengali_pretraining_sampling.py",
+      "tests/test_bengali_pretraining_sampling.py"
+    ],
+    "sha256": {
+      "sciona/bengali_pretraining_sampling.py": "ab13c39225e77014704ecc635ddfd85a9f996bc358e3a6086f22f5e3d93e501a",
+      "tests/test_bengali_pretraining_sampling.py": "9929ef2685fb000af593b4a158fac198f76f1a6ed0c93b73b36b09e11aa1d22e"
+    },
+    "reference_report": "docs/reviews/competition_bengali_pretraining_sampling.json",
+    "catalog_mutations": 0,
+    "verified": [
+      "Wider shear range is sampled before float32 conversion; it is not approximated by scaling an already rounded5degree draw.",
+      "Both historical backend branches match source shear values and subsequent RNG draws for64samples each.",
+      "Python-random draw ordering includes cutout decision and inclusive center sampling.",
+      "Nine pretraining/CycleGAN sampling and population tests pass after shared sampler refactoring."
+    ],
+    "limits": [
+      "Earlier full-network demonstration remains evidence for its recorded source hashes; no claim that it was rerun after this refactor.",
+      "Classifier fitting and full-pipeline qualification remain pending."
+    ]
+  },
+  "classifier_fit_progress": {
+    "files": [
+      "sciona/bengali_classifier_fit.py",
+      "tests/test_bengali_classifier_fit.py"
+    ],
+    "sha256": {
+      "sciona/bengali_classifier_fit.py": "1f8b45b4d06f0f395dbbdd75353d7b26cb3820da1b3d35ecea3cb759c0faa2b9",
+      "tests/test_bengali_classifier_fit.py": "b8b323f117bb6809f455f0ad5f1e2cd549a069b89295ce782720e5068da99f05"
+    },
+    "catalog_mutations": 0,
+    "verified": [
+      "Complete classifier fit consumes replacement-sampled training batches with pretraining augmentation, then deterministic same-population evaluation per epoch.",
+      "Source AdamW settings and flat-first-half linear-decay schedule are explicit.",
+      "Best checkpoint requires strict positive accuracy improvement; zero-accuracy synthetic fit correctly has no best checkpoint.",
+      "Final tensor-only checkpoint reload matches current model state."
+    ],
+    "limits": [
+      "Small synthetic classifier used for lifecycle verification; full B0 source-budget fit remains pending.",
+      "Same-population evaluation is not held-out accuracy or font recognition evidence."
+    ]
+  },
+  "full_b0_classifier_execution": {
+    "status": "completed_synthetic_execution",
+    "script": "scripts/run_bengali_classifier_training_probe.py",
+    "script_sha256": "e9c75a5a6c5d9f40dd9532ae24efd9dfd87000b0245f0a7ee678aa228852d148",
+    "process_session": 9185,
+    "epochs": 60,
+    "batch_size": 32,
+    "synthetic_optimizer_updates": 120,
+    "catalog_mutations": 0,
+    "approved": false,
+    "limits": [
+      "Synthetic intensity patterns and reduced population; not original fonts or original update count.",
+      "Source epoch/batch controls match winner writeup.",
+      "Same-population evaluation is not held-out; full-pipeline publication remains pending."
+    ],
+    "last_observed_completed_epochs": 60,
+    "completed_optimizer_updates": 120,
+    "report": "docs/reviews/competition_bengali_classifier_training_probe.json"
+  },
+  "classifier_checkpoint_handoff_progress": {
+    "files": [
+      "sciona/bengali_checkpoint_handoff.py",
+      "tests/test_bengali_checkpoint_handoff.py"
+    ],
+    "sha256": {
+      "sciona/bengali_checkpoint_handoff.py": "50461fbb046cc75c72d986a251b25737a0473770123efafb970cd31bf697504e",
+      "tests/test_bengali_checkpoint_handoff.py": "d6857b91ac3f679c440a015fb1ff5e4a96c393a712ad5eaf4de0175129fd6466"
+    },
+    "catalog_mutations": 0,
+    "verified": [
+      "Loads exactly the receipt-bound bytes with weights_only; checks complete tensor inventory, dtype, shape and finite values before model mutation.",
+      "Successful load freezes parameters and evaluation mode while retaining input gradients.",
+      "Corrupt hash, missing tensors, shape/dtype mismatch and nonfinite tensor rejection leave the destination model unchanged."
+    ],
+    "limits": [
+      "Post-completion consistency receipt establishes observed synthetic checkpoint handoff only, not a training-time checkpoint attestation or full pipeline provenance."
+    ],
+    "test_result": {
+      "passed": 6,
+      "failed": 0
+    }
+  },
+  "classifier_completion_qualification_progress": {
+    "status": "completed_synthetic_checkpoint_replay_and_started_cyclegan",
+    "files_sha256": {
+      "scripts/qualify_bengali_classifier_checkpoint.py": "6c0cac212a7ba1d037fdf509b089aee9db91aa8969312a140efaad9980d1f3a1",
+      "scripts/run_bengali_trained_guidance_probe.py": "1f666ae893fd1292613daec7f680773cd18c5d1585a65a7f77c940f27478bc4c",
+      "tests/test_bengali_classifier_qualification.py": "14d565c545130c79e3f7ab371d43f4c4133e87d26e8c10f95e7248d24ace9928",
+      "sciona/bengali_checkpoint_handoff.py": "50461fbb046cc75c72d986a251b25737a0473770123efafb970cd31bf697504e",
+      "tests/test_bengali_checkpoint_handoff.py": "d6857b91ac3f679c440a015fb1ff5e4a96c393a712ad5eaf4de0175129fd6466"
+    },
+    "tests_passed": 28,
+    "tests_failed": 0,
+    "catalog_mutations": 0,
+    "approved": false,
+    "checks": [
+      "Reject incomplete source epoch/update budget, nonfinite or inconsistent history, missing or changed implementation bindings.",
+      "Select first strictly improving maximum, independently replay its same-population synthetic evaluation, and bind observed checkpoint bytes.",
+      "CycleGAN handoff rechecks receipt content, completion/history content, classifier/checkpoint/verifier bindings before loading frozen guidance."
+    ],
+    "planned_cyclegan_execution": {
+      "epochs": 40,
+      "batch_size": 32,
+      "updates_per_optimizer": 80,
+      "classifier_weight": 4.0,
+      "synthetic_branches": 1
+    },
+    "limits": [
+      "Receipt is post-completion consistency evidence; original launcher did not persist a training-time checkpoint digest in its final report.",
+      "One synthetic intensity branch is being trained; no original font recognition or winning accuracy claim.",
+      "Full seen/OOD/routing, licensing, dependency and publication qualification remain pending."
+    ],
+    "receipt": "docs/reviews/competition_bengali_classifier_checkpoint_qualification.json",
+    "receipt_sha256": "3c0b7ea165a1efd0725a000716005f2e59bd2f4dcdbbe295df082cc32d8364c0",
+    "selected_checkpoint_epoch_zero_based": 20,
+    "selected_epoch_evaluation_replayed": true
+  },
+  "trained_guidance_cyclegan_execution": {
+    "passed": true,
+    "approved": false,
+    "catalog_mutations": 0,
+    "synthetic_only": true,
+    "completed_epochs": 40,
+    "batch_size": 32,
+    "optimizer_updates_per_optimizer": 80,
+    "classifier_weight": 4.0,
+    "synthetic_classifier_receipt_sha256": "3c0b7ea165a1efd0725a000716005f2e59bd2f4dcdbbe295df082cc32d8364c0",
+    "all_four_trainable_networks_updated": true,
+    "frozen_classifier_unchanged": true,
+    "fresh_generator_output_exact": true,
+    "verified_epoch_checkpoints": 40,
+    "limits": [
+      "One synthetic intensity branch; neither final font branch nor glyph-recognition validation.",
+      "Source epoch/batch controls with a smaller synthetic population; not the original optimizer update count.",
+      "Classifier handoff uses post-completion consistency evidence, not a training-time digest.",
+      "Full seen/OOD/routing pipeline, historical environment, licensing and publication gates remain pending."
+    ],
+    "status": "completed_synthetic_branch",
+    "report": "docs/reviews/competition_bengali_trained_guidance_probe.json",
+    "report_sha256": "21f841feee30eb9cff2797ff562bede28865cb5b026cd189e49e2560cd0eb1ce",
+    "current_bound_implementation_consistency_verified": true
+  },
+  "svhn_augmentation_progress": {
+    "status": "source_reconstruction_and_reference_execution_passed",
+    "reference": {
+      "repository": "https://github.com/DeepVoltaire/AutoAugment",
+      "candidate_commit": "17d718251f25c0d9413bf30f91b523907924f33a",
+      "commit_date": "2019-10-11T15:41:42Z",
+      "files_sha256": {
+        "autoaugment.py": "41099a6a0157d1e1cb6b509f94d3ba88297fd61283a461a610b5e24d1926aae8",
+        "LICENSE": "891360b3b770d32beec4ea6467ef99f5ddf2fe70736a316c90cd548282497c4e",
+        "README.md": "26fc87a19dea8281b2015f810b0d66adcb6f4e676ce966b0f1f43659ea67206c"
+      },
+      "selection": "Latest commit preceding2020-03-20; winner exact revision is not specified."
+    },
+    "report": "docs/reviews/competition_bengali_svhn_reference.json",
+    "catalog_mutations": 0,
+    "approved": false,
+    "tests_passed": 4,
+    "source_cases": 400,
+    "seeded_cases": 128,
+    "maximum_pixel_difference": 0,
+    "verified": [
+      "All25subpolicies, probability decisions, sign draws and sequential RNG state match the pinned reference.",
+      "Bicubic shear, nearest-default translation, unsigned rotation and fixed rotation fill preserve source behavior.",
+      "Explicit owned RNG and RGB input boundary; no crop/resize introduced."
+    ],
+    "limits": [
+      "Winner-linked historical candidate is not proven exact winner revision.",
+      "Both executions use Pillow11.3.0; exact historical raster environment remains unresolved.",
+      "B7 lifecycle, warmup duration, image normalization, pretrained artifacts and full publication remain incomplete."
+    ]
+  },
+  "b7_head_progress": {
+    "status": "full_installed_backbone_head_reference_execution_passed",
+    "report": "docs/reviews/competition_bengali_b7_heads.json",
+    "catalog_mutations": 0,
+    "approved": false,
+    "source_contract": {
+      "winner_post_body_sha256": "762fa0cf4ef4de04840a66ea83b023a29ed57ca6745e489e49f02986a9edcb07",
+      "features": 2560,
+      "ood_classes": 1295,
+      "seen_classes": 14784,
+      "input_shape": [
+        3,
+        137,
+        236
+      ]
+    },
+    "verified": [
+      "Full installed EfficientNet-B7 with supplied feature extractor, adaptive mean pooling, LayerNorm and task-specific linear head.",
+      "Both branches match parameterized notebook head logits, input gradients and LayerNorm/linear parameter gradients exactly on synthetic tensors.",
+      "OOD execution uses the separately source-checked hard-negative BCE objective; seen execution uses cross entropy."
+    ],
+    "limits": [
+      "Parameterized notebook B0 head expanded to winner-described B7 dimensions is a reconstruction, not recovered B7 training code.",
+      "Random initialization; ImageNet checkpoint, historical dependency identity, normalization, warmup and full training remain unresolved."
+    ],
+    "files_sha256": {
+      "sciona/grapheme_b7_head.py": "0fb0f04df66cb56394d611dd2bf3e636e5709e144e1131b58d2e8409102d0ba5",
+      "scripts/validate_bengali_b7_heads.py": "a4d3e80bcace51e195b84d261f6641b3995899645144b4911c7ffcd9f3495709"
+    }
+  },
+  "b7_initialization_progress": {
+    "status": "publisher_candidate_tensor_and_gradient_execution_passed",
+    "report": "docs/reviews/competition_bengali_b7_initialization.json",
+    "publisher_asset": {
+      "id": 18386618,
+      "name": "efficientnet-b7-dcc49843.pth",
+      "size": 266860719,
+      "digest": null,
+      "created_at": "2020-03-01T03:27:51Z",
+      "updated_at": "2020-03-01T03:28:06Z",
+      "browser_download_url": "https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b7-dcc49843.pth",
+      "sha256": "dcc49843b8ec5a097a8cb166eded1d7a09291093eff7735f603bcfcafce12c8e",
+      "download_size": 266860719,
+      "publisher_filename_hash_prefix_matches": true,
+      "publisher_full_digest_available": false
+    },
+    "catalog_mutations": 0,
+    "approved": false,
+    "negative_deserialization_gate_tests_passed": 1,
+    "verified": [
+      "All1200checkpoint tensors match installed B7 inventory, shapes, dtypes and finite-value contract; full SHA256 is checked before tensor-only deserialization.",
+      "Seen and OOD branch losses and input/backbone/task-head gradients are finite; stem and task-head gradients are nonzero.",
+      "Unused original ImageNet head receives no task gradient; evaluation/backprop leaves all checkpoint tensors unchanged."
+    ],
+    "limits": [
+      "Standard publisher checkpoint is a source-compatible candidate; no proof of exact winner artifact identity.",
+      "Full publisher digest was not available from release API; observed full digest matches filename prefix and publisher size.",
+      "Exact winner normalization, warmup, historical dependency identity, artifact licensing and full training/publication remain pending."
+    ],
+    "files_sha256": {
+      "sciona/grapheme_b7_initialization.py": "b2ec0447814afee02812243987660095765f26be354627c628e58d2f534179f6",
+      "scripts/validate_bengali_b7_initialization.py": "dedc1fbf20d68712a56cb6f3d5d5dd35200c9c82e8290c87f6652574d2978790",
+      "tests/test_grapheme_b7_initialization.py": "921f4e486282cf0dd63ad1a1bbba02bb5b6dcd359aeaf4f34ce9fa1c6da95c0f"
+    }
+  },
+  "cyclegan_progress_audit": {
+    "report": "docs/reviews/competition_bengali_cyclegan_progress.json",
+    "status": "complete_recorded_history_consistency_passed",
+    "completed_epochs": 40,
+    "verified_epoch_checkpoints": 40,
+    "tests_passed": 8,
+    "catalog_mutations": 0,
+    "approved": false,
+    "files_sha256": {
+      "scripts/audit_bengali_cyclegan_progress.py": "fa3fe6a482451959ae4acc39a72aa45a4e9adc4afecb0052655077b0e82e38b7",
+      "tests/test_bengali_cyclegan_progress_audit.py": "c9dfbf3175805774e2b23997833d59bd709b3d8f5780bb5b2d62ded8eccce22e"
+    },
+    "limits": [
+      "Recorded history, loss decomposition and generator checkpoint consistency only; no independent training replay.",
+      "Discriminators, optimizers and replay pools are not present in source epoch inference checkpoints.",
+      "Final fit report must establish unchanged code/classifier evidence, all-network updates and output replay.",
+      "One synthetic branch; complete Bengali pipeline and publication qualification remain pending."
+    ],
+    "report_sha256": "47387aa1f9860ccfa53b4ab15f0e5aa3a99b8f92669eaff47f5309dcad93f286"
+  },
+  "b7_schedule_progress": {
+    "status": "published_formula_reference_passed_warmup_unresolved",
+    "report": "docs/reviews/competition_bengali_b7_schedule.json",
+    "report_sha256": "f4d16f2e6ab24ddb06dafe226fb3d946083962eab9986b04377c5e555f431819",
+    "exact_multiplier_checks": 7373,
+    "synthetic_configurations": 256,
+    "tests_passed": 13,
+    "approved": false,
+    "catalog_mutations": 0,
+    "source_markdown_sha256": "e7baa14c4dec0cf1d579fdaa79f5d4f8e2fabd916e14d5da40d52e085fb4f6f4",
+    "limits": [
+      "Formula equality only; synthetic warmup parameters are not attributed to the winner.",
+      "Full B7 training, scheduler/optimizer ordering, normalization and warmup identity remain pending."
+    ]
+  },
+  "b7_control_source_followup": {
+    "paper": "https://aclanthology.org/2023.banglalp-1.4.pdf",
+    "findings": [
+      "Winner post gives the B7 formula without assigning WARM_UP_STEP; the font-classifier half-training setting belongs to a different schedule.",
+      "Paper section6 describes threshold maximization on locally weighted validation to match the expected seen/unseen mixture."
+    ],
+    "unresolved": [
+      "Exact B7 warmup duration and scheduler/optimizer ordering.",
+      "Exact B7 normalization.",
+      "Concrete threshold calibration mixture and fitted threshold."
+    ],
+    "catalog_mutations": 0
+  }
+}

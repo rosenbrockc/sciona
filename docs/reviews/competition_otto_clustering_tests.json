@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Hand cluster centers and Euclidean distance oracle",
+    "Assignment consistency",
+    "Explicit-reference raw/log1p optional scaling",
+    "Fitted state detached and query independent",
+    "Multiple cluster counts and seeded repeat",
+    "Invalid/degenerate fitting populations rejected"
+  ],
+  "sha256": {
+    "sciona/otto_clustering.py": "227611641be342eb0245a128d4ac4954665d1332bb44af14b286b32d9c265ed7",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "tests/test_otto_clustering.py": "0715b8b4164be14cf8546dc11c5b60c778c43169080ac51b01965d5c7eacedb9"
+  },
+  "limitations": [
+    "Historical cluster counts, initialization, preprocessing scope and output encoding unresolved.",
+    "Independent Lloyd/k-means++ component exposes assignments and distances separately.",
+    "Remaining model families and full source fidelity/graph qualification pending."
+  ],
+  "catalog_mutations": 0
+}

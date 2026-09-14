@@ -1,0 +1,30 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "initializations": 3,
+    "kernel_checks": 27,
+    "bias_checks": 15,
+    "training_updates": 3,
+    "rejections": 4
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_initialization.py": "c4dbe90e5c958b14f2ab6f2ec8890a839adc60d015679a14b0ad69a482416a73",
+    "scripts/validate_webtraffic_initialization.py": "7f6743b548438cbd760a26074aa3c2fe74c340ec743f24e96a75e60c0475aa71",
+    "sciona/webtraffic_train_step.py": "b3c6baa092e1493a44c3db799b07b56b440738e8f580898af56854158d56532f",
+    "sciona/webtraffic_training_forward.py": "37315b609e76acd03c32442f55b88d039b196d6299ec9f53172ea02e1358fe6c",
+    "sciona/webtraffic_encoder.py": "4861fe7aad9af376f47287ede6342fe098aa10bd88b6a4541ae522fa7a61089b",
+    "sciona/webtraffic_decoder.py": "0a9aed75509a7991b4fb97458f8a5d7b03045519d1feef5fb6787289e90c3436",
+    "sciona/webtraffic_dropout.py": "e14169f15d2381f793b2d7e5fc5cf68bce8d2ad67ab4e6a44dd02f238c145259",
+    "sciona/webtraffic_losses.py": "3af5d59fd8c9f43a95e0de1db7d4c18bc315b2382446b9c9078eacb6028711a3",
+    "sciona/webtraffic_adam.py": "3a8b018b2ca2d0491ebe6f8415107c48e80054370d5d71edd1919c4976fd64f9",
+    "docs/reviews/competition_webtraffic_initializer_source.json": "e8c72d190d0999d27316e7106a5b453ca7ac2fddbb99dff87d20f3d23e07908c",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891"
+  },
+  "limitations": [
+    "Source distributions/constants, not TensorFlow random sequence or seeded op correlation parity.",
+    "Explicit unit-uniform draws preserve separate six-block encoder layout; no opaque checkpoint codec.",
+    "Disconnected attention initialization and original runtime scheduling remain outside this evidence.",
+    "Full lifecycle/promotion validation remains."
+  ]
+}

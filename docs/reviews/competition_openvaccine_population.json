@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 10,
+  "hashes": {
+    "sciona/openvaccine_population.py": "8c87cd4e5f6f941014dad4030a5ff02a7ff58e2c5c3798ef1eee7f15a044872f",
+    "tests/test_openvaccine_population.py": "2b77bc531dc17012e8619c925a2ce077dd546139c3b1a3cb0c9f22ce6532cc41"
+  },
+  "scope": "Population inverse-square-root cluster weighting with supplied proximity factors and aligned feature/adjacency/target reversal; cluster derivation and full training lifecycle remain unverified."
+}

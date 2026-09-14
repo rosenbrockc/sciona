@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "f75578efe5c4054e2fdd479db15bfb5cca15b610b909185b40f452c4b87a91db",
+  "source_url": "https://raw.githubusercontent.com/pytorch/vision/v0.5.0/torchvision/ops/misc.py",
+  "exact_output_and_input_gradient_cases": 20,
+  "installed_default_difference_observed": true,
+  "required_eps": 0.0,
+  "installed_torch_version": "2.11.0",
+  "implementation_sha256": {
+    "sciona/wheat_frozen_normalization.py": "a5b798bab7c4e3821e9a0989a684e0b8f612512190c5da18f421befef348cc4b",
+    "scripts/validate_wheat_frozen_normalization.py": "cbd429b2d2fd4d949adcceb11d4fd23019e359a4f8d549361013731b2f0d23fb"
+  },
+  "limits": [
+    "Normalization component only; no full Faster R-CNN initialization or training qualification.",
+    "Synthetic positive variances; no competition data or accuracy claim."
+  ]
+}

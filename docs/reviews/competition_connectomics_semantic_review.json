@@ -1,0 +1,86 @@
+{
+  "format": "connectomics-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "e9f83a4e-4cb1-5297-8c04-8fd65c6e7d33",
+  "source_hash": "c37cf5cd41c4c7f7f19af3f2f48ab3a69d94bd451822a830088abe2c632774ed",
+  "source_commits": {
+    "winning_solver": "b3abb178b9a9d558fdd5a7de49ae50425576a011",
+    "historical_pca": "8d04380d474723467b5a717328efd0c9fc5bd898"
+  },
+  "serialized_graph_sha256": "53dc75dcdd21723b0dc9da4018177ef8a8da210b900fa5df656d95bbb7ffd925",
+  "provider_sha256": "e29240147d80d32ed8f99f83001b82443363d906f62e3c3e1127369b8ec5e5eb",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": [
+    {
+      "intake": "calcium_lowpass_filter",
+      "realization": "Source circular f1/f2 or f1/f2/f3/f4"
+    },
+    {
+      "intake": "first_difference",
+      "realization": "Adjacent temporal differences"
+    },
+    {
+      "intake": "fluorescence_hard_threshold",
+      "realization": "Corrected scalar threshold at each grid entry"
+    },
+    {
+      "intake": "global_activity_sample_reweighting",
+      "realization": "Simple row activity or tuned lagged activity and filter-specific powers"
+    },
+    {
+      "intake": "pca_precision_matrix",
+      "realization": "Pinned historical PCA, 80 percent components and negative precision"
+    },
+    {
+      "intake": "score_matrix_normalization",
+      "realization": "Diagonal minimum and min/max after weighted precision aggregation"
+    },
+    {
+      "intake": "threshold_sweep_ensemble",
+      "realization": "Complete 120-entry weighted grid, not Bayesian inference"
+    },
+    {
+      "intake": "temporal_precedence_directivity",
+      "realization": "Optional strict 0.2/0.5 precedence bounds with source endpoint behavior"
+    },
+    {
+      "intake": "weighted_score_combination",
+      "realization": "Optional 0.997 precision and 0.003 precedence"
+    }
+  ],
+  "dependencies": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.5.3"
+  },
+  "limitations": [
+    "Automated Tier 3 Community corrected reconstruction; no Tier 1 human certification or Tier 2 community-usage qualification. Original intake remains draft.",
+    "Three explicit source corrections forward scalar thresholds into sweeps and filters and filter identity into tuned weighting. This is a new execution version, not original buggy-output parity.",
+    "Both complete source grids retain 120 entries, including ten duplicates and the absent 0.153 value. Weighted precision aggregation is not represented as Bayesian inference.",
+    "Historical sklearn PCA is pinned and executed with sample-count variance and original whitening representation. Modern sklearn supplies validation/base interfaces only; its PCA is not substituted.",
+    "Circular lowpass boundaries, filter-specific tuned activity weights, source directivity endpoint handling, strict precedence inequalities and post-aggregation normalization are preserved.",
+    "Caller must explicitly choose simple/tuned and optional directivity. The latter contributes 0.003 after source normalization, with precision weight 0.997; it is not enabled implicitly.",
+    "Supported inputs are finite nonnegative float32-compatible time-by-node matrices, at least three nodes and more samples than nodes. Constant channels, degenerate residual covariance and degenerate score ranges fail closed; ill-conditioned but finite estimates remain a numerical limitation.",
+    "Evidence uses synthetic matrices only, including 720 independent-reference sweep fits and four actual graph executions. It does not establish historical competition accuracy, biological validity or calibrated edge probabilities.",
+    "Locally provisioned hash-verified source and pinned dependencies are required. No external inputs or model downloads occur during execution; clean-environment installation and resource-cap guarantees are not claimed.",
+    "Execution files explicitly declare BSD 3 clause; retained author notices and historical sklearn BSD license accompany this reconstruction. Unlicensed rank-analysis helper is not executed.",
+    "Private signals and scores remain runtime values; review artifacts contain software identities and aggregate synthetic checks only."
+  ],
+  "evidence_sha256": {
+    "competition_connectomics_source_pins.json": "5f6cbd3868c61956af0b63e86dfb6a0c14fcdf56bb6c37f11330478641403057",
+    "competition_connectomics_source_execution.json": "afd68717fd94345c39fc1ab656df8f283478b614dcae04bcfc080e208c161ae6",
+    "competition_connectomics_corrected_execution.json": "d79778218592f97b4a76ed96267618e32b50b45d9f10da004fdb01fdc6416f73",
+    "competition_connectomics_graph_execution.json": "7c1ec83b071ef8b34de80f3b158f4036316c844968884a37a01d0bff043f6cea",
+    "competition_connectomics_environment.json": "27d704f96f78010c55904764cca6bee8a375f1f1db3d3c71cea9fe6b87f101fe"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_connectomics_execution.py": "2d6b7028d641b31770711d2e2e14b6ca8ccb040c0716fa133b05fdfabe644a93",
+    "requirements/connectomics-execution.txt": "3af6f6d271292b95afcfc384c6100fe8c6be4fbb1ba8fcbb46b0b06de487cdc9",
+    "docs/licenses/Connectomics-source-notices.txt": "882135d3090ed55a15a64f9475a2e634fa6221bf41069bf6f5deeecffe617b1e",
+    "docs/licenses/Connectomics-legacy-scikit-learn-BSD.txt": "711b82c84f81ee6ce8b7a2a4a98ed14e7eb93a4b533cde7d210ccf398a6a74c9"
+  },
+  "catalog_mutations": 0
+}

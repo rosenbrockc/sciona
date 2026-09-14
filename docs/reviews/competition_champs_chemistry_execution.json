@@ -1,0 +1,26 @@
+{
+  "results": [
+    {
+      "synthetic_case": "water",
+      "bonds": 2,
+      "finite_features": true,
+      "rigid_transform_invariant": true
+    },
+    {
+      "synthetic_case": "methane",
+      "bonds": 4,
+      "finite_features": true,
+      "rigid_transform_invariant": true
+    }
+  ],
+  "rdkit": "2026.03.6",
+  "openbabel": "3.1.0",
+  "compatibility_changes": {
+    "heavyvalence": "GetHvyDegree",
+    "heterovalence": "GetHeteroDegree",
+    "valence": "GetExplicitDegree"
+  },
+  "legacy_semantics_source": "https://github.com/openbabel/openbabel/blob/openbabel-2-4-1/include/openbabel/atom.h",
+  "scope": "Two synthetic geometries and rigid transforms; no label vocabulary, scaling, tensor packing or full pipeline parity established.",
+  "validator_sha256": "3dd7cc38a67b1ea5d44794bbe91540acececb9b4a9f645ef54ee278c551e26fa"
+}

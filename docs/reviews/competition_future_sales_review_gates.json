@@ -1,0 +1,25 @@
+{
+  "format": "future_sales-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_scope",
+    "clipping_order",
+    "future_leakage",
+    "missing_tpe",
+    "worker_parity",
+    "missing_refit",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notice"
+  ],
+  "sha256": {
+    "scripts/review_future_sales_execution.py": "77d7a01602e98df001042276f821a76b170496ee8da516aa05dd6e38c6c54adf",
+    "scripts/validate_future_sales_review_gates.py": "ee739a520657a4b99b13ae961f246cb258a132a35bba4da93d5612da3f6c22ed"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

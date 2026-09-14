@@ -1,0 +1,21 @@
+{
+  "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+  "source_content_hash": "5ee3659042611115b7a83dbf165f7b44355a0f09ff346514ce4dd2a15e66340b",
+  "source_scope": "Six-stage temporal sparse regression specialization; independent bounded streaming SGD ensemble with fixed one-pass training.",
+  "implementation_origin": "Independent project code; generated synthetic streams only.",
+  "source_status": "draft",
+  "source_is_publishable": false,
+  "stage_mapping": {
+    "efficient_table_loading": "Bounded JSONL reads and private immutable disk snapshots",
+    "temporal_feature_engineering": "Strict-past per-entity rolling/latest-time target means, age/count and periodic features",
+    "categorical_sparse_encoding": "Fixed-width unsigned entity/category hashing, eight numeric features and clipped CSR chunks",
+    "leakage_safe_validation": "Chronological train/validation/query gaps checked before fitting; frozen held-out history",
+    "boosted_sparse_ensemble": "One-pass squared-error and Huber sparse SGD on log1p targets with equal log-score mean",
+    "metric_postprocessing": "Clipped inverse transform, streamed RMSLE and bounded predictions"
+  },
+  "scope_corrections": [
+    "Fixed one-pass optimization; no early stopping or validation-selected refit.",
+    "Specialization for nonnegative regression with immediately revealed historical targets; not every task named by the generic intake."
+  ],
+  "catalog_mutations": 0
+}

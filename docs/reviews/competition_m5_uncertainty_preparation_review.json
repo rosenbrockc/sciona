@@ -1,0 +1,39 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22",
+  "checks": [
+    {
+      "case": "base_partition",
+      "status": "passed"
+    },
+    {
+      "case": "combined_aggregate",
+      "status": "source_key_error_reproduced"
+    },
+    {
+      "case": "all_levels",
+      "status": "source_key_error_reproduced"
+    }
+  ],
+  "consequence": "The documented aggregate-only batch has no base rows for outlet normalization. The all-level batch also lacks a denominator for aggregate outlet roles. Full-method qualification requires an explicitly justified correction; current implementation rejects both undefined cases.",
+  "additional_source_code": [
+    {
+      "path": "Code of Winning Methods/U1/quantiles_kaggle.ipynb",
+      "notebook_sha256": "d69d727757a84b84626e101a061396f83a12e9b6a0d21c604afe270420a34e8c",
+      "code_sha256": "ed2a85ee6b20a155e33d9c5a06fd8e5c0c3319ccbe36ce3e90ecd788d3141ec9"
+    },
+    {
+      "path": "Code of Winning Methods/U1/original/original_training.ipynb",
+      "notebook_sha256": "0761ef04d33ffa6b0636c51b3bc0269d57a2334029416ecf2e4e5a9645a77dfa",
+      "code_sha256": "a0d24941cc43547ebfcac7f0bb0e3f91746c817161902e6040c479fa0c832d3f"
+    }
+  ],
+  "retrieval_scope": "Only code-cell source retained privately; notebook outputs were discarded and are not evidence artifacts.",
+  "tests_passed": 80,
+  "sha256": {
+    "sciona/m5u_preparation.py": "947a8e55110fb4b7abed99575ca7624b100eaf6ace7ce96006b4dcffcb86996e",
+    "tests/test_m5u_preparation.py": "3339a1b80d8b9aa502c6b2acc63b151aed7a5a5f52d4de3968c50478f51fa8f7"
+  }
+}

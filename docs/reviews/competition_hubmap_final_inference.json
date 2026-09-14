@@ -1,0 +1,63 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_training_checkpoint_to_inference_state": true,
+  "cases": [
+    {
+      "resolution": 32,
+      "input_resolution": 32,
+      "tiles": 9,
+      "batch_size": 4,
+      "classifier_logit": 1.0,
+      "tta": 4,
+      "model_calls": 12,
+      "exact_mask_logits_rng": true
+    },
+    {
+      "resolution": 1024,
+      "input_resolution": 320,
+      "tiles": 1,
+      "batch_size": 12,
+      "classifier_logit": 1.0,
+      "tta": 3,
+      "model_calls": 3,
+      "exact_mask_logits_rng": true
+    },
+    {
+      "resolution": 32,
+      "input_resolution": 32,
+      "tiles": 9,
+      "batch_size": 4,
+      "classifier_logit": 0.0,
+      "tta": 3,
+      "model_calls": 9,
+      "exact_mask_logits_rng": true
+    }
+  ],
+  "exact_final_buffers": true,
+  "implementation_sha256": {
+    "sciona/hubmap_raw_inference.py": "8f8670ef857263815caa8e92a4942603ef5a31b2baaf34220d0b67cf6e464179",
+    "sciona/hubmap_inference.py": "c30e4eb325b47bc4eeecfafaf858104d98fab1c4fecbdd10aeb82028ff0a4c9b",
+    "sciona/hubmap_inference_tiles.py": "8d1558a118885d6e9f636b4f85258a924a8e2d411a51e53bb5434ae352879909",
+    "sciona/hubmap_inference_network.py": "9ca795aafd1da4661c8bb08075f4efd2a2262030bbe0ff7340dd095fbd333d2d",
+    "sciona/hubmap_checkpoint.py": "09f530be7192195dd1f37ae22cb4361818b1faf15efb3a4990741cc2e4ca4e9c",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "scripts/validate_hubmap_final_inference.py": "1179b8e7b14242522b588877c8d24dd71da74a239b7c7b5407ed1048252f0ae3",
+    "scripts/validate_hubmap_final_network.py": "2abe9f1f88623117ee7de1b74adb497f86afbccc4cd9718482a1ccc3553347b8",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "scripts/validate_hubmap_inference_tiles.py": "9a81b9b199e39b6fc17c83813f11fcddd7089004cf518da63c53d0aa68ca74a7",
+    "scripts/validate_hubmap_augmentation.py": "f916e76c3c111df079c0eb262bb035f7467d71b123131b53566fd51a118b0e11",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_pseudo_pins.json": "e4aa409b4f7e53f69646dd49bee490ddedb65984e1d5c4e27df9e5c7e43942a9",
+    "docs/reviews/competition_hubmap_augmentation_pins.json": "44977ff6956885588f3c30521110e5d038080551f3cf337fd5ec8a73ab9b23c0",
+    "docs/reviews/competition_hubmap_final_notebook_pins.json": "f5db4bcde5ffee7fd603d3c54c21c688e011a76400bcb6839ef38f83041dbbea"
+  },
+  "limitations": [
+    "Decoded synthetic RGB arrays and synthetic full-network checkpoint; no learned accuracy claim.",
+    "Original dataset, transforms, full model and inference loop; only raster IO and explicit loader generator adapted.",
+    "Current CPU float32 execution; historical GPU/codec behavior excluded.",
+    "Single full-network checkpoint here; multi-model flip ordering independently checked with asymmetric witnesses.",
+    "Full inference-to-retraining lifecycle and full publication gates remain."
+  ]
+}

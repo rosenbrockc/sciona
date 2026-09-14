@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "tests_passed": 57,
+  "command": "OMP_NUM_THREADS=1 .venv/bin/python -m pytest tests/test_vsb_*.py -q",
+  "sha256": {
+    "sciona/vsb_baseline.py": "3c38d41b990c15ee5addc94bab28c87f451a146b3b89ebb36c7864cfda5f5f97",
+    "sciona/vsb_descriptors.py": "381df7f3a2f41d688144d8c292d045e3aeff469b3ae74cead48ecd7ebe2cba4c",
+    "sciona/vsb_execution.py": "d7c2106eed8516523a45e547424f0fa5d434cca86cc736fa707c8c8b99de7856",
+    "sciona/vsb_measurement.py": "f8607a107d000ec57d770a31604adb52164dbc0365503ee284faf40d931452a6",
+    "sciona/vsb_peaks.py": "a7c33f4894401cd80e346eed64b23b34570b9a7d3a41121bc172b15e2985ed41",
+    "sciona/vsb_threshold.py": "972523f96b4cbefe62b1b037e389700fe8c4a022b6452d15ff2c8f6598b952b9",
+    "sciona/vsb_training.py": "193a56675d23098abe0175a2aecd45f16e88d401b5990c361292124e8b8b654d",
+    "tests/test_vsb_baseline.py": "5b41bd75b24ba05af3c584aa758720f4d7027b9be44ec47f153394ae18b68a55",
+    "tests/test_vsb_descriptors.py": "73f27c54061d53c2915ee664c48d804f28bb74dcc357c65651269af07dc52754",
+    "tests/test_vsb_execution.py": "74c3f1fca8e35e230ba1f5c3aca91cbada66dac6d5ccb3adef49d9da30f2c06c",
+    "tests/test_vsb_measurement.py": "2189d0816e3a261b4ee0eef8fd5615a07f97bda9d49d3545c24c9550ca43496e",
+    "tests/test_vsb_peaks.py": "2c4767eb8866457990b3cb9d35ab718616c854f59230441cdf0f04244311e9f3",
+    "tests/test_vsb_threshold.py": "147bf8fcc571f44e4c7bd9b9d9662f9d363005e8ae5af79dd2eb6e87f3eed611",
+    "tests/test_vsb_training.py": "1cb5d650b0445a7934b0c6464fdff99bba8c93b10f5741d71c827dbecb0ba1f3",
+    "scripts/vsb_synthetic.py": "e187bb8692093357144160f3400d01cb971585a9e510f528a1fe8b4e0be54e40"
+  },
+  "scope": "Complete preprocessing, threshold, repeated ensemble and private execution boundary. Raw full-limit execution recorded separately; graph and publication pending."
+}

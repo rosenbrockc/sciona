@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "20ad0ed48457be92c61f27dbb7f21cf151eeb1151050134b1feda74b9c696772",
+  "provider_sha256": "1a8ce3ed80ada7ee985444c42c4723a64a2cde224dd3174285b32edd1d21aae9",
+  "code_sha256": {
+    "sciona/tabular_ensemble_calibration.py": "4a04c21466734845754b8f6c86f326b851944a1cc19aeaf02a6c3a1b2e3a7244",
+    "sciona/tabular_ensemble_contract.py": "bd9b02b20cf40744bbd6d8cf183b0ba1f973f199c622dac784117cc9d866bec1",
+    "sciona/tabular_ensemble_features.py": "a21c9a05d159cea22cb6d46cd19ce7822ae260e33f081a8784a275a342864e95",
+    "sciona/tabular_ensemble_graph.py": "3303fc529db2389f3210b30fd16aa6adad6779e00b0488dfd17c1a01fd156c5b",
+    "sciona/tabular_ensemble_training.py": "5404123c59e394e7e35f62a5261f60d9a87ce8864017cc9a15723121cc3be272",
+    "scripts/tabular_ensemble_synthetic.py": "41130d0ca9314fe3e747c98387afb55a0c10b2e183fa75dcaa08eb58607860bf",
+    "scripts/validate_tabular_ensemble_graph_execution.py": "5284f441487d3a959a7fd9f3b178fc51f0d876dbe81b787b9848c14bda51c68c"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 12,
+    "calibration_rows": 4,
+    "query_rows": 2,
+    "models": 2,
+    "forest_trees": 64,
+    "folds": 3,
+    "oof_rows": 12,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual synthetic five-stage cleaning/features/OOF-stacking/calibration/prediction execution; no served publication or historical accuracy claim."
+}

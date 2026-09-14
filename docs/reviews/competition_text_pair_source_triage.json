@@ -1,0 +1,7 @@
+{
+  "source_version_id": "1169253d-76d3-5b76-885f-07b58bed795c",
+  "source_content_hash": "896ea8e61c63f03fcb22b6bc418126ac23acf0fb3ad55e5a11c3815ae00e1bd7",
+  "source_scope": "Generic six-stage text-pair feature ensemble topology; explicit binary matching realization, not a historical winning implementation.",
+  "implementation_origin": "Independent project code using installed standard scientific libraries; no external corpus or model weights.",
+  "catalog_mutations": 0
+}

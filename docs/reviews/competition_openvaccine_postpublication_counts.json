@@ -1,0 +1,8 @@
+{
+  "read_only": true,
+  "served_cdgs": 83,
+  "competition_intakes": 142,
+  "intakes_with_served_provenance": 16,
+  "intakes_without_served_provenance": 126,
+  "scope": "Direct mandatory source provenance coverage, not approval of original intakes or historical accuracy."
+}

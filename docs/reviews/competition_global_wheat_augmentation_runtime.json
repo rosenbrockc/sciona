@@ -1,0 +1,159 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "publisher_packages": {
+    "albumentations": {
+      "package": "albumentations",
+      "version": "0.4.5",
+      "url": "https://files.pythonhosted.org/packages/8d/40/a343ecacc7e22fe52ab9a16b84dc6165ba05ee17e3729adeb3e2ffa2b37b/albumentations-0.4.5.tar.gz",
+      "artifact_sha256": "77bda58c5cfa5ec8dccd360bf75be52449d6bd7a25dce087192e3c78dd2a439a",
+      "files_sha256": {
+        "LICENSE": "e4b2eca9d4ce19ec33dc60ec57c3c1798a8f006fa8043056c8aab9a238c013db",
+        "PKG-INFO": "63d68f499fabeb0d80fac304d09f53ea8d9093a164fdb20714c821e1a470e163",
+        "albumentations/__init__.py": "adfb7766c9d196365c81039fd3bc9e30db0f220a7c714d689bf008362f4e92e4",
+        "albumentations/augmentations/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "albumentations/augmentations/bbox_utils.py": "aa9a6148967ba0e801dcbf794f8e01680ec54f17e0d4f73c09166fc125364894",
+        "albumentations/augmentations/functional.py": "b5654b973222558c7dd08a71456e50e6be97dd270e94dc34a35fb1d0c3137775",
+        "albumentations/augmentations/keypoints_utils.py": "4f45d81e7982592da17f138e67f76de6aac34fa110463129c9f854584fe9c384",
+        "albumentations/augmentations/transforms.py": "e92e243d1e27b543f9929f763d12a091d1074de0893d34ba5fbaa6c3543ab47f",
+        "albumentations/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "albumentations/core/composition.py": "c7e17ac6408efce0b1a1ba501e16722398a464b0fff3812dc60b7d0f0431bae1",
+        "albumentations/core/serialization.py": "f6d4f5565c84cb4d21484001a9abd0f6c28298b651aca79eb3c619097f1476a3",
+        "albumentations/core/six.py": "93c18dd3c1f0d3879f5f38140bf92dc6d12ac2e10f8b5460b6f9e4a9a83806ca",
+        "albumentations/core/transforms_interface.py": "be73629812e38d7810b569848c102063eefe3899b5ac59a6498fdc4db19e0437",
+        "albumentations/core/utils.py": "de508781384a15a154e10053d60aa3cc2f0073a1a6250b0a8011a0be09e84c8c",
+        "albumentations/imgaug/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "albumentations/imgaug/transforms.py": "20d3b48cf13b8682b186d443d5e09db03abc821b7043e04f5d880d532a3d4011",
+        "albumentations/pytorch/__init__.py": "51c9c99c68612e7464bf0687a12124f755d49e64eb056782596dbfa4e3875d76",
+        "albumentations/pytorch/functional.py": "272693c992cca049925041c2c74a3e06506cc94d8570956559f2f894d1574f1d",
+        "albumentations/pytorch/transforms.py": "483de9dfbb37b12af8ca89ab94e6cff80ab96852d131b4f0246680cd822b70f1",
+        "setup.py": "48d4d0412fe37782c25e6ee0d591016740df6478aeaa3fec793cf275f928c94d"
+      }
+    },
+    "imgaug": {
+      "package": "imgaug",
+      "version": "0.2.6",
+      "url": "https://files.pythonhosted.org/packages/ad/2e/748dbb7bb52ec8667098bae9b585f448569ae520031932687761165419a2/imgaug-0.2.6.tar.gz",
+      "artifact_sha256": "82a5052d2daabc1b8de04b5fade44d59f3376c429880dd78e759028c67f3c8f3",
+      "files_sha256": {
+        "imgaug/augmenters/arithmetic (copy).py": "d37609a26bc608d0a0dc0f2612a06b7135700ed192bdd2c89b7b07f97f021e58",
+        "imgaug/augmenters/arithmetic.py": "53e1fe2f18561c8836b804e46d771276deaa0db1eaf10da2e69f61152780a91e",
+        "imgaug/augmenters/blur (copy).py": "1f231ef71668d3a37d834924ec95a420eb83e5211c57b2d727d97bb322d243e7",
+        "imgaug/augmenters/blur.py": "908cdc5d0ff2c96b85e280a746dc27c1106650fb667c345e60ea9f2dfb4f560f",
+        "imgaug/augmenters/color (copy).py": "11609c3b91f1e395b0374bebddd3e60a65f1e7fcf3ac687a0a012d1f27e306f3",
+        "imgaug/augmenters/color.py": "6630fd5c265c62b610a5bbbfbddebc19d091e41bb4bfe4a1c05cba9b1b8e9a63",
+        "imgaug/augmenters/convolutional (copy).py": "f72469e9bc5887a6415d6c4d078de3dd8fc72e2220bbfada6a3018c8ebd88028",
+        "imgaug/augmenters/convolutional.py": "5a47e80f12ba483e0369176065c44f172196b4bfaf84f79d48ebcd81b39ec7c9",
+        "imgaug/augmenters/flip (copy).py": "3ae5843331e2d18014c3d52b65171ee5d74fd7b6f044c945db6664635f640752",
+        "imgaug/augmenters/flip.py": "90cc46e7cf5a359f8a11afc669f5f377d80c118dba7d8643e6e62ed5c8abdd20",
+        "imgaug/augmenters/geometric (copy).py": "e901fd87fe08b687bfb7746459d13be822483f64e066a491b6af4f2c99a98f61",
+        "imgaug/augmenters/geometric.py": "5d628ff0d8864d313b26739a0bdc8bd0bae7ff6173e777ccc129e6b1f004e6ef",
+        "imgaug/augmenters/meta (copy).py": "5270dc854999290a476141f451cf6cb6eb3335832a27a220b554beed99100d98",
+        "imgaug/augmenters/meta.py": "849ff36852b68669fa2c297d87539e6c08fff8b581db836a7cbf6a530e4a4433",
+        "imgaug/augmenters/overlay (copy).py": "b5bf391781eedc150a5a2333c90d5ec610cc866357174e425b68ae12ff05572d",
+        "imgaug/augmenters/overlay.py": "aff231c61bf2e0b873ff37cb49ee6e945dda61ab1e2d51fbcd5fe5693aa15fef",
+        "imgaug/augmenters/segmentation (copy).py": "350372e557e432f8e101bf2ff0d618d7cd9a958534407067f34855a0d1d9f8d6",
+        "imgaug/augmenters/segmentation.py": "0f1fc9c7176596335ac76489e7443def587453ffebfa9683c5df49de113cb250",
+        "imgaug/augmenters/segmentation_maps.py": "3dc62eeef34407894285938237ca94536fbd4901c7cffa3cc5cd2456633c2bcc",
+        "imgaug/augmenters/size (copy).py": "a2219b7e3edd5424737446bdec76be8049076b02e85d9da9d731cd6ffb41f61a",
+        "imgaug/augmenters/size.py": "30c9835da794d7623362851838b54344520bcedc5c8b9c0a886cdb604e3dca75",
+        "imgaug/augmenters/__init__.py": "28d7482c72a6c12353833b2990e1daaa667a8f88abf00c91c7b0e4eb7ef1d4c2",
+        "imgaug/bak/affine.py": "4411b723109f5463fdd9cb1fe94100268895067285825a0b8c8354e1a6abb0b1",
+        "imgaug/external/opensimplex.py": "c430bcded0c8c70b5c7f398732d22915680bf49de8d1eb45999fde9074aba89a",
+        "imgaug/external/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "imgaug/imgaug.py": "8cecc9c96ee614996084c2d07e7e66c2e9aba96e8fe342d156983afc1f36b4ca",
+        "imgaug/parameters-testcode.py": "95c70dbe61ff86e8304921acd35c742071ab4ba547a0d6be9902c9514ffa2e3a",
+        "imgaug/parameters.py": "e8c3c23a348be65245239a200b70ddbb48bbfe4bb305e5c4af30a67d703775bf",
+        "imgaug/__init__.py": "412fe66161e8866990d422230738c2ca214ce3caa9fadaae7200aa77cb8af296",
+        "PKG-INFO": "24196d0cb997117c3787a7483104ef0442bd0bbc38c16825562ca6d29e6bc9c2",
+        "setup.py": "9f7abdfa5dc13c269db3aab6ba2ca35778f3590a92280a822f9f797f64789411"
+      }
+    }
+  },
+  "source_float_type_enumeration_matches": true,
+  "namespace_restored_on_success_and_exception": true,
+  "transforms": [
+    {
+      "transform": "HorizontalFlip",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "VerticalFlip",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "ToGray",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "IAAAdditiveGaussianNoise",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "GaussNoise",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "MotionBlur",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "MedianBlur",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "Blur",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "CLAHE",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "IAASharpen",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "IAAEmboss",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "RandomBrightnessContrast",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "HueSaturationValue",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    },
+    {
+      "transform": "Resize",
+      "seeded_repeat_cases": 8,
+      "executed": true
+    }
+  ],
+  "seeded_repeat_cases": 112,
+  "implementation_sha256": {
+    "sciona/wheat_augmentation_compat.py": "c94c2d2e7d6972c8aeba94d3d059a1b826546a9e01e3adcefe370008f1a66a9b",
+    "scripts/validate_wheat_augmentation_dependencies.py": "ee7eeb67e9df0aa116d18d6aeb4a575e0a3dd88a07a5ded56a6218ebcc0d2b33"
+  },
+  "limits": [
+    "Execution and seeded repeatability on installed NumPy/OpenCV/SciPy; historical native numerical equivalence is not claimed.",
+    "Individual operations forced on; complete probabilistic policy, box transformations and training remain pending.",
+    "Scoped aliases require a dedicated serial augmentation process."
+  ]
+}

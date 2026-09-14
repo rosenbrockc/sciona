@@ -1,0 +1,44 @@
+{
+  "approved": false,
+  "candidate_repository": "https://github.com/qubvel/efficientnet",
+  "commit": "f7f3e736c113b872caf53dae9fbbda996a8eb87d",
+  "files": {
+    "efficientnet/weights.py": {
+      "url": "https://raw.githubusercontent.com/qubvel/efficientnet/f7f3e736c113b872caf53dae9fbbda996a8eb87d/efficientnet/weights.py",
+      "sha256": "c78f99a019a5443576eebf7e6fafca6d2d4b69cf947505ad9f535709c7df3989"
+    },
+    "efficientnet/model.py": {
+      "url": "https://raw.githubusercontent.com/qubvel/efficientnet/f7f3e736c113b872caf53dae9fbbda996a8eb87d/efficientnet/model.py",
+      "sha256": "30c5ab3fac2cec0a28b211f2987379402a18658c434db3e7a1063cd535de8f60"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/qubvel/efficientnet/f7f3e736c113b872caf53dae9fbbda996a8eb87d/LICENSE",
+      "sha256": "e486cea90cab95bee73cbe32de74e5e8e84ba4e87228e837be71af9e41a55203"
+    }
+  },
+  "repository_license": "Apache-2.0",
+  "status": "All 608 public upstream backbone parameter tensors exactly match the notebook artifact; the notebook artifact adds three normalization-state tensors.",
+  "remaining": [
+    "Finish upstream redistribution terms review.",
+    "Execute full fivefold EfficientNet CV and integrate the four-family ensemble.",
+    "Complete population provenance, environment, semantic and publication gates."
+  ],
+  "weights_downloaded": true,
+  "source_weight_equivalence_claim": false,
+  "winner_artifact": {
+    "metadata_url": "https://www.kaggle.com/api/v1/datasets/view/jannish/cassava-leaf-disease-efficientnetb4",
+    "version": 1,
+    "publisher_license": "Unknown",
+    "matches_notebook_input_reference": true,
+    "status": "Strict load and full-resolution training update passed; redistribution remains unapproved because publisher license is Unknown.",
+    "publication_approved": false,
+    "evidence": "docs/reviews/competition_cassava_efficientnet_pretrained_validation.json"
+  },
+  "candidate_repository_weights_downloaded": true,
+  "origin_evidence": "docs/reviews/competition_cassava_efficientnet_weight_origin_validation.json",
+  "local_integrity_required": true,
+  "upstream_reconstruction_evidence": "docs/reviews/competition_cassava_efficientnet_upstream_validation.json",
+  "post_adaptation_backbone_tensors_identical": 611,
+  "upstream_lifecycle_evidence": "docs/reviews/competition_cassava_efficientnet_upstream_lifecycle_validation.json",
+  "upstream_bound_to_fold_and_refit": true
+}

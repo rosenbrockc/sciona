@@ -1,0 +1,33 @@
+{
+  "rollback_rows": 40,
+  "rollback_absence_verified": true,
+  "apply": {
+    "applied": true,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "402f67981b9465e5539ccfa08128904099fb2c242a6ce21455a88e01daeb7772",
+    "version_id": "0a389e29-a1bb-573e-a7f9-6c53f66bd90e"
+  },
+  "reapply": {
+    "applied": true,
+    "rows_created": 0,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "402f67981b9465e5539ccfa08128904099fb2c242a6ce21455a88e01daeb7772",
+    "version_id": "0a389e29-a1bb-573e-a7f9-6c53f66bd90e"
+  },
+  "inventory": {
+    "environment": "configured local Supabase",
+    "served_cdgs": 99,
+    "intake_count": 142,
+    "covered_intakes": 32,
+    "remaining_intakes": 110
+  }
+}

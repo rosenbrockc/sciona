@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "completed_epochs": 40,
+  "recorded_generator_updates": 80,
+  "recorded_discriminator_updates": 80,
+  "verified_epoch_checkpoints": 40,
+  "recorded_epoch_budget_complete": true,
+  "history_snapshot_sha256": "b50bb005efa5dc2265bd2b7e482e0d26c91fdaf59b17f70b4137baa798208a4d",
+  "auditor_sha256": "fa3fe6a482451959ae4acc39a72aa45a4e9adc4afecb0052655077b0e82e38b7",
+  "limits": [
+    "Recorded history, loss decomposition and generator checkpoint consistency only; no independent training replay.",
+    "Discriminators, optimizers and replay pools are not present in source epoch inference checkpoints.",
+    "Final fit report must establish unchanged code/classifier evidence, all-network updates and output replay.",
+    "One synthetic branch; complete Bengali pipeline and publication qualification remain pending."
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 4,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Actual 60 neural models in five excluding-fold bags and full-training query bag",
+    "Exact reference features, reference labels and heldout query populations captured for every fold",
+    "Synthetic OOF and query nine-class learning",
+    "Overlapping identities, missing-class fit population and negative query rejected before worker launch"
+  ],
+  "sha256": {
+    "sciona/otto_h2o_crossfit.py": "d9e884208062c2b8be0dd11b40f752fc51a976443f25e5218387d917fc9e1510",
+    "tests/test_otto_h2o_crossfit.py": "430553710c214e78a16cf0436d5c3e68decf51c4c0de0de5e6657f1da310e023",
+    "sciona/otto_h2o.py": "a8eee16e8dfd279e2d8a731ea8ae975b2270a97b2838e48c7582a83fbe7e4d6e",
+    "sciona/otto_h2o_worker.py": "da967f386a1d31f18c4bb1d4ccc1a08f4fa6ca19dbf09ac965661be234ec55ef"
+  },
+  "limitations": [
+    "Historical H2O version, architecture and training settings remain unresolved.",
+    "Remaining Lasagne families and source-entry-ten width interpretation unresolved.",
+    "Native dependency closure and full-stack publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

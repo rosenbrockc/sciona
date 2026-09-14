@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "f1a6e63969167159ef72c4ba32897e5aef7c3888",
+  "source_sha256": "e20657812744e5b86d8211bece1f2afbc55d791077c5273a7bfd76fd8d90d338",
+  "compared_reachable_cases": 24,
+  "compared_unreachable_cases": 8,
+  "maximum_absolute_error": 1.3322676295501878e-15,
+  "reverse_tangent_correction": "Pinned source reports no next intersection; corrected geometry advances one negative turn, validated analytically.",
+  "missing_intersection_mapping": "Source NaN coordinates/-1 layer/infinite arc length become explicit false validity mask with ignored zero placeholders.",
+  "scope": "One synthetic cylinder, pre_move=1e-6, missable=False, no corrector. No finite-layer/gap/complete-track parity claim.",
+  "provider_sha256": "f93c7c59bb5a9e30c046aaeb4f4c32962e09c9927ab6b09b488e556026543ca0",
+  "validator_sha256": "abb2b8477b1644b41f6fd3c07f965ed762217a2c154f5dab68384940c75edefa"
+}

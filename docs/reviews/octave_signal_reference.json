@@ -1,0 +1,12 @@
+{
+  "octave_version": "11.3.0",
+  "packages": {
+    "signal": "1.4.8",
+    "control": "4.2.3"
+  },
+  "archive_hashes": {
+    "signal-1.4.8.tar.gz": "f5989b4f148e6f5b696a7b7ceee8c610140acf6084eb3e7eafbf0eb38df79a33",
+    "control-4.2.3.tar.gz": "b281350217322fb1ff5dcdef1d0f8f4d1daaa8d9ed656f2ed76d409d27d46455"
+  },
+  "scope": "Reference runtime only, packages installed in private temporary directories; no dataset material."
+}

@@ -1,0 +1,103 @@
+{
+  "status": "source_reconstruction_incomplete",
+  "approved": false,
+  "source_evidence": "competition_santander_source_triage.json",
+  "neural_architecture": {
+    "categorical_embedding": {
+      "vocabulary_size": 6,
+      "width": 12,
+      "shared_across_feature_groups": true
+    },
+    "continuous_branches": {
+      "count": 2,
+      "hidden_width": 50,
+      "output_width": 10,
+      "activation": "ReLU between linear layers"
+    },
+    "intercepts": "Two learned constant-token embeddings of width two; do not substitute feature identity embeddings.",
+    "pooling": "Concatenate categorical, both continuous and weight-intercept embeddings; batch normalization, linear to five, ReLU, linear to scalar, softmax across feature groups. Same weights pool all three branches.",
+    "head": "Pooled branches concatenate; batch normalization and dense hidden width 32; binary logits.",
+    "normalization": "Feature-axis normalization for group tensors plus channel normalization in weight and output paths; preserve axes during port.",
+    "dropout": {
+      "branch": 0.08,
+      "head": 0.2
+    }
+  },
+  "augmentation": "Within each target class, independently permute each feature group while preserving its categorical/raw/substituted triplet. Concatenate positive and negative batches with corresponding labels. Validation unchanged.",
+  "training_controls": {
+    "stratified_folds": 10,
+    "batch_size": 1024,
+    "epoch_sampler_multiplier": 2,
+    "epochs": 15,
+    "maximum_learning_rate": 0.01,
+    "weight_decay": 0.1,
+    "checkpoint_selection": "validation AUROC improvement"
+  },
+  "missing_for_full_winner_scope": [
+    "LightGBM complete settings and training program",
+    "Pseudo-label selection and retraining implementation",
+    "Final fold/seed schedule and blend implementation",
+    "Explicit source licenses"
+  ],
+  "validation_required": [
+    "Hand-checked uniqueness categories and mean substitution",
+    "Test-only detector population and correct polarity",
+    "Explicitly expose original global-encoding CV limitation; do not claim fold-isolated scores",
+    "Paired augmentation invariant",
+    "Attention normalization and shared parameters",
+    "Actual neural and tree fitting plus pseudo-label retraining",
+    "Full serialized graph and served catalog selection"
+  ],
+  "scope_note": "Architecture and controls transcribed as algorithm specifications; no third-party source copied. Source script is a partial neural implementation and must not be claimed as full winning ensemble.",
+  "encoding_semantics": "Global labeled reference with per-row self-exclusion; test-only real-row detection, combined train/retained-test repeated-value override and training-mean substitution. Source prepares features before CV; validation labels can influence other encoded rows.",
+  "neural_input_preparation": {
+    "category_tokens": "Sorted observed training categories per column mapped to 1..K; query unknown to zero, per legacy fastai categorical codes plus one.",
+    "scaling": "StandardScaler fit to training plus all query continuous rows before folds; float32 model input.",
+    "fold_output": "Released script averages per-query ranks across fold predictions, not raw probabilities."
+  },
+  "pseudo_label_source_followup": {
+    "author_reply": "https://www.kaggle.com/competitions/santander-customer-transaction-prediction/discussion/89003#513626",
+    "confirmed": "Best neural predictions supply confidence tails, selected rows become labeled training examples, count features are regenerated, then models rerun.",
+    "not_resolved": [
+      "Tree configuration",
+      "Whether selected query rows remain in the unlabeled count reference",
+      "Exact neural pseudo-label retraining fold treatment",
+      "Tie-breaking at confidence boundaries"
+    ],
+    "selection_implementation": "Explicit disjoint tail counts; original query-order alignment; ambiguous boundary ties fail closed. No silent population-size truncation."
+  },
+  "additional_reply_review": {
+    "loaded_additional_public_replies": 50,
+    "deleted_replies_requested": false,
+    "rank_blending_author_reply": "https://www.kaggle.com/competitions/santander-customer-transaction-prediction/discussion/89003#513840",
+    "hard_labels_author_reply": "https://www.kaggle.com/competitions/santander-customer-transaction-prediction/discussion/89003#514493",
+    "findings": [
+      "All final models combined with rank blending, not stacking",
+      "Soft pseudo-label experiment replaced by hard labels to regenerate class-presence features"
+    ],
+    "kernel_license_check": "GetKernel metadata for author preprocessing program returned no license field. License remains unestablished.",
+    "remaining": "No complete tree parameter recipe or selected-row reference membership found in reviewed replies."
+  },
+  "final_blend": "Independent weighted average of neural and tree ranks, 2.1:1. Average ties explicit. Full model inputs still require complete source reconstruction.",
+  "independent_tree_branch": {
+    "implementation": "sciona/santander_tree.py",
+    "evidence": "competition_santander_tree_tests.json",
+    "status": "ten_fold_component_tested",
+    "historical_settings_resolved": false
+  },
+  "independent_complete_lifecycle": {
+    "implementation": "sciona/santander_lifecycle.py",
+    "evidence": "competition_santander_retraining_tests.json",
+    "status": "thirty_model_synthetic_lifecycle_tested",
+    "historical_membership_resolved": false
+  },
+  "full_default_tail_execution": {
+    "status": "passed",
+    "evidence": "competition_santander_default_tail_execution.json"
+  },
+  "serialized_graph_execution": {
+    "status": "passed",
+    "evidence": "competition_santander_graph_execution.json",
+    "boundary_tests": 16
+  }
+}

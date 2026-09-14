@@ -1,0 +1,592 @@
+{
+  "intake_version_id": "af2888ee-499c-5db7-8576-f4096e1f8804",
+  "intake_content_hash": "d1891c5f46afe2b677bce08e67522a016bd798bb654d43f4060822f957eb30a9",
+  "status": "published_tier3_and_served_execution_verified",
+  "target_tier": 3,
+  "repository": "boschresearch/BCAI_kaggle_CHAMPS",
+  "commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "pins": [
+    {
+      "software_path": "LICENSE",
+      "git_blob_sha1": "e418e040685c1ce7264cb0b3a7142de5867fb848",
+      "sha256": "62cc37899dbc44214c6e90ddfa5479ef9b7aaf89b5b904f57d5aac8cc4f9e9e2"
+    },
+    {
+      "software_path": "README.md",
+      "git_blob_sha1": "170517c61ba3b64282d58fb7e6f8a7e7ec5c79e3",
+      "sha256": "9d2a094bc7d87989b203d9281f14e38571b06a78f3c759a760c5819ed94d382c"
+    },
+    {
+      "software_path": "entry_points.md",
+      "git_blob_sha1": "45bdb04eb2735416a1df25e0d5258370c847a7f8",
+      "sha256": "c8cd7bd96536779691a69c08c3dc3ae2272cae4426b19ccfcd147f7c5f7ce38b"
+    },
+    {
+      "software_path": "requirements.txt",
+      "git_blob_sha1": "5cb45ebfcf82e99790b2be866a55ccc0f0ec2966",
+      "sha256": "e475c378d754f20c5fcaf9d96fbce72388006a54b621c0fb8704a59419b118ca"
+    },
+    {
+      "software_path": "src/graph_transformer.py",
+      "git_blob_sha1": "fa43f22a2cd41a896bc68297a272dde5f51de579",
+      "sha256": "6a47aeba5cff763dff6cdfd3dc17d2c05aec3cbc314d09f35900f137831bd502"
+    },
+    {
+      "software_path": "src/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "src/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "src/modules/optimizations.py",
+      "git_blob_sha1": "cc81b88005580e8e58c84a0383902eceb8768695",
+      "sha256": "e94caf50b2f661fe92d72975e73300c58c8e41cb042ec29012f07823ad0e9356"
+    },
+    {
+      "software_path": "src/modules/radam.py",
+      "git_blob_sha1": "258fb85707f810bc15e46d2f33fc4fb1f377d52a",
+      "sha256": "b12f2576e203b66f0b2b750f1b5b5c14d5a9abec57f57583628a79cfa45ef57e"
+    },
+    {
+      "software_path": "src/pipeline_pre.py",
+      "git_blob_sha1": "70ffa549a57dba66d9a52f4fb61aeb45383fbb50",
+      "sha256": "c4a46d61662200cae127ef474e1e4f07f1e142e027299c1b7d0d279573d3aa09"
+    },
+    {
+      "software_path": "src/predictor.py",
+      "git_blob_sha1": "72e01f3855dff5d99abf07b086d582c4868176e0",
+      "sha256": "76692966f9be5e60d88d948b331f5df239e2bf03a15d90b8a575fdbff8bca045"
+    },
+    {
+      "software_path": "src/train.py",
+      "git_blob_sha1": "86ccd9f3127c54c8424eec90ced0ec265e3a0800",
+      "sha256": "e13e027805606e1b6ba7f492cb697e3a9694c000058545c18f74102f4cf6e429"
+    },
+    {
+      "software_path": "src/utils/csv_to_pkl.py",
+      "git_blob_sha1": "c425f382e33d6e24022b5732e162ad4b2e54d82e",
+      "sha256": "96d7b0c899ac751728c8a1619f6f04dc44f1f7215ca350641ddc9ea075619f88"
+    },
+    {
+      "software_path": "src/utils/data_parallel.py",
+      "git_blob_sha1": "823e4a450323f4083596c8c46eab0df2c6d2268a",
+      "sha256": "39a7f8d9be8e5be5e2ad6ba10de2c75c6a64ce2c11e6277c68beb186d3fddd67"
+    },
+    {
+      "software_path": "src/utils/exp_utils.py",
+      "git_blob_sha1": "b5271fe279fc6318de2b36ad75d34f53150fb48a",
+      "sha256": "46c84615abc6d3acc65b9cbd5df5a2b8f346881cb55031c3b0b674b4d472610e"
+    },
+    {
+      "software_path": "src/utils/filters.py",
+      "git_blob_sha1": "2bfcc848f9c79185fffc20f8dd2964ccde31053b",
+      "sha256": "26aa0b584c998d0e59fea225ee142175dbac589c3e8b4511a91615a18f5239f3"
+    },
+    {
+      "software_path": "src/utils/radam.py",
+      "git_blob_sha1": "258fb85707f810bc15e46d2f33fc4fb1f377d52a",
+      "sha256": "b12f2576e203b66f0b2b750f1b5b5c14d5a9abec57f57583628a79cfa45ef57e"
+    },
+    {
+      "software_path": "src/xyz2mol.py",
+      "git_blob_sha1": "e15fc2c355c814e854e56e21f7b9119189d9e236",
+      "sha256": "b81f863154df369bee7b51128f4d3b9114335c5442d93fcf31bb92197f7bb104"
+    },
+    {
+      "software_path": "config/models.json",
+      "git_blob_sha1": "786f3ac48bf7564c9d09b89e5bde5fd076bd1a17",
+      "sha256": "4623d4d9c0b6a8100bec6e1b858610663c8397aaace43631c3eec80244dd7bf4"
+    },
+    {
+      "software_path": "models/model_A/config",
+      "git_blob_sha1": "08eac73f675867cba5a9fdcdeab9041c023e5f67",
+      "sha256": "2a898facc3a881c2d4ad8b2e796975630da147ea5afef236c220666e9f53d69c"
+    },
+    {
+      "software_path": "models/model_A/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_A/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_A/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_B/config",
+      "git_blob_sha1": "968b6faa4a69891e58fc3fd691c60444708dac46",
+      "sha256": "ed49a4bdbe23a4012f842748ac7d55e0f40a769cb522da70d3d4facc6a2fc864"
+    },
+    {
+      "software_path": "models/model_B/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_B/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_B/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_C/config",
+      "git_blob_sha1": "7966359dfb3322e309802d9549e200d7f08ab1a2",
+      "sha256": "b949bfa6d63fdffdeaa587784e0cc0cf8d6d920be4f2e4070efe843a11ad365f"
+    },
+    {
+      "software_path": "models/model_C/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_C/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_C/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_D/config",
+      "git_blob_sha1": "b98a456a11bbaa4d9f1f962f579b8b3d1db5bb9a",
+      "sha256": "42e10502cf1f80c549bd23fb96123076a6783639fb5b16a62580fbf0a669d888"
+    },
+    {
+      "software_path": "models/model_D/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_D/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_D/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_E/config",
+      "git_blob_sha1": "6f6641fee903acd882f91f8ecd01aa4f7940e26d",
+      "sha256": "d4fefc16e09a1a7b0546c12af4cb4c4a66e4e4aab5ba684f4986a052b36ce1bc"
+    },
+    {
+      "software_path": "models/model_E/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_E/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_E/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_F/config",
+      "git_blob_sha1": "cf0c87afaa4542c0a36ca4a4d63b6b64f01940cf",
+      "sha256": "1a32b42ac3ad16c3097f1e04f7bf76f193b6f07ce04c8f27c1210058286c7313"
+    },
+    {
+      "software_path": "models/model_F/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_F/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_F/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_G/config",
+      "git_blob_sha1": "1a371b7a82bf50e2d160bcb95df77591d93ba6c5",
+      "sha256": "d67b0b80d24f3c99600cdd3a006fd82f1081f971907242dd9faaebed724db6b3"
+    },
+    {
+      "software_path": "models/model_G/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_G/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_G/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_H/config",
+      "git_blob_sha1": "a539a1020deaba9f6095bec45267e02c1202b94c",
+      "sha256": "28376e5be6733ef6cdf8251851de0aa1d077b6fef7645b1ab9463d4d209c7572"
+    },
+    {
+      "software_path": "models/model_H/graph_transformer.py",
+      "git_blob_sha1": "f6bba79c23af883980bfddffd581f1f38cc80a08",
+      "sha256": "08c420473192b8380e7b59f72453ef50047329edf0663a5032773c67d1db3153"
+    },
+    {
+      "software_path": "models/model_H/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_H/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_I/config",
+      "git_blob_sha1": "b021457c7174bd08607f587c34a20727e70a977a",
+      "sha256": "4577d34d8e5bc5834f1891553b3fcfe0064ed118255d25e4eb723ef8d1c172bb"
+    },
+    {
+      "software_path": "models/model_I/graph_transformer.py",
+      "git_blob_sha1": "2fc897c362e5f18f967203c02d68acb1da7c6641",
+      "sha256": "96a13e2a1f2a7b5fe199ac7cdf7b2ea6769e8df23c0b5b3ec897ac8809a5a321"
+    },
+    {
+      "software_path": "models/model_I/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_I/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_J/config",
+      "git_blob_sha1": "acdd82c4caf6eb95581d830a0ce80b6e0db30984",
+      "sha256": "245491f5f2599b755825fa79ad91abf2553b8dd7d977a234a913030bf86f5f3c"
+    },
+    {
+      "software_path": "models/model_J/graph_transformer.py",
+      "git_blob_sha1": "f6bba79c23af883980bfddffd581f1f38cc80a08",
+      "sha256": "08c420473192b8380e7b59f72453ef50047329edf0663a5032773c67d1db3153"
+    },
+    {
+      "software_path": "models/model_J/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_J/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_K/config",
+      "git_blob_sha1": "ba3a822d220aa43c0f2f56a85b616187a97f3ab4",
+      "sha256": "08a4e4f5b3c5d5c8a0c662ac39777593704f8b824484e09e9ab9cf90d4f59793"
+    },
+    {
+      "software_path": "models/model_K/graph_transformer.py",
+      "git_blob_sha1": "f6bba79c23af883980bfddffd581f1f38cc80a08",
+      "sha256": "08c420473192b8380e7b59f72453ef50047329edf0663a5032773c67d1db3153"
+    },
+    {
+      "software_path": "models/model_K/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_K/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_L/config",
+      "git_blob_sha1": "2ca3156df6c150b13a9b4bd5c93a9c3ac91407ed",
+      "sha256": "ba009b4a5af766811741f250a247b09c5183ac3e93fb23bb6e9094b05835f71d"
+    },
+    {
+      "software_path": "models/model_L/graph_transformer.py",
+      "git_blob_sha1": "fb75cdeeef2953c016d1f1bd80599fcba8b0a893",
+      "sha256": "ae950aa26883188192d55de2c55af3357fa8b39052a0b55b51b3dc45a7f9ec21"
+    },
+    {
+      "software_path": "models/model_L/modules/embeddings.py",
+      "git_blob_sha1": "37ee5dd0acbc1595045a184ba688350e4095d68a",
+      "sha256": "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9"
+    },
+    {
+      "software_path": "models/model_L/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "28c4636f3d2f8bd6a2c54474b82c34eaf58b3cba",
+      "sha256": "9ed4d3d9d439c921768b82550ed07c4e1a819c066c9176ab96d801ed9c14bf5d"
+    },
+    {
+      "software_path": "models/model_M/config",
+      "git_blob_sha1": "720490652847c03859c0d93ebc5aecfb2f6c112d",
+      "sha256": "082c52045d4c9d3798e93997a64b96eb28507781b093a70d85bf322e4a4b0ffe"
+    },
+    {
+      "software_path": "models/model_M/graph_transformer.py",
+      "git_blob_sha1": "a91cb82fb39d36242044cb8e6d8555066c900b2b",
+      "sha256": "ed286f93fe972c94db16f1a7aa5d5ca89373cd8ae24a4b343edf4d79880cf5df"
+    },
+    {
+      "software_path": "models/model_M/modules/embeddings.py",
+      "git_blob_sha1": "c4ebf90b2c9f89ff6030e3acaeaf0f3c25fe6ba5",
+      "sha256": "04a421ca14c7e9b788736e2f5822c5dbbf730c22f57db7499febfee7d46aea1b"
+    },
+    {
+      "software_path": "models/model_M/modules/hierarchical_embedding.py",
+      "git_blob_sha1": "d6e96b28eb25bfdd6462d15328fba5a6a46d5d65",
+      "sha256": "eb2e5db37196b8dfe67cd933feebceb353a66438b10a8de3db5b2bd4a47b6689"
+    }
+  ],
+  "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit",
+    "node_id": "MDc6TGljZW5zZTEz"
+  },
+  "next_steps": [
+    "Treat published CHAMPS runtime/provider/graph/evidence/requirements/review files and bound shared ML package metadata as immutable; corrections require a new reviewed execution version.",
+    "Continue the remaining competition promotion queue; 12 covered and 130 uncovered of 142 intakes, 80 total served CDGs."
+  ],
+  "catalog_mutations": 0,
+  "findings": [
+    "Thirteen configured model variants; graph-transformer layers over atoms, bonds and triplets, with quadruplets enabled for one variant.",
+    "Distance-biased self attention and coupling-subtype grouped residual prediction heads, not SchNet plus pooled pair attention.",
+    "Final prediction uses coupling-specific hardcoded model masks and averages five central sorted predictions, not a mean over GNN/LightGBM models.",
+    "Target scaling uses per-labeled-type mean and sample standard deviation; this does not imply Gaussian-distributed targets.",
+    "Raw geometry preprocessing also infers chemistry through RDKit/xyz2mol and OpenBabel; pinned chemistry dependencies are now installed and synthetic chemistry execution passes.",
+    "Default source embedding synthetic forward failed on valid two-feature rank-three input. Model variants must be checked individually.",
+    "Original launchers use filesystem data, pickle checkpoints and fixed output cardinality. Synthetic runtime must replace those boundaries explicitly.",
+    "All thirteen saved model configurations explicitly choose sine embeddings. The learnable embedding bug affects an unused/default option and does not prevent final-ensemble network execution.",
+    "Original per-model predictor CSV serialization rounds to six decimals before final reduction; reusable predictor preserves this numeric boundary without CSV files."
+  ],
+  "embedding_probe": {
+    "scope": "One source embedding forward on synthetic tensors; no graph lifecycle or training claim.",
+    "synthetic_atom_feature_shape": [
+      1,
+      3,
+      2
+    ],
+    "result": {
+      "error": "AssertionError",
+      "message": "Number of features do not match"
+    },
+    "cause": "LearnableEmbedding adds an axis whenever n_feature > 0 even when input is already rank three; expected two features becomes singleton axis.",
+    "source_embedding_variant_groups": {
+      "724615ba70705957cb203d81c136c665d0e97beff1c461c73b6c3e97ac35b7e9": [
+        "model_J",
+        "model_D",
+        "model_C",
+        "model_B",
+        "model_E",
+        "model_L",
+        "model_K",
+        "model_I",
+        "model_G",
+        "model_F",
+        "model_A",
+        "model_H"
+      ],
+      "04a421ca14c7e9b788736e2f5822c5dbbf730c22f57db7499febfee7d46aea1b": [
+        "model_M"
+      ]
+    },
+    "next": "Review model-specific embedding bodies and implement a versioned, explicitly documented compatibility correction if needed."
+  },
+  "ensemble_adapter": {
+    "module": "sciona/champs_ensemble.py",
+    "sha256": "d088852ed47b849e620d93677b613655ad9904df6d6f0c1686cf2e8dcf428afd",
+    "tests_passed": 10,
+    "source_comparisons": 12,
+    "synthetic_predictions": 480,
+    "evidence": "docs/reviews/competition_champs_ensemble_execution.json",
+    "scope": "Exact final reduction with strict record alignment; no full pipeline claim."
+  },
+  "chemistry_probe": {
+    "evidence": "docs/reviews/competition_champs_chemistry_execution.json",
+    "executions": 4,
+    "scope": "Synthetic water/methane and rigid transforms; original bond inference, chemistry tags and charges with documented OpenBabel interface adaptation.",
+    "dependencies": "requirements/champs-chemistry.txt"
+  },
+  "packing_probe": {
+    "evidence": "docs/reviews/competition_champs_packing_execution.json",
+    "status": "source_layout_defects_reproduced",
+    "findings": [
+      "Original seven-column triplet packer writes both bond indices to column5, leaving column6 zero.",
+      "All13saved graph variants consume atom indices from columns1:4 and bonds4:6, inconsistent with encoded two-type-column layout."
+    ],
+    "implication": "Previous full-size network smoke checks validate topology execution only; they do not establish correctness of chemistry-to-model tensor handoff."
+  },
+  "handoff_review": {
+    "evidence": "docs/reviews/competition_champs_handoff_execution.json",
+    "models": 13,
+    "full_padding": true,
+    "high_subtype_id": 118,
+    "finite_forward_backward": true,
+    "tests_passed": 15,
+    "source_changes": "Triplet bond references packed to columns5/6; model atom references read2/3/4 and bonds5/6. Original cache unchanged. New behavior requires new execution version; no pretrained parity claim."
+  },
+  "raw_handoff_review": {
+    "evidence": "docs/reviews/competition_champs_raw_handoff_execution.json",
+    "models": 13,
+    "raw_synthetic_molecules": 2,
+    "requested_couplings": 12,
+    "source_loss_scalar_reference": true,
+    "finite_forward_backward": true,
+    "scope": "Raw synthetic chemistry through fresh vocabulary, corrected packing and full configured networks. Primary vocabulary reserves all eight coupling types to preserve source loss semantics. No original pretrained parity claim."
+  },
+  "loss_review": {
+    "evidence": "docs/reviews/competition_champs_loss_execution.json",
+    "objectives": [
+      "global_mae",
+      "mean_log_type_mae"
+    ],
+    "all_eight_types": true,
+    "unequal_type_counts": true,
+    "scalar_loss_and_gradient_match": true,
+    "auxiliary_and_padding_excluded": true
+  },
+  "preprocessing_review": {
+    "evidence": "docs/reviews/competition_champs_preprocessing_execution.json",
+    "synthetic_molecules": 2,
+    "chemical_bonds": 14,
+    "triplets": 24,
+    "quadruplets": 18,
+    "requested_couplings": 12,
+    "translation_checks": true,
+    "compatibility": "OpenBabel degree interfaces; pandas append, numeric aggregation and positional indexing; corrected triplet layout."
+  },
+  "epoch_review": {
+    "evidence": "docs/reviews/competition_champs_epoch_execution.json",
+    "scope": "Pinned original epoch with analytic synthetic model; three training paths match accumulation, clipping and warmup/cosine reference. Cutout disabled.",
+    "defect": "Original chunked evaluation attempts backward in no_grad.",
+    "correction": "Hash-checked conditional backward only when optimizer is present. Corrected evaluation metrics match full batch for both loss modes and parameters remain unchanged."
+  },
+  "checkpoint_review": {
+    "evidence": "docs/reviews/competition_champs_checkpoint_execution.json",
+    "models": 13,
+    "synthetic_sgd_updates": true,
+    "strict_tensor_state_roundtrip": true,
+    "restored_predictions_exact": true,
+    "scope": "Raw synthetic chemistry through all full models, original loss and synthetic SGD updates. State_dict checkpoint adapter; no original pickled checkpoint parity or original full training run claim."
+  },
+  "source_runtime_review": {
+    "evidence": "docs/reviews/competition_champs_runtime_execution.json",
+    "module": "sciona/champs_source_runtime.py",
+    "source_files_verified": 71,
+    "full_models": 13,
+    "caller_rng_preserved": true,
+    "strict_checkpoint_predictions_exact": true,
+    "scope": "Reusable source-verified full model loader; preprocessing and loss still run through review harness, not a complete deployed lifecycle."
+  },
+  "preprocessing_runtime_review": {
+    "evidence": "docs/reviews/competition_champs_preprocessing_runtime_execution.json",
+    "module": "sciona/champs_preprocessing.py",
+    "source_reference_tensors_exact": true,
+    "fitted_state_replay": true,
+    "unlabeled_inference": true,
+    "requested_ids_preserved": true,
+    "inputs_and_state_unchanged": true,
+    "unfitted_inference_and_unknown_labels_rejected": true,
+    "scope": "Synthetic chemistry fit/transform and inference. Complete training lifecycle and graph not yet integrated."
+  },
+  "training_runtime_review": {
+    "module": "sciona/champs_training.py",
+    "controller_evidence": "docs/reviews/competition_champs_training_runtime_execution.json",
+    "full_model_evidence": "docs/reviews/competition_champs_full_training_execution.json",
+    "optimizer_scheduler_combinations": 16,
+    "exact_stochastic_resume": true,
+    "full_models_trained_and_evaluated": 13,
+    "tests_passed": 36,
+    "limits": [
+      "Full-model check is one synthetic SGD epoch; stochastic cutout/resume tested separately on an analytic model.",
+      "Absent target types yield undefined source per-type metrics; aggregate MAE is finite.",
+      "Source inverse-square-root scheduler is not stepped after warmup; retained and documented.",
+      "Full population/selection/inference/graph lifecycle remains pending."
+    ]
+  },
+  "prediction_review": {
+    "evidence": "docs/reviews/competition_champs_prediction_execution.json",
+    "module": "sciona/champs_prediction.py",
+    "source_six_decimal_boundary_preserved": true,
+    "exact_synthetic_source_predictions": 6,
+    "partial_batches_and_reordered_ids": true,
+    "duplicate_missing_ids_rejected": true
+  },
+  "train_predict_ensemble_review": {
+    "evidence": "docs/reviews/competition_champs_train_predict_ensemble_execution.json",
+    "models": 13,
+    "synthetic_ensemble_predictions": 12,
+    "independent_central_five_match": true,
+    "scope": "One synthetic full-model training epoch followed by unscaling, source rounding and ensemble. Population/selection/complete checkpoint lifecycle and served graph pending."
+  },
+  "population_review": {
+    "module": "sciona/champs_population.py",
+    "source_split": "Seed-zero first60% plus last20% training; middle20% validation.",
+    "batching": "Original DataLoader shuffle/drop_last with isolated caller-seeded generator.",
+    "tests": "Fixed split indices/alignment, shuffle repeatability and RNG preservation, dropped final training batch versus retained final inference batch."
+  },
+  "lifecycle_review": {
+    "module": "sciona/champs_lifecycle.py",
+    "evidence": "docs/reviews/competition_champs_lifecycle_execution.json",
+    "full_models": 13,
+    "complete_checkpoint_preprocessing_reload": true,
+    "ensemble_predictions": 12,
+    "selection_tests": "Strict finite eight-type macro log-MAE; retain earlier checkpoint on ties; reject validation-dependent scheduling without validation.",
+    "streaming_resume_evidence": "docs/reviews/competition_champs_training_runtime_streaming_execution.json",
+    "scope": "All13 source-configured networks, synthetic full-population one-SGD-epoch lifecycle and restored-state inference. Validation selection control tested separately. Full graph/provider and served verification pending."
+  },
+  "graph_review": {
+    "evidence": "docs/reviews/competition_champs_graph_execution.json",
+    "serialized_graph_sha256": "cfcf1e74cc4efcb35064c0eab882bddb875a9cffce54a126b32ea0dc29df4f5e",
+    "checks": {
+      "actual_runner_nodes": 2,
+      "full_model_lifecycles": 13,
+      "synthetic_predictions": 12,
+      "complete_checkpoint_reload": true,
+      "strict_json_output": true,
+      "graph_codec_roundtrip": true,
+      "provider_witness_contracts": true
+    },
+    "tests_passed": 50,
+    "scope": "Actual execution runner, raw synthetic input contract, all13 source-configured model lifecycles and full ensemble. Catalog served verification and publication remain pending."
+  },
+  "publication": {
+    "version_id": "bfb8ec22-0405-5906-85a8-0c16bfef77d6",
+    "graph_sha256": "cfcf1e74cc4efcb35064c0eab882bddb875a9cffce54a126b32ea0dc29df4f5e",
+    "trust_tier": 3,
+    "rows_created": 40,
+    "idempotent_reapply_rows_created": 0,
+    "provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "served_verification": "docs/reviews/competition_champs_publication_verification.json",
+    "full_model_lifecycles": 13,
+    "original_intake_status": "draft",
+    "publication_runner": "champs-execution-community.v1"
+  }
+}

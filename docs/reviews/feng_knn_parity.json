@@ -1,0 +1,110 @@
+{
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "7bf4e248bb05f91e53b9c0dfc468a399c45e79aeb0cfa471db8a08c14a749c48",
+  "provider_sha256": "3751d91bef60a80d6ee0a6d057d23603e0ee8a3ec56d5e1cc4a70205093d428d",
+  "validation_sha256": "8c06ae942079fb6a124c173c409df0313913f5c3242c2b875d91bd5ab4fa88f8",
+  "test_sha256": "0441d7f5469529965e86b5eea22b63edd30476077d31febdf992b7ba4900ee9e",
+  "libraries": {
+    "numpy": "2.4.2",
+    "sklearn": "1.8.0"
+  },
+  "cases_passed": 15,
+  "cases": [
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.7725203334756993
+    },
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.7754605933575452
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.7667604496104251
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.7639253126024124
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.7684992288522361
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 1.0
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 1.0
+    }
+  ],
+  "limitations": [
+    "Original numerical function bodies with synthetic in-memory loaders matching source float32 allocation.",
+    "Current sklearn, source parallel neighbors versus serial provider; no historical-engine or performance claim.",
+    "Separate prediction-batch scaling intentionally preserved; batch composition changes predictions.",
+    "Complete serialized graph validation and catalog approval remain outstanding."
+  ]
+}

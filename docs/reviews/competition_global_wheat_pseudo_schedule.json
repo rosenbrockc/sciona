@@ -1,0 +1,174 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "historical_scheduler_source": "https://raw.githubusercontent.com/pytorch/pytorch/v1.4.0/torch/optim/lr_scheduler.py",
+  "historical_scheduler_sha256": "1efe08d7f86f12bbe2c1ce722646ae4945c6fe19611db5c9058ffbf396bc94c3",
+  "runtime_source_sha256": "36551e0efd6b7d60778d2c4965a7dc4936e7101937bcde1cda4aeef1b9f5418b",
+  "installed_torch": "2.11.0",
+  "possible_round1_checkpoint_epochs_checked": 10,
+  "exact_historical_and_installed_schedules": true,
+  "round2_effective_base_lr": 8e-05,
+  "round2_nominal_cli_lr": 1e-05,
+  "round1_training_rates": [
+    8e-05,
+    7.823803458662553e-05,
+    7.31246117974981e-05,
+    6.516026908252904e-05,
+    5.512461179749811e-05,
+    4.4000000000000006e-05,
+    3.28753882025019e-05,
+    2.2839730917470977e-05,
+    1.4875388202501898e-05,
+    9.761965413374474e-06
+  ],
+  "round2_cases": [
+    {
+      "prior_best_epoch": 0,
+      "restored_lr_before_scheduler": 7.823803458662553e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 1,
+      "restored_lr_before_scheduler": 7.31246117974981e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 2,
+      "restored_lr_before_scheduler": 6.516026908252904e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 3,
+      "restored_lr_before_scheduler": 5.512461179749811e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 4,
+      "restored_lr_before_scheduler": 4.4000000000000006e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 5,
+      "restored_lr_before_scheduler": 3.28753882025019e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 6,
+      "restored_lr_before_scheduler": 2.2839730917470977e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 7,
+      "restored_lr_before_scheduler": 1.4875388202501898e-05,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 8,
+      "restored_lr_before_scheduler": 9.761965413374474e-06,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    },
+    {
+      "prior_best_epoch": 9,
+      "restored_lr_before_scheduler": 8.000000000000001e-06,
+      "restored_initial_lr": 8e-05,
+      "training_rates": [
+        8e-05,
+        7.51769145362398e-05,
+        6.2e-05,
+        4.4000000000000006e-05,
+        2.6000000000000012e-05,
+        1.2823085463760208e-05
+      ],
+      "final_lr": 8.000000000000001e-06
+    }
+  ],
+  "verifier_sha256": "04b79eef31603711c1164227397583697c3021057b45d4b243e59c9ae2596448",
+  "limits": [
+    "Pinned PyTorch1.4scheduler classes execute over installed Adam and synthetic optimizer state.",
+    "No claim of historical Adam numerical updates, Apex state or mixed-precision equivalence.",
+    "Full detector training, checkpoint selection, population construction and publication remain pending."
+  ]
+}

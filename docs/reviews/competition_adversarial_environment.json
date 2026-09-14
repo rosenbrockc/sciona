@@ -1,0 +1,11 @@
+{
+  "format": "adversarial-environment.v1",
+  "python": "3.13.11",
+  "direct_runtime_versions": {
+    "torch": "2.11.0",
+    "numpy": "2.4.2",
+    "Pillow": "11.3.0"
+  },
+  "requirements": "requirements/adversarial-execution.txt",
+  "limits": "Installed matcher environment observed. Clean installation not tested; wider graph-runner dependencies remain provided by matcher. TensorFlow/SciPy historical source references are not runtime dependencies."
+}

@@ -1,0 +1,21 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "detector_loss_gradient_parity_cases": 24,
+  "max_loss_error": 0.0,
+  "max_gradient_error": 0.0,
+  "classifier_loss_gradient_parity_cases": 12,
+  "classifier_exact_loss_probability_and_baseline_gradient_parity": true,
+  "limitations": [
+    "Source diagnostic tensor.data[0] becomes tensor.item() for current scalar tensors.",
+    "Parity uses the same installed PyTorch; historical dependency fidelity is not proven.",
+    "No trained model, full graph, or catalog approval is implied.",
+    "Empty negative sets are explicitly rejected instead of returning the source undefined mean."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_losses.py": "1dfa838a4bbc0fb7b272b107de269347fc5182113497f419f159fed2918a9d47",
+    "tests/test_dsb_losses.py": "e0972accc1e64ae71c661c1bde03fb6792d82a69cdf945d15c9b42111b584838",
+    "scripts/validate_dsb_losses.py": "cee5b3ee9dd05a5be963bbc8ca105e0debdab2a2d1ecf6132f30c14064e59fd4"
+  }
+}

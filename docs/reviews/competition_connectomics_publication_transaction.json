@@ -1,0 +1,14 @@
+{
+  "runner": "connectomics-execution-community.v1",
+  "rollback_rows_created": 40,
+  "rollback_absence_verified": true,
+  "apply_rows_created": 40,
+  "idempotent_reapply_rows_created": 0,
+  "trust_tier": 3,
+  "execution_version_id": "e347858c-302c-54df-b845-18fa2d44745d",
+  "execution_graph_sha256": "53dc75dcdd21723b0dc9da4018177ef8a8da210b900fa5df656d95bbb7ffd925",
+  "served_cdgs": 81,
+  "competition_intakes": 142,
+  "covered": 13,
+  "uncovered": 129
+}

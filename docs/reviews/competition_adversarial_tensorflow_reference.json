@@ -1,0 +1,21 @@
+{
+  "format": "adversarial-tensorflow-reference-pin.v1",
+  "repository": "https://github.com/tensorflow/tensorflow",
+  "reference_tag": "v1.4.0",
+  "commit": "d752244fbaad5e4268243355046d30990f59418f",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "d7c9068d896188264b60827b8cd1e25fdb9f5b5cad0b1589e90b96c87729c404"
+    },
+    {
+      "path": "tensorflow/contrib/layers/python/layers/layers.py",
+      "sha256": "a3fffaa8bae6fc29109e0cf903d884c5408aa1751268bba40e19bd06bc60e051"
+    },
+    {
+      "path": "tensorflow/python/ops/nn_impl.py",
+      "sha256": "38dfbc153b069389127761d9398106241a3f3cea51c8bef358ad82ade9899a6e"
+    }
+  ],
+  "limits": "Explicit TF1 reference for primitive semantics/defaults; original competition binary version is unspecified. Software only, no installation or model states."
+}

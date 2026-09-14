@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 4,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Exactly five fold-local augmentation fits and full-training query fit",
+    "Complete multiclass OOF output",
+    "Heldout labels do not affect own fold predictions",
+    "Changed query population leaves all OOF predictions unchanged",
+    "Overlapping identities rejected before clustering"
+  ],
+  "sha256": {
+    "sciona/otto_augmented_boosting.py": "8f3067931468b062c5b5b4af2a451da7e968aa7a73ca8ca437cfdf17e641d6cc",
+    "sciona/otto_augmented_crossfit.py": "91b0ae050a678360f67dc8eb808169f0571087108d033d62ee40296f1e6c7aa5",
+    "sciona/otto_augmented_features.py": "17568a237b96a2db6e2152892699dfd782461a982059060523aa3eb36226776f",
+    "tests/test_otto_augmented_boosting.py": "c5c482aace09f6882feb2892eb61590f13156f1dc271d695dffd5d95e2c5e6d9"
+  },
+  "limitations": [
+    "Independent fold-local cluster-ID realization; historical population scope, counts, encoding and boosting settings unresolved.",
+    "Synthetic learning check uses class-center queries; no extrapolation accuracy claim.",
+    "Remaining winner model stack and source qualification pending."
+  ],
+  "catalog_mutations": 0
+}

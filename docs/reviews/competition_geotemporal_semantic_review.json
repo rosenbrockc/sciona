@@ -1,0 +1,69 @@
+{
+  "format": "geotemporal-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "9bb6428c-0529-56c8-b51d-96e1b4d6990c",
+  "source_hash": "b22878a5b3fa77fcf721b4343515a4284b9dd7777758bd9e86b1ed56e5c6790e",
+  "source_scope": "Generic five-stage geospatial/spatiotemporal fusion topology; independent causal planar regression realization.",
+  "serialized_graph_sha256": "cbe1b307959c62dc36744a3e1a4cb87573125a29297389774af52abef4727068",
+  "provider_sha256": "c0aebe33da0cc0564eb5da2dd2c0066aed6e321206a5c2325528bf2394bb3791",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": {
+    "geo_temporal_join": "Latest available spatial context per site within radius/lookback",
+    "spatial_temporal_features": "Planar coordinates, seasonal phase, distances, context age, strict-past target lags and missingness",
+    "leakage_safe_geo_validation": "Expanding time blocks, explicit gap, fitting-only warmup and fold-local target history",
+    "fusion_model": "ExtraTrees regressor for each forward fold followed by full-training refit",
+    "geographic_postprocessing": "Nonnegative clipping and same-time spatial-neighbor smoothing"
+  },
+  "dependencies": {
+    "joblib": "1.5.3",
+    "numpy": "2.4.2",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.17.1",
+    "threadpoolctl": "3.6.0"
+  },
+  "limitations": [
+    "Automated Tier 3 Community only; no Tier 1 human certification or Tier 2 usage qualification. Original generic intake remains draft with mandatory provenance.",
+    "Complete five-stage causal planar regression realization: context join, spatial/temporal features, forward validation, ExtraTrees fusion and geographic smoothing. Independent implementation; synthetic qualification only, no historical winning recipe or empirical accuracy claim.",
+    "Caller declares shared planar metric coordinates and seconds clock with shared origin. No coordinate transformation, clock alignment or proof of the declaration. Duplicate space/time rows rejected separately per population.",
+    "Context time denotes availability, not merely event time: latest available value per site within lookback/radius, then nearest-site mean with coordinate tie order. Late-reported or revised context must use correct availability timestamps supplied by caller.",
+    "Target lags use only strict-past observations within radius/lookback. Training features exclude own-time targets; validation features see only fitting-fold history, with no sequential update from held-out labels. Missing aggregates use zero plus explicit availability indicators.",
+    "Expanding contiguous time blocks with exclusion gap; block zero is fitting-only warmup with no validation prediction. Later folds legitimately use earlier validation labels as history. Temporal validation permits repeated locations; no unseen-location generalization guarantee.",
+    "ExtraTrees regressor per forward fold and full-data refit with fixed controls. Held-out MSE covers only post-warmup predictions after geographic smoothing. No hyperparameter optimization or unbiased performance guarantee beyond supplied split assumptions.",
+    "Nonnegative clipping precedes convex same-time neighbor smoothing. Query outputs intentionally depend on co-timed query population; different times never smooth together. No mass conservation, map matching or query-population independence claim.",
+    "Naive in-memory spatial joins, pinned provisioned dependencies and installed notices. No large-scale, clean-install or cross-platform qualification. Strict finite JSON boundary; fitted objects trusted in-process and no portable serialization claim."
+  ],
+  "evidence_sha256": {
+    "competition_geotemporal_source_triage.json": "e9469e7ffad19af753c1bbca1ed412296541f8e017fcaffeb54627b33b1040db",
+    "competition_geotemporal_runtime_tests.json": "57f51781210997fcb6e9db4ca52f739e638322e6c879cc60a472d369c7575403",
+    "competition_geotemporal_graph_execution.json": "0b921bafbf406b7bf10ddb65588b55251b60dee36a7288b9dcc4a70bad15f038",
+    "competition_geotemporal_environment.json": "d91e122d0d7f0ad7ff5b07a0f2ee89ee95a8db80047582e411357081e1498ba8"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_geotemporal_execution.py": "fb877decbb592e9c820b1c9b7338a06b43b390a4ed61c2309d9818890ab6c2cb",
+    "requirements/geotemporal-execution.txt": "e60b311cb4bfcd42e1627036821f64565c64f0bc9d06c14cc5a7c24b730d0707",
+    "docs/licenses/Geotemporal-joblib-0-LICENSE.txt": "42612911c1872c5e4b43f6ae0e8ee59467cd350332241cf72ce90640264fae6a",
+    "docs/licenses/Geotemporal-numpy-0-LICENSE.txt": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf",
+    "docs/licenses/Geotemporal-numpy-1-LICENSE.txt": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+    "docs/licenses/Geotemporal-numpy-2-COPYING": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+    "docs/licenses/Geotemporal-numpy-3-LICENSE": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+    "docs/licenses/Geotemporal-numpy-4-dragon4_LICENSE.txt": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+    "docs/licenses/Geotemporal-numpy-5-LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+    "docs/licenses/Geotemporal-numpy-6-LICENSE": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+    "docs/licenses/Geotemporal-numpy-7-LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+    "docs/licenses/Geotemporal-numpy-8-LICENSE.txt": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+    "docs/licenses/Geotemporal-numpy-9-LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+    "docs/licenses/Geotemporal-numpy-10-LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+    "docs/licenses/Geotemporal-numpy-11-LICENSE.md": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+    "docs/licenses/Geotemporal-numpy-12-LICENSE.md": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+    "docs/licenses/Geotemporal-numpy-13-LICENSE.md": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+    "docs/licenses/Geotemporal-numpy-14-LICENSE.md": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+    "docs/licenses/Geotemporal-numpy-15-LICENSE.md": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+    "docs/licenses/Geotemporal-numpy-16-LICENSE.md": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+    "docs/licenses/Geotemporal-scikit-learn-0-COPYING": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "docs/licenses/Geotemporal-scipy-0-LICENSE.txt": "60a7d05d729ed5c763852a324a1cb4223d665d4ad3f4b8a0c130ae5c60c93e49",
+    "docs/licenses/Geotemporal-threadpoolctl-0-LICENSE": "81ac619075248b06e53660b652d10e485f4675f5d0ae0f97ea22370da1f7e23b"
+  },
+  "catalog_mutations": 0
+}

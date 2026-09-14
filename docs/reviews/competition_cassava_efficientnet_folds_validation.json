@@ -1,0 +1,60 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "upstream_pretrained_sha256": "62297d620d56d0848b3234faa8b4c0f04791e533203447ee23c06d3e6968ed21",
+  "diagnostic_batch_size": 1,
+  "folds": [
+    {
+      "fold": 0,
+      "epochs_executed": 7,
+      "best_epoch": 2,
+      "held_out_checkpoint_score_replayed": true,
+      "checkpoint_optimizer_count_verified": true
+    },
+    {
+      "fold": 1,
+      "epochs_executed": 5,
+      "best_epoch": 0,
+      "held_out_checkpoint_score_replayed": true,
+      "checkpoint_optimizer_count_verified": true
+    },
+    {
+      "fold": 2,
+      "epochs_executed": 5,
+      "best_epoch": 0,
+      "held_out_checkpoint_score_replayed": true,
+      "checkpoint_optimizer_count_verified": true
+    },
+    {
+      "fold": 3,
+      "epochs_executed": 5,
+      "best_epoch": 0,
+      "held_out_checkpoint_score_replayed": true,
+      "checkpoint_optimizer_count_verified": true
+    },
+    {
+      "fold": 4,
+      "epochs_executed": 6,
+      "best_epoch": 1,
+      "held_out_checkpoint_score_replayed": true,
+      "checkpoint_optimizer_count_verified": true
+    }
+  ],
+  "temporary_checkpoints_removed": true,
+  "scope": "Complete pretrained fivefold CPU CV through shared population dispatch; original budgets, preparation provenance and full four-family ensemble remain separate gates.",
+  "sha256": {
+    "sciona/cassava_efficientnet_folds.py": "35035ae845c76fde36cdede44793d3a2ba92aac78bb570579be982a7e21d6a6f",
+    "sciona/cassava_fold_contract.py": "4761d25e2787a0ffc04170af5e1868ef15b29c9b0967f6d6528638d69fe61a40",
+    "sciona/cassava_fold_dispatch.py": "ae1f7fde1ab5b02669ac16e610c6cec4d8f4a44e346c9ace891010c2d526a05f",
+    "sciona/cassava_efficientnet_initialization.py": "f84f617b4ab2be7ddcdb89d457ce367c07a7c4845356f0e8074bab8c3c05abbb",
+    "sciona/cassava_efficientnet_upstream.py": "0417ac3859c47303e5c289dcef1ac7a9ad1c1b51744a9ec65da5db5467f71fef",
+    "sciona/cassava_efficientnet_weights.py": "15145907da545ab8501f2c0fef025b7957f12d815260888fa78047fc610b4091",
+    "sciona/cassava_efficientnet_model.py": "56ba01b91cfb069ee7e8165a6a2494eafe1a2e757a22af2eabb3504d2de97ae6",
+    "sciona/cassava_efficientnet_training.py": "297bb4d488d9223a322f217a865e4a29f5a492865872c7e1eb57b92c21838e3c",
+    "sciona/cassava_training_images.py": "79bf5b6a09da1cf709c2477f9aa73a7a34f94fa6221b3e6126acb3bffbdf9902",
+    "sciona/cassava_training_stream.py": "d887b1f57d6d50e5bec4b0258c562531a15f1afb40f9d9019cb1181fec4d7535",
+    "sciona/cassava_efficientnet_schedule.py": "716c3fb5912fe8c78fecd861a4eaee3808d05e57237b6d8be407e2bb0872d694",
+    "scripts/validate_cassava_efficientnet_folds.py": "79254ee364a92c1b5f9e593df43fd1a9cf47d75cb074dd245c797211361d58e3"
+  }
+}

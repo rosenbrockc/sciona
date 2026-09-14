@@ -1,0 +1,75 @@
+{
+  "approved": false,
+  "synthetic_weights_and_inputs": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "network_parity_cases": [
+    {
+      "classifier": false,
+      "training": false,
+      "side": 16,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": false,
+      "training": false,
+      "side": 32,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": false,
+      "training": true,
+      "side": 16,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": false,
+      "training": true,
+      "side": 32,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": true,
+      "training": false,
+      "side": 16,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": true,
+      "training": false,
+      "side": 32,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": true,
+      "training": true,
+      "side": 16,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    },
+    {
+      "classifier": true,
+      "training": true,
+      "side": 32,
+      "strict_state_roundtrip": true,
+      "exact_output_input_and_parameter_gradient_parity": true
+    }
+  ],
+  "source_classifier_96_cube_inference_parity": true,
+  "limitations": [
+    "No trained checkpoint or predictive accuracy validation.",
+    "Same current PyTorch for source and candidate, not historical runtime fidelity.",
+    "96-cube parity covers inference; gradient cases use 16/32 cubes.",
+    "Graph assembly, coordinate generation, proposal decoding and full pipeline execution remain."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_network.py": "32a897938064b21e0ba0fee037159cb59befa750e21eba1dd721de8388724efc",
+    "tests/test_dsb_network.py": "52b1b457c5757879764905b84aae2869f8f431707b7353a87d03776d17c2416a",
+    "scripts/validate_dsb_network.py": "b6c6439053fe3f9a1375a44e5dba397deb613f600041649f95ee406c1314acaa"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "checks": {
+    "independent_schedule_points_two_parameter_groups": 16,
+    "final_branch_training_loop_ast_equal": true
+  },
+  "source_commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "implementation_sha256": "0a3aa74db2e71642254a1c0be893022395e7d408c1367929a130429685d356f2",
+  "scope": "Final linear/cosine schedules only; optional plateau scheduling not independently tested."
+}

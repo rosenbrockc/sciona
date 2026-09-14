@@ -1,0 +1,25 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "training": false,
+  "deep_supervision": true,
+  "classification_head": true,
+  "spatial_size": 32,
+  "batch": 2,
+  "parameters": 134133707,
+  "exact_initial_state_and_rng": true,
+  "exact_outputs": true,
+  "exact_input_and_parameter_gradients": false,
+  "exact_final_buffers": true,
+  "implementation_sha256": {
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Synthetic initialized weights and float32 CPU tensors; no learned accuracy or historical numerical environment claim.",
+    "Optional source threshold shortcut rejected; original training configurations disable it.",
+    "Complete optimizer/augmentation/tiling/pseudo-label/inference graph remains."
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "approved": false,
+  "scope": "Synthetic numerical component only; full workflow remains incomplete",
+  "source_commit": "cd7809db4d7eb92860b178d8f5a53ab16f03ad91",
+  "checks": {
+    "preprocessing": 4,
+    "fits": 16,
+    "independent_covariance": 16,
+    "likelihood_gradients": 16,
+    "optimizer_fallback": 4,
+    "cached_fit": 4,
+    "unknown_band": 1
+  },
+  "hashes": {
+    "sciona/plasticc_observations.py": "694196bf77c42833f07aa0367d67d0a0fbe5491a5d0aaf5d4acf174260310385",
+    "scripts/validate_plasticc_observations.py": "b24f3a6e38e0c9f037348536e2074a1ed57e88cc7c094085d0fb9b9273dbe219",
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  },
+  "dependencies": {
+    "astropy": "8.0.1",
+    "george": "0.4.4",
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "pandas": "2.3.3"
+  },
+  "limitations": [
+    "No competition accuracy claim",
+    "No full graph execution yet",
+    "Source optimizer failure returns attempted parameters although predictor restores guesses"
+  ]
+}

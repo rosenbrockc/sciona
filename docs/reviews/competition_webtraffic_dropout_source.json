@@ -1,0 +1,6 @@
+{
+  "url": "https://raw.githubusercontent.com/tensorflow/tensorflow/v1.10.0/tensorflow/python/ops/rnn_cell_impl.py",
+  "sha256": "bb8d8bc594b9daf4a31db85fe1d1b56a1c90843b99cd726958b514b797cca036",
+  "scope": "TensorFlow DropoutWrapper semantics inspection",
+  "approved": false
+}

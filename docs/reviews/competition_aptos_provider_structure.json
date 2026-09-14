@@ -1,0 +1,32 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "scope": "Structural registration, code anchors, explicit IO contracts and symbolic composition only",
+  "serialized_graph_sha256": "5d81a258553ad5e1737ee9ec38799315a20ee1bde92e67fa986f2902ca9ffebe",
+  "registrations": {
+    "population": {
+      "fqdn": "sciona.atoms.ml.aptos_execution.aptos_population",
+      "symbol": "aptos_population",
+      "relative_file": "src/sciona/atoms/ml/aptos_execution.py",
+      "first_line": 13,
+      "last_line": 22,
+      "signature": "(base: list, average: list, grouped: list, pseudo_keys: list) -> object",
+      "version_id": "cac04171-edbd-5b40-a7bf-a2cb5707c39a"
+    },
+    "train_ensemble": {
+      "fqdn": "sciona.atoms.ml.aptos_execution.aptos_train_ensemble",
+      "symbol": "aptos_train_ensemble",
+      "relative_file": "src/sciona/atoms/ml/aptos_execution.py",
+      "first_line": 34,
+      "last_line": 58,
+      "signature": "(plan: object, query_keys: list, images: dict, references: dict, first_stage_epochs: dict, seeds: dict, batch_size: int, learning_rate: float, lower_deviation: float, upper_deviation: float, tie_policy: str, work_root: str) -> dict",
+      "version_id": "03b1f916-fdb1-51b5-bbd1-79a876f53199"
+    }
+  },
+  "provider_sha256": "97953529d448b804912e47eee127293094de60fc63f12ecf05dfacab15c966ab",
+  "sha256": {
+    "scripts/build_aptos_execution_graph.py": "331b6f51f443887d00b8614884f5ead70d6bda38426a5691a5b81c3b4fcc8dc7",
+    "scripts/audit_aptos_provider_contract.py": "670469e55df736e6f67db463f66c8ab98ce9b0d7968c26f9b44da523c5e0c368"
+  }
+}

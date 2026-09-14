@@ -1,0 +1,188 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "query_images": 2,
+  "selected_keras_checkpoints": 20,
+  "checkpoint_diagnostics": [
+    {
+      "snapshot": 0,
+      "fold": 0,
+      "min": 0.23137255012989044,
+      "max": 0.41960784792900085,
+      "mean": 0.31492048501968384,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 0,
+      "fold": 1,
+      "min": 0.4470588266849518,
+      "max": 0.6235294342041016,
+      "mean": 0.49993830919265747,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 0,
+      "fold": 2,
+      "min": 0.501960813999176,
+      "max": 0.6705882549285889,
+      "mean": 0.5463005900382996,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 0,
+      "fold": 3,
+      "min": 0.27450981736183167,
+      "max": 0.9843137264251709,
+      "mean": 0.4325050711631775,
+      "confident_fraction": 0.14812273306538576
+    },
+    {
+      "snapshot": 0,
+      "fold": 4,
+      "min": 0.5137255191802979,
+      "max": 0.572549045085907,
+      "mean": 0.549224317073822,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 1,
+      "fold": 0,
+      "min": 0.23137255012989044,
+      "max": 0.4156862795352936,
+      "mean": 0.3131619393825531,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 1,
+      "fold": 1,
+      "min": 0.4470588266849518,
+      "max": 0.615686297416687,
+      "mean": 0.49591565132141113,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 1,
+      "fold": 2,
+      "min": 0.501960813999176,
+      "max": 0.6549019813537598,
+      "mean": 0.5420387387275696,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 1,
+      "fold": 3,
+      "min": 0.29411765933036804,
+      "max": 0.9725490212440491,
+      "mean": 0.4505796432495117,
+      "confident_fraction": 0.14209391236153318
+    },
+    {
+      "snapshot": 1,
+      "fold": 4,
+      "min": 0.5098039507865906,
+      "max": 0.5686274766921997,
+      "mean": 0.5462130904197693,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 2,
+      "fold": 0,
+      "min": 0.23529411852359772,
+      "max": 0.4156862795352936,
+      "mean": 0.3173408806324005,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 2,
+      "fold": 1,
+      "min": 0.4431372582912445,
+      "max": 0.5686274766921997,
+      "mean": 0.48865431547164917,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 2,
+      "fold": 2,
+      "min": 0.4941176474094391,
+      "max": 0.6352941393852234,
+      "mean": 0.5369445085525513,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 2,
+      "fold": 3,
+      "min": 0.3686274588108063,
+      "max": 0.8980392217636108,
+      "mean": 0.49293842911720276,
+      "confident_fraction": 0.0929320654837761
+    },
+    {
+      "snapshot": 2,
+      "fold": 4,
+      "min": 0.5098039507865906,
+      "max": 0.5607843399047852,
+      "mean": 0.544600784778595,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 3,
+      "fold": 0,
+      "min": 0.239215686917305,
+      "max": 0.4156862795352936,
+      "mean": 0.3187152147293091,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 3,
+      "fold": 1,
+      "min": 0.4627451002597809,
+      "max": 0.5333333611488342,
+      "mean": 0.48913660645484924,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 3,
+      "fold": 2,
+      "min": 0.4941176474094391,
+      "max": 0.6078431606292725,
+      "mean": 0.534570038318634,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 3,
+      "fold": 3,
+      "min": 0.4313725531101227,
+      "max": 0.6313725709915161,
+      "mean": 0.501345157623291,
+      "confident_fraction": 0.0
+    },
+    {
+      "snapshot": 3,
+      "fold": 4,
+      "min": 0.5098039507865906,
+      "max": 0.5607843399047852,
+      "mean": 0.5452949404716492,
+      "confident_fraction": 0.0
+    }
+  ],
+  "ensemble_summary": {
+    "min": 0.4413725629448891,
+    "max": 0.5943137422204018,
+    "mean": 0.4730169342454084,
+    "per_image_confident_fraction": [
+      0.0,
+      0.0
+    ]
+  },
+  "limits": [
+    "First two generated query images only; full round confidence remains established by persisted round state.",
+    "Diagnostic inference only; no retraining, checkpoint changes or selection overrides."
+  ],
+  "blend_bounds_for_any_normalized_torch_prediction": {
+    "min": 0.22068628147244454,
+    "max": 0.7971568711102008,
+    "source_confident_pixel_impossible": true,
+    "scope": "two diagnostic synthetic query images"
+  }
+}

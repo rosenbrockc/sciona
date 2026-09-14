@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 35,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_gravity_mass.py": "2c1da1d6f7a58cd2c634ce423b31e3e19a3936dc381d0e8f4657e5fb90dfea54",
+    "tests/physics_ingest/test_gravity_mass_proof.py": "70a5f06b5ccdc1cd47a8e844074a66ad565b1312522cdcaae2cc05383757fcf5"
+  },
+  "provider_sha256": "1b6e60b0001dcd4773d1e44153232f9bef00b5cdc07e4d1192e59f4514ccfa11",
+  "synthetic_only": true
+}

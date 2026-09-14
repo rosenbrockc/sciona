@@ -1,0 +1,40 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "actual_validation_section": {
+    "steps": 1,
+    "mean_training_loss": 1.3140013217926025,
+    "validation_before": 1.301329255104065,
+    "validation_after_attempt": 2.821870803833008,
+    "rolled_back": false,
+    "rollback_policy": "model_and_optimizer",
+    "optimizer_iteration": 1
+  },
+  "injected_metric_rollback_cases": [
+    {
+      "steps": 1,
+      "mean_training_loss": 2.554016351699829,
+      "validation_before": 1.0,
+      "validation_after_attempt": 2.0,
+      "rolled_back": true,
+      "rollback_policy": "weights_only",
+      "optimizer_iteration": 2
+    },
+    {
+      "steps": 1,
+      "mean_training_loss": 2.646578788757324,
+      "validation_before": 1.0,
+      "validation_after_attempt": 2.0,
+      "rolled_back": true,
+      "rollback_policy": "model_and_optimizer",
+      "optimizer_iteration": 2
+    }
+  ],
+  "post_update_exception_restores_model_optimizer": true,
+  "source_model": "full_gru",
+  "stochastic_training_enabled": true,
+  "random_stream_rewind": false,
+  "scope": "One real validation section, both injected deterioration policies and failure after actual update; full lifecycle and stochastic replay remain pending.",
+  "runtime_sha256": "522c95faf44713c1b1b1cca510008c9e3ba172fbad82428b3f0ec5c63748f640",
+  "validator_sha256": "e681c86f643063a93772b56cb43606facad70da0bbaf8137dae026e77fc63eba"
+}

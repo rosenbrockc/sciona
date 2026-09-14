@@ -1,0 +1,27 @@
+{
+  "package": "albumentations",
+  "version": "0.5.2",
+  "wheel_url": "https://files.pythonhosted.org/packages/03/58/63fb1d742dc42d9ba2800ea741de1f2bc6bb05548d8724aa84794042eaf2/albumentations-0.5.2-py3-none-any.whl",
+  "wheel_sha256": "d7e9b6782aa252477d1d796891c0b01aae90c31b122fcf173d4ced4a574454c6",
+  "files": {
+    "albumentations/__init__.py": "1755864a08b0f51f5ca26c0da4498e5ed4e42dbd8e82522104bb4fc3ccfe2bef",
+    "albumentations/augmentations/__init__.py": "b320df8ed39b8bce7c06181a7e75a7b402425860887cda8585987c40c975f0dd",
+    "albumentations/augmentations/bbox_utils.py": "7003cc1d60119588c0db2199fa5388921832d7c551aadaecbeae656da752ba5a",
+    "albumentations/augmentations/domain_adaptation.py": "96f51a36a6abd8633ac38e294b1b3f89b1470ecfb9b8de5c5e3b6349fcaa7f53",
+    "albumentations/augmentations/functional.py": "5cb3717c06679a330c73233988688b46c3836a81463a877a81bcc55ec60b00bb",
+    "albumentations/augmentations/keypoints_utils.py": "71dfc7962b1c6648fa53971552ed3f6b9ef27ee1f9a86b8be21f60230b0eaadf",
+    "albumentations/augmentations/transforms.py": "ce029ede007c076f16222f4231b2c749ef6a35cb343d3736bc07b88faf24e224",
+    "albumentations/augmentations/utils.py": "1da5dfaa6652481d7eb4135481d65b10055824c63a414a9795342c22b2e6dfd7",
+    "albumentations/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "albumentations/core/composition.py": "a5f278c101fa9522b8b44b894805067c5a566594df16552839f18778da56b9f7",
+    "albumentations/core/serialization.py": "4df84ccb89a89d86db9ec3f6a3f2819f569aa173bef980c3186147b423b800a4",
+    "albumentations/core/six.py": "93c18dd3c1f0d3879f5f38140bf92dc6d12ac2e10f8b5460b6f9e4a9a83806ca",
+    "albumentations/core/transforms_interface.py": "bf467194a7e05560b7354bc65c43d411adee7f996628ced88ce958de4d6b8961",
+    "albumentations/core/utils.py": "4d0bc5575b7626386b2f0f47d0f18a2a1f03f607e50a9ca6c979a6db9c741374",
+    "albumentations/imgaug/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "albumentations/imgaug/transforms.py": "4a0e54e236da8cc83593541f1ef44d4229fe814ade59fe493ea1ae6eb42bf3d6",
+    "albumentations/pytorch/__init__.py": "51c9c99c68612e7464bf0687a12124f755d49e64eb056782596dbfa4e3875d76",
+    "albumentations/pytorch/functional.py": "272693c992cca049925041c2c74a3e06506cc94d8570956559f2f894d1574f1d",
+    "albumentations/pytorch/transforms.py": "46b5dda4c09a1b0d0c891a6eeff27e05822daadff52e87f47f00bb8b5911a4fb"
+  }
+}

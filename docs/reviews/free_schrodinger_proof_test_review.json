@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_free_schrodinger_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_free_schrodinger_proof.py": "32bd6d94aa54ca7ce27b8924cda8e5f013a8a9b4444de30cbb36395d15853eff",
+    "sciona/physics_ingest/free_schrodinger_proof.py": "3d6e021f777111f404465f24c9a9f5890bb98dec756ad57fd2ee2055a70b94de",
+    "scripts/validate_free_schrodinger_source.py": "6b3cbe73b9a4bd1c093a94a762b0952e9902fc25cce5deac08c58bcbf45e5974"
+  }
+}

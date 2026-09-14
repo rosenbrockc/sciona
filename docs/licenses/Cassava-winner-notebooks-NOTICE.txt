@@ -1,0 +1,28 @@
+Cassava winning notebook reconstruction attribution
+
+Source authors and pinned public notebook versions:
+- jannish: Final Version Inference, version 8
+  https://www.kaggle.com/code/jannish/final-version-inference
+- hiarsl: Cassava Leaf Disease ResNeXt50, version 21
+  https://www.kaggle.com/code/hiarsl/cassava-leaf-disease-resnext50
+- sebastiangnther: Cassava Leaf Disease ViT TPU Training, version 3
+  https://www.kaggle.com/code/sebastiangnther/cassava-leaf-disease-vit-tpu-training
+- jannish: Cassava Leaf Disease EfficientnetB4 TPU, version 11
+  https://www.kaggle.com/code/jannish/cassava-leaf-disease-efficientnetb4-tpu
+
+Kaggle's public notebook viewer declares Apache License 2.0 for these public
+notebooks. The pinned-version metadata and publisher declaration are recorded
+in competition_cassava_notebook_license_declaration.json. License text is in
+Cassava-winner-notebooks-Apache-2.0.txt.
+
+This implementation reconstructs the described model training and inference
+operations. It separates ViT training from held-out validation, resolves the
+commented EfficientNet refit normalization input through an explicit population,
+uses a disclosed CPU reference runtime, and requires verified local pretrained
+weights. It adds identity, integrity, and input contracts. These changes do not
+claim equivalence to the original hardware environment or competition scores.
+
+Third-party implementations and model weights retain their own notices and
+terms. This attribution does not grant rights to notebook input data or model
+artifacts under a different license. No original notebook outputs or input data
+are included in this notice.

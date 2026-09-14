@@ -1,0 +1,28 @@
+{
+  "format": "dfdc-transforms-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "dependency": {
+    "albumentations": "1.3.0",
+    "opencv": "5.0.0"
+  },
+  "checks": {
+    "source_ast_equalities": 4,
+    "actual_source_image_mask_rng_cases": 72,
+    "independent_direct_nearest_resize": true,
+    "constructor_interpolation_ignored": true,
+    "independent_padding": true
+  },
+  "semantics": [
+    "Source train and validation order/probabilities retained; B7 size380 passed explicitly.",
+    "Spatial augmentation applies jointly to image and mask; mask resize uses nearest interpolation.",
+    "Constructor interpolation_up/down attributes are not forwarded to image apply under installed library: default area/cubic is effective; explicit direct apply arguments work.",
+    "Factory source default300 retained but does not override B7 configuration."
+  ],
+  "limits": "Actual synthetic transforms under installedAlbumentations1.3.0, compared with same-library source definitions. SourceDocker pins1.0.0; historical stochastic/binary equivalence is not asserted. Landmark/region augmentation and tensor preparation still need connection; no full lifecycle or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_transforms.py": "5b1cee757b9ceac53c18e61c5aba489fad629f81dbd78f298945ebb452889f6f",
+    "scripts/validate_dfdc_transforms.py": "81f47216819a384fba2177a4693a98fc03f3dcd48d347f5fd4a9c5addca1896a",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "steps_per_epoch": 1,
+      "epochs": 2,
+      "peak": 0.001,
+      "max_abs_error": 2.541098841762901e-20
+    },
+    {
+      "steps_per_epoch": 1,
+      "epochs": 2,
+      "peak": 0.0005,
+      "max_abs_error": 1.2705494208814505e-20
+    },
+    {
+      "steps_per_epoch": 1,
+      "epochs": 5,
+      "peak": 0.001,
+      "max_abs_error": 2.541098841762901e-20
+    },
+    {
+      "steps_per_epoch": 1,
+      "epochs": 5,
+      "peak": 0.0005,
+      "max_abs_error": 1.2705494208814505e-20
+    },
+    {
+      "steps_per_epoch": 3,
+      "epochs": 1,
+      "peak": 0.001,
+      "max_abs_error": 1.0842021724855044e-19
+    },
+    {
+      "steps_per_epoch": 3,
+      "epochs": 1,
+      "peak": 0.0005,
+      "max_abs_error": 5.421010862427522e-20
+    },
+    {
+      "steps_per_epoch": 3,
+      "epochs": 2,
+      "peak": 0.001,
+      "max_abs_error": 1.0842021724855044e-19
+    },
+    {
+      "steps_per_epoch": 3,
+      "epochs": 2,
+      "peak": 0.0005,
+      "max_abs_error": 5.421010862427522e-20
+    },
+    {
+      "steps_per_epoch": 3,
+      "epochs": 5,
+      "peak": 0.001,
+      "max_abs_error": 1.0842021724855044e-19
+    },
+    {
+      "steps_per_epoch": 3,
+      "epochs": 5,
+      "peak": 0.0005,
+      "max_abs_error": 5.421010862427522e-20
+    },
+    {
+      "steps_per_epoch": 7,
+      "epochs": 1,
+      "peak": 0.001,
+      "max_abs_error": 1.0842021724855044e-19
+    },
+    {
+      "steps_per_epoch": 7,
+      "epochs": 1,
+      "peak": 0.0005,
+      "max_abs_error": 5.421010862427522e-20
+    },
+    {
+      "steps_per_epoch": 7,
+      "epochs": 2,
+      "peak": 0.001,
+      "max_abs_error": 1.0842021724855044e-19
+    },
+    {
+      "steps_per_epoch": 7,
+      "epochs": 2,
+      "peak": 0.0005,
+      "max_abs_error": 5.421010862427522e-20
+    },
+    {
+      "steps_per_epoch": 7,
+      "epochs": 5,
+      "peak": 0.001,
+      "max_abs_error": 1.0842021724855044e-19
+    },
+    {
+      "steps_per_epoch": 7,
+      "epochs": 5,
+      "peak": 0.0005,
+      "max_abs_error": 5.421010862427522e-20
+    }
+  ],
+  "invalid_schedules_rejected": 7,
+  "historical_scheduler_sha256": "131e6d9694580cf9d6b2b0296e762a47a5ce7760a9d133938f2fe88ecd340a66",
+  "runtime_sha256": "b374deb86e605f8c3479e32ccaf614558225bc0382bab935410e1324163e71ea",
+  "validator_sha256": "f47264fffd0382d68fee0897dee0bd211b1e5b3ae93d1c59f67e5fcfe347b144",
+  "scope": "Every iteration compared across16source schedules, including epoch transition and truncated cosine horizon. Model-only continuation restarts at zero; full optimizer/checkpoint integration remains separate."
+}

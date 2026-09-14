@@ -1,0 +1,78 @@
+{
+  "format": "champs-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "af2888ee-499c-5db7-8576-f4096e1f8804",
+  "source_hash": "d1891c5f46afe2b677bce08e67522a016bd798bb654d43f4060822f957eb30a9",
+  "source_commits": {
+    "winning_solver": "4a42e18b5b88043fb40ec15289216a1d88789698"
+  },
+  "serialized_graph_sha256": "cfcf1e74cc4efcb35064c0eab882bddb875a9cffce54a126b32ea0dc29df4f5e",
+  "provider_sha256": "50b9c31b0feaecb28520fbf58a971baeb339ae44e8394f7ca30f9fc504700f69",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": [
+    {
+      "intake": "spatial_graphing",
+      "realization": "XYZ bond inference, chemistry tags/charges, atom/bond/triplet/quadruplet motifs and corrected fixed packing"
+    },
+    {
+      "intake": "target_scaling",
+      "realization": "Per-subtype mean/sample-standard-deviation scaling, not a distributional Gaussian guarantee"
+    },
+    {
+      "intake": "message_passing_neural_network_mpnn",
+      "realization": "Thirteen full configured graph transformers, not SchNet"
+    },
+    {
+      "intake": "attention_mechanism",
+      "realization": "Distance-biased multi-head attention across typed motifs with grouped subtype prediction heads"
+    },
+    {
+      "intake": "ensembling",
+      "realization": "Six-decimal unscaled predictions, fixed coupling-specific model masks and central-five mean, no LightGBM"
+    }
+  ],
+  "dependencies": {
+    "torch": "2.11.0",
+    "numpy": "2.4.2",
+    "pandas": "2.3.3",
+    "rdkit": "2026.3.6",
+    "openbabel-wheel": "3.1.1.23",
+    "networkx": "3.6.1",
+    "scipy": "1.17.1"
+  },
+  "limitations": [
+    "Automated Tier 3 Community reconstruction. No Tier 1 human certification or Tier 2 usage qualification; original inaccurate intake remains draft.",
+    "Pinned Bosch graph-transformer solution corrects the intake SchNet/LightGBM claims. All thirteen full configurations are retained; no original pretrained checkpoint or historical accuracy parity is claimed.",
+    "Explicit corrected triplet packing/model indices and chunked evaluation; modern OpenBabel/pandas interfaces. Caller-seeded batching and complete structured checkpoints replace launcher global state and model pickles.",
+    "Original chemistry requires supported connected motifs and fixed 29/406/54/117 capacities. Degenerate or absent motifs, unsupported chemistry, out-of-vocabulary labels and nonfinite scaling can fail. This is not a general molecular chemistry predictor.",
+    "Original per-record bond corrections are excluded. Optional manual corrections in lower-level preprocessing are not exposed in this version of the pipeline payload; original-record parity is not claimed.",
+    "Fitted vocabulary/scaling precede the source population split. This preserves source behavior rather than claiming leakage-free validation. The eight supervised primary type slots are explicitly reserved for smaller populations.",
+    "Source inverse-square-root schedule is initialized but never advanced after warmup; this behavior is preserved. Original quadruplet cutout and chunked log-type-loss training combinations remain unsupported.",
+    "Graph evidence uses one explicitly configured synthetic SGD epoch for every full model. Sixteen stochastic optimizer/scheduler resume combinations and validation selection controls were checked separately with analytic synthetic inputs, not historical training runs.",
+    "Validation selection requires all eight finite type metrics. Full-population mode retains the last epoch; finite aggregate MAE alone is not represented as complete competition macro-metric coverage.",
+    "Per-model prediction rounding to six decimals precedes the coupling-specific central-five ensemble, matching original CSV precision. Opaque caller IDs are remapped to exactly representable internal float32 integers.",
+    "CPU execution requires locally provisioned hash-verified software and pinned dependencies in the matcher environment. No downloads, GPU/mixed-precision qualification, clean-environment installation or resource-cap guarantee is claimed.",
+    "Geometry, fitted state, checkpoints, training outputs and predictions are private runtime data. Publication evidence contains synthetic fixtures and aggregate checks only."
+  ],
+  "evidence_sha256": {
+    "competition_champs_source_pins.json": "99fde10617f64e20fc0459e73723ded08e3692518afd6e74bb67b8f96de804ca",
+    "competition_champs_ensemble_execution.json": "d2e10d21899278eaf8a677af30b0f80f02f21ca7faeba4159f0e36ab96fc55f0",
+    "competition_champs_loss_execution.json": "3cc5c17c6a04240bfee4e558d80347e503e59f62c5a79de36e24ef1a1369eea0",
+    "competition_champs_prediction_execution.json": "d7735def9c5d183752c42258a4b4f7f4e0b0cf73dce38740c6c6915d19f60653",
+    "competition_champs_preprocessing_runtime_execution.json": "b7291a7137c21d643ce0879792caeea4f2a1a457c5f61eafc1561c105ad75998",
+    "competition_champs_training_runtime_streaming_execution.json": "4b8b46d15094b5e19f1dfac85b650be3b91ed192a8baac03d00049757fd9200b",
+    "competition_champs_lifecycle_execution.json": "3ea78836c920a80c46b7356b049fb1ffbddda300ebdd7a02e1804bda6f6f7e37",
+    "competition_champs_graph_execution.json": "4895596329fc4767115499888520c694f8999555441c7e5628aca4214fb0cd96",
+    "competition_champs_environment.json": "a4b05c18778594688054127f7d9ceaa55fc755e455b06bd0fa1f058f63b0586d"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_champs_execution.py": "27a806f70a91dbdaa80854297e30c08134a1a8ce6140a29ffef1096df4fd3ee7",
+    "requirements/champs-execution.txt": "0d8c16d0992435e26b7b024a57ddabfc427941a064358f4fed77654b7f9d9c17",
+    "docs/licenses/CHAMPS-MIT.txt": "62cc37899dbc44214c6e90ddfa5479ef9b7aaf89b5b904f57d5aac8cc4f9e9e2",
+    "docs/licenses/CHAMPS-xyz2mol-MIT.txt": "fe538a65522bc5da996bdd80d33d872857294563546d3aefa1f9292ca14ba498",
+    "docs/licenses/CHAMPS-RAdam-Apache-2.0.txt": "baf3b3504bee66243b77fc6ab7b9b4a51354151712ab6b752d6bbcceb23c46d0"
+  },
+  "catalog_mutations": 0
+}

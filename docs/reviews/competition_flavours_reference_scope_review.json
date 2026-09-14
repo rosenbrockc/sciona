@@ -1,0 +1,27 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_attribution_status": "conditional_pass",
+  "publication_scope": "Independent project reconstruction,provider contracts and CDG metadata; no third-party notebook source,wheels,models or data bundled.",
+  "dependency_packages": 94,
+  "bundled_notice_files": 147,
+  "supplemental_notice_packages": [
+    "flatbuffers",
+    "langchain-core",
+    "langsmith"
+  ],
+  "conditions": [
+    "Retain source attribution,dependency notices and external OpenMP notice with the reference.",
+    "Publication covers project implementation and catalog metadata only; no blanket third-party artifact redistribution grant.",
+    "Any future bundling of dependency wheels,native components or model artifacts requires its own terms review.",
+    "Qualified execution requires the reviewed dependency versions and exact OpenCV overlay; caller establishes lawful inputs."
+  ],
+  "sha256": {
+    "docs/licenses/Flavours-reference-NOTICE.txt": "1be424dd964bcaf03d35cd27bac4b9b97e598fc4ba4c6de4b51b636187ebdb5b",
+    "docs/licenses/Flavours-dependency-NOTICES.txt": "af96c6be093d4bcd6fe0493399ac9376b9ffe9928b234c135e9fe1a2dfa26596",
+    "docs/licenses/Flavours-libomp-NOTICE.txt": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "docs/reviews/competition_flavours_dependency_notices.json": "5c52ccedba0de0473c1f8e2e85ebf55cee6b6a45b647e1d6499faf4deab481a3",
+    "docs/reviews/competition_flavours_native_publisher.json": "74cb45b0a4cc29034fc0139cfb5c6d5d74f215e172f935d099d265f117024b31",
+    "docs/reviews/competition_flavours_publisher_payload_validation.json": "f894d855ae892a2a5343757d17e1b62f4343d2df18f016773b721cdf1790b7c2"
+  }
+}

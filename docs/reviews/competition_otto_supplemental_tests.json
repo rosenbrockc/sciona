@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 3,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "All seven supplemental blocks execute together and raw features supplied separately for neural learner",
+    "Native t-SNE coordinates used for fold-excluding class distances",
+    "Independent scalar raw-distance and embedding-distance oracles",
+    "Heldout-label changes do not affect own-fold class-dependent blocks",
+    "One common cluster fit uses full training only",
+    "Row nonzero counts and aligned common fold declarations"
+  ],
+  "sha256": {
+    "sciona/otto_supplemental.py": "9db058edbddceb60a070dc52372c01fd8ee076b62676c1bc1c982156822537cb",
+    "tests/test_otto_supplemental.py": "f6e5b593b8236a7b6376bcbaf3f151e26efba1e9595aa67209cdd505c574fe18",
+    "sciona/otto_neighbor_crossfit.py": "1d3cac62677ee5c41bc99263dc1870f025ddcaa3a6e902f857339f70b5e5afc7",
+    "sciona/otto_neighbor_features.py": "ff96a5e315cf09e14d7773a59c896406c8d891dcb34aa69cfd18157351976742",
+    "sciona/otto_tfidf_crossfit.py": "07ed2a7369cfae2fc26e3201bc98b9d05d6d1576515190232a1d9617da01296c",
+    "sciona/otto_clustering.py": "227611641be342eb0245a128d4ac4954665d1332bb44af14b286b32d9c265ed7",
+    "sciona/otto_meta_layout.py": "bf880395739b7436903b8c1f14de8a4826c762bf259b2fb490d213be518cd895",
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0"
+  },
+  "limitations": [
+    "Historical metric counts, cluster counts, encodings and total supplemental width unresolved.",
+    "Embedding may be transductive; full-training unsupervised clustering uses a common frame rather than changing cluster identities per fold.",
+    "All first-level classifier outputs and entire pipeline still require integrated execution.",
+    "Source ambiguities, native closure and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

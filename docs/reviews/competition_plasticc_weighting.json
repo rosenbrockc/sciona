@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "checks": {
+    "fold_assignments": 12,
+    "augmentation_isolation": 6,
+    "flat_weights": 24,
+    "redshift_weights": 48,
+    "independent_redshift": 48,
+    "losses": 24,
+    "loss_contributions": 24,
+    "missing_prediction_rejection": 1
+  },
+  "hashes": {
+    "sciona/plasticc_weighting.py": "cb2a5293d4d02399f1a627c6139555182178afa88e3ac9f4bdc9362ca2473013",
+    "scripts/validate_plasticc_weighting.py": "5efda346f3ac4ebcbe491446f252201573bd53dd0732c81c0261b38c4fe1f2e8",
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  },
+  "scope": "Fold assignment, flat/redshift weights and weighted loss; synthetic settings and inputs",
+  "remaining": [
+    "Pinned default settings review",
+    "LightGBM compatibility and actual fitting",
+    "Dataset orchestration and full graph"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "format": "santa-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_source",
+    "false_historical_scope",
+    "missing_boundary_tests",
+    "hidden_threshold_leakage",
+    "missing_full_game",
+    "opponent_reward_leakage",
+    "missing_training",
+    "wrong_provider",
+    "wrong_dependency",
+    "missing_notices"
+  ],
+  "sha256": {
+    "scripts/review_santa_execution.py": "a3b05ddbc5a7759ad257be512a435c60634c912e2541f0df5f7723ccb32e30b1",
+    "scripts/validate_santa_review_gates.py": "f5fabf1a0bccb94bc821829e1d7bc1d27846945c32b64af78f5ccc509a48742e"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

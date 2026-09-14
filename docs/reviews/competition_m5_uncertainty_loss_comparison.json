@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "checks": {
+    "synthetic_only": true,
+    "source_comparisons": 400
+  },
+  "source_software_sha256": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22",
+  "sha256": {
+    "sciona/m5u_loss.py": "838923d8f2bda7f7e0b7856412199afbf51d6e4e36232c60c8ffab0e20d2115f",
+    "tests/test_m5u_loss.py": "a82b4974aa5fddd09cc40f752d8027762a2020bb1b69e9f8b13f1eb2afd8e97e",
+    "scripts/validate_m5u_loss_comparison.py": "7fbf412a97cab52933b56a76def29adcd61fd2c4db7b90cb83466ae50f4c9db0",
+    "docs/reviews/competition_m5_uncertainty_source_pins.json": "c3983bbe6fd393ed10ee094f0d014c129fd6724e97006c5bee4ec55ca925adff"
+  },
+  "scope": "Loss arithmetic only; full quantile training and hierarchy pipeline remain incomplete."
+}

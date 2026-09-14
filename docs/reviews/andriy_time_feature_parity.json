@@ -1,0 +1,66 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_hashes": {
+    "raw_analysis": "5964fb2952c36bbe7a896fec28fb8869deb5af2bdd78cb9fdf6b18e494dea652",
+    "hjorth": "5a43367ad037931ccec9fcc4d09dc3f0ad8ab89f32a9846643cb2d358293053c",
+    "zero_crossing": "71d957d4f763bae9ae32d49db59740c80ca729cad3bbafd5277fdd8b5476969b",
+    "minmax": "5e72f302f3be65d6c3afe315591d5a1ab10eb63ff882042737c7c0a44183ccd6",
+    "RMS_amplitude": "615928fa2d588bcc0eadd7411feddbe30fbdd206d3f5e8448ace6119bd96b70f"
+  },
+  "provider_sha256": "f831b77e6f0d96eb83d6a0eddbb50502446a7798ca113c318209aba52aa04008",
+  "validation_sha256": "1ad551073014f9f7dd0e51ed36c88419d430758f92a45647032e0262902cd5c6",
+  "test_sha256": "3d6f52307fd871872e17b0b7027b89f1b38243b14770abce8eba1e5feedf32b5",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "cases": [
+    {
+      "seed": 10211,
+      "samples": 17,
+      "maximum_absolute_error": 1.7763568394002505e-15
+    },
+    {
+      "seed": 10211,
+      "samples": 3840,
+      "maximum_absolute_error": 1.7763568394002505e-14
+    },
+    {
+      "seed": 10211,
+      "samples": 7680,
+      "maximum_absolute_error": 1.687538997430238e-14
+    },
+    {
+      "seed": 10212,
+      "samples": 17,
+      "maximum_absolute_error": 8.881784197001252e-16
+    },
+    {
+      "seed": 10212,
+      "samples": 3840,
+      "maximum_absolute_error": 2.398081733190338e-14
+    },
+    {
+      "seed": 10212,
+      "samples": 7680,
+      "maximum_absolute_error": 4.440892098500626e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 17,
+      "maximum_absolute_error": 1.7763568394002505e-15
+    },
+    {
+      "seed": 10213,
+      "samples": 3840,
+      "maximum_absolute_error": 1.687538997430238e-14
+    },
+    {
+      "seed": 10213,
+      "samples": 7680,
+      "maximum_absolute_error": 3.552713678800501e-14
+    }
+  ],
+  "limitations": [
+    "Unmodified numerical source helpers in current Octave; no original MATLAB runtime claim.",
+    "Ten helper outputs only, not the complete102-feature family; low-range masking and full model execution remain separate."
+  ]
+}

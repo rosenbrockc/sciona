@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "draws_per_backend": 64,
+  "backends": [
+    "RandomState",
+    "SFC64"
+  ],
+  "exact_samples": true,
+  "exact_following_rng_draws": true,
+  "implementation_sha256": "73f677eacbc2bcc964146ec12bb7bc8b111e7e781da96b8aac6420f852a4498d",
+  "limits": [
+    "Affine inner draws only; per-image wrapper derivation and Python-random transform decisions remain pending.",
+    "Historical NumPy branch selection explicitly emulated on installed NumPy; no historical binary qualification."
+  ]
+}

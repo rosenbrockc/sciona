@@ -1,0 +1,16 @@
+{
+  "targeted": {
+    "repository": "https://github.com/dongyp13/Targeted-Adversarial-Attack",
+    "commit": "7da707fe568053a9e2735fcc692c8f0ad7e122a1",
+    "source_file": "target_attack.py",
+    "url": "https://raw.githubusercontent.com/dongyp13/Targeted-Adversarial-Attack/7da707fe568053a9e2735fcc692c8f0ad7e122a1/target_attack.py",
+    "sha256": "06150755ab75473774ec22a4037fc83ef73ff2f89771b969e692fae45a4136fd"
+  },
+  "untargeted": {
+    "repository": "https://github.com/dongyp13/Non-Targeted-Adversarial-Attacks",
+    "commit": "5c68162e05de7afed2e3d33115df43e2a7a1c3da",
+    "source_file": "attack_iter.py",
+    "url": "https://raw.githubusercontent.com/dongyp13/Non-Targeted-Adversarial-Attacks/5c68162e05de7afed2e3d33115df43e2a7a1c3da/attack_iter.py",
+    "sha256": "be5f6903bb0675f480d10e0551e37f9cbb1dc883fa1dcc63ad05e9fb6fb82d12"
+  }
+}

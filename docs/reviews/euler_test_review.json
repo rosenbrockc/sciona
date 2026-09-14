@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_euler_identity_proof.py": "1d1adf6346000a9bd01a4ec0b5ef69ebecea22fdb8cf1c0ec407dbcd1227b745",
+    "tests/physics_ingest/test_euler_constant_semantics.py": "6404ab3b97c65f84c6e35f67c7e6942797a7d02aff9fa755d3ff3d2057eb06af"
+  },
+  "provider_sha256": "83c6955773ecd360c0e5d822aa3ff7a1cd151ca093528c2fff047b7cb483e9a5",
+  "junit_sha256": "88dbc6846d97fd4b9fcad40a6b766885a7de5f83d0e012d2cbd4a649e11c1d0d"
+}

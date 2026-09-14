@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 40,
+  "serialized_boundary_tests": 15,
+  "source_version_id": "9f3c8c4f-ce85-5e9d-b169-8b055562ce65",
+  "source_content_hash": "3cc5a5fdfab302b5c1a37abe86916ac996f577d11b733cba0bbf7b7d4438b2cd",
+  "stage_mapping": {
+    "table_audit_cleaning": "Fold-local median imputation, quantile clipping and constant/duplicate numeric removal",
+    "split_aware_feature_engineering": "Fold-local one-hot and frequency features",
+    "tabular_model_zoo": "Scaled logistic regression and ExtraTrees with64 trees per fit",
+    "ensemble_stacking_blending": "Logistic stacker trained on complete OOF probabilities; full-training base refit",
+    "metric_calibration": "Separate regularized sigmoid on clipped stack-score logits; fixed0.5 decision"
+  },
+  "checks": {
+    "complete_oof_coverage": true,
+    "held_out_fold_isolation": true,
+    "calibration_does_not_refit_stack": true,
+    "query_batch_independence": true,
+    "group_disjointness": true,
+    "strict_json_boundary": true,
+    "mutated_intermediate_rejected_before_fit": true
+  },
+  "sha256": {
+    "sciona/tabular_ensemble_calibration.py": "4a04c21466734845754b8f6c86f326b851944a1cc19aeaf02a6c3a1b2e3a7244",
+    "sciona/tabular_ensemble_contract.py": "bd9b02b20cf40744bbd6d8cf183b0ba1f973f199c622dac784117cc9d866bec1",
+    "sciona/tabular_ensemble_features.py": "a21c9a05d159cea22cb6d46cd19ce7822ae260e33f081a8784a275a342864e95",
+    "sciona/tabular_ensemble_graph.py": "3303fc529db2389f3210b30fd16aa6adad6779e00b0488dfd17c1a01fd156c5b",
+    "sciona/tabular_ensemble_training.py": "5404123c59e394e7e35f62a5261f60d9a87ce8864017cc9a15723121cc3be272",
+    "tests/test_tabular_ensemble_calibration.py": "0597e06efd081e61aa89d0c204417f8b2abaf3d06906851be44fcd09ee2d1c99",
+    "tests/test_tabular_ensemble_contract.py": "7fadfdfd8eaadecc13175fd7ca0895854867f3b69c813df1cbfc4494d6fdf07f",
+    "tests/test_tabular_ensemble_features.py": "284ae8ca51039dbb6fe92280e349f765c4ef9e003986c2ad408596e46abc65a9",
+    "tests/test_tabular_ensemble_training.py": "de380524f870bf7927482f2168110097b8a7be7b21a1977d04a01d47d616b291",
+    "scripts/tabular_ensemble_synthetic.py": "41130d0ca9314fe3e747c98387afb55a0c10b2e183fa75dcaa08eb58607860bf"
+  },
+  "scope": "Synthetic binary mixed-table lifecycle only; no historical accuracy or empirical calibration guarantee. Review and publication pending."
+}

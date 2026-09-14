@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "applied": false,
+  "rows_rehearsed": 40,
+  "execution_version_absent": true,
+  "provider_rows_absent": true,
+  "version_id": "b9e239a7-588b-56c9-9be2-d7720a341350",
+  "graph_sha256": "2eeaaa8b3b622b0a20baacdfd5255b0f9d32281c57ea08f3f2fac8cfb3479e6b"
+}

@@ -1,0 +1,11 @@
+{
+  "intake_applied": true,
+  "status": "draft",
+  "is_publishable": false,
+  "is_latest": false,
+  "trust_tier": 3,
+  "bindings": 155,
+  "served_full_ensemble": 0,
+  "catalog_roundtrip": "passed",
+  "repeat_intake_new_rows": 0
+}

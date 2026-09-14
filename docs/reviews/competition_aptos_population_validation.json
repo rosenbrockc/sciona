@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "tests": 7,
+  "scope": "First-stage base isolation and four-role second-stage target construction, independent soft-target oracle, disjoint identities and complete teacher coverage. Full training qualification separate.",
+  "sha256": {
+    "sciona/aptos_population.py": "3ab744fefc2be23c3fffafa7566b0f696e2d11054e3d756dcbf5750a94d4112c",
+    "sciona/aptos_group_refinement.py": "e6417e93ebeeb4d44556f73cca5309381aa5acf0ffe4b7e05a115068db309f2d",
+    "sciona/aptos_refinement.py": "2599304219bdb8e91bdda98633c96db30f0abe6abfcb115b06b3f7f0d3cdbae5",
+    "sciona/aptos_ensemble.py": "0ab67a978e17226c1f076dce8dc5368a51fe1af74d2dd061ddb5a17531072f22",
+    "tests/test_aptos_population.py": "4ec9023d2c14a00ae6a8ba85f4827f97799ac0cdd330b50d6e41f5c3d73a4b87"
+  }
+}

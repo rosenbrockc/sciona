@@ -1,0 +1,17 @@
+{
+  "approved": false,
+  "scope": "Source and componentwise proof only; implementation and publication pending",
+  "test_results": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "source_sha256": {
+    "tests/physics_ingest/test_curl_curl_proof.py": "95bca753948fff201fb063baf5beb41f5cf11a8b46603e5af4ec1097f93e7c44",
+    "sciona/physics_ingest/curl_curl_proof.py": "141ad8ceca7927f79c829ce86e90ba52e7686b1849865dc7613a52402ad148e5",
+    "scripts/validate_curl_curl_source.py": "78a80ff6b7f9dc498bbc59d8f86bcc74bc054fc3ff057fa2e9831a72abe84f0d",
+    "sciona/physics_ingest/vacuum_wave_proof.py": "4cb528487909569b1c7f1ad36722849eff39b0c632b1e0c6eff865c8c7e6d018"
+  }
+}

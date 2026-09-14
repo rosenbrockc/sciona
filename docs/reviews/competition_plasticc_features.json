@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "checks": {
+    "fraction_oracles": 30,
+    "synthetic_model_cases": 6,
+    "independent_statistics": 6,
+    "selected_feature_cases": 6,
+    "dataframe_selection": 1,
+    "real_gp_integration": 2,
+    "leakage_exclusion": 6
+  },
+  "raw_feature_count": 230,
+  "selected_feature_count": 41,
+  "hashes": {
+    "sciona/plasticc_features.py": "e2b0841b8c65008cf8b11088192688c1d7d22f9742b4bb60ff0a0ecc64ad6c69",
+    "scripts/validate_plasticc_features.py": "1c4797fca3d411cd3375decd2e286f49c032ac2b0e66045246e4d7922959c86c",
+    "sciona/plasticc_observations.py": "694196bf77c42833f07aa0367d67d0a0fbe5491a5d0aaf5d4acf174260310385",
+    "docs/reviews/competition_plasticc_source_pins.json": "321a0fa44c9f16913110cce5236af7d91760c4aee0b42cf409d31a7484566235",
+    "docs/licenses/Avocado-MIT.txt": "11285fecca67497d171d8bb06f7f18ba60962503387203ba8ad72db10d58710b"
+  },
+  "scope": "Complete numerical featurizer; synthetic checks only; full workflow still incomplete",
+  "adaptations": [
+    "numpy.warnings replaced by standard warnings; reference uses isolated alias"
+  ],
+  "limitations": [
+    "Source NaN and nonfinite ratio semantics preserved",
+    "No competition accuracy or full CDG claim"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_software_sha256": "2cd51d6c6a5f5679e192c4b13615530c9e25e920b7b22e67ded9bc4372d76e22",
+  "checks": {
+    "synthetic_only": true,
+    "forecast_comparisons": 202,
+    "hierarchy_comparisons": 100,
+    "native_quantiles": 9,
+    "native_models": 27,
+    "candidate_fits": 54,
+    "refits": 27
+  },
+  "sha256": {
+    "sciona/m5u_prediction.py": "48640d1423fdad6ffa0c084c4f9bd5cde67303eea21bb600ab22e75aa496b4d8",
+    "sciona/m5u_harmonization.py": "1a394cf9eab63dd14bd7e645cab728033fb596b47a46bf2764960b69b1c82d8f",
+    "tests/test_m5u_prediction.py": "ed8adc493a4ff9b85efd58f7d7bd7d9c7b83016b09498417c12b4ca004fef1a6",
+    "tests/test_m5u_harmonization.py": "377929a62a8c63a8e1a13290277513a659f92e9f1b9e248f2b2d3931c4bc8a95",
+    "sciona/m5u_bagging.py": "343eaf62bf1b67b8633d72b4ac2f24639ba7186a14edc835f0edb0d7b10e74ec",
+    "sciona/m5u_sampling.py": "e908ff4711669c5e418318066ff4a5ba0692b1edc23706a1e0f6eadbaf545ff3",
+    "sciona/m5u_search.py": "3c770fc2b24e96584aa4e1f5b7e25195f4d32a9a990a35d7df15195f43ba0255",
+    "sciona/m5u_loss.py": "838923d8f2bda7f7e0b7856412199afbf51d6e4e36232c60c8ffab0e20d2115f",
+    "sciona/m5u_search_parameters.json": "b9d0773352b192184728433e7b55a56e58cb7b7766ff71cbb92537c21fcc01dd",
+    "scripts/validate_m5u_prediction_comparison.py": "aef80d9e40bd442f66511d9443f1ece0b6b87282e6d914493eee3d699068c7eb",
+    "docs/reviews/competition_m5_uncertainty_source_pins.json": "c3983bbe6fd393ed10ee094f0d014c129fd6724e97006c5bee4ec55ca925adff"
+  },
+  "scope": "Forecast blending and final level adjustment only; complete source schedule, inference repeats and graph execution remain unqualified."
+}

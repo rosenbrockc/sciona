@@ -1,0 +1,35 @@
+{
+  "approved": false,
+  "source_version_id": "dd8cc8a7-162b-52f1-a74d-256ce661f7ba",
+  "source_hash": "6f8962c26d57adbdead9c31a1ed95d7bc31d66bf4e042f5da564d0c8c6d23dee",
+  "proposed_tier": "tier3",
+  "corrections": [
+    "Original generic 2.5D stacking/temporal TTA labels replaced by source single-frame and four-panel MaxViT/U-Net branches with spatial D4 probability averaging.",
+    "Source shifted-label geometry, augmented corrected-loss masking, skipped single decoder block and terminal-checkpoint selection are preserved.",
+    "Source ensemble weights are unnormalized; threshold diagnostic does not override fixed final threshold0.5."
+  ],
+  "computational_closure": [
+    "Versioned explicit arrays and initialization state",
+    "Source false color and temporal quadrant layout",
+    "Joint augmentation and shifted targets",
+    "Exact source-width MaxViT/U-Net models and branch correction heads",
+    "Source folds,losses,AdamW,scheduler,validation-break timing",
+    "Terminal checkpoint inference and exact fold weighting",
+    "Column-major RLE with historical plain integers"
+  ],
+  "declared_adaptations": [
+    "Explicit arrays replace file codecs; caller supplies selected times/channels in documented logical order.",
+    "No implicit pretrained weights: supplied encoder/full state or explicitly random initialization.",
+    "CPU/current tested numerical library versions; source timm/SMP/augmentation versions retained where compatible.",
+    "Explicit seed with scoped RNG restoration and optional shortened-epoch execution reported.",
+    "Input rejection and restored model mode for undefined evaluation cases.",
+    "NumPy2 integer repr handled in RLE formatting."
+  ],
+  "evidence_limits": [
+    "Synthetic full-model v43 with one epoch; no historical competition accuracy or default35/40epoch performance claim.",
+    "v47 all10fold orchestration checked with stand-ins; same full-model branches separately executed.",
+    "Tier2 community usage and Tier1 human certification not established.",
+    "Publication and served retrieval replay outstanding."
+  ],
+  "provider_package_sha256": "9630772be5b4898ccd843849c729863041fc722777484523ef2adda654a20679"
+}

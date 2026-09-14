@@ -1,0 +1,110 @@
+{
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "ffbb111d93853b1a665d4e83324e126c3370bbe831efaec9f44830001d169766",
+  "provider_sha256": "eda82c9b82cce00fb35bc066c9d70b6727ac5b9809007f9eb38349cdbd51a43f",
+  "validation_sha256": "c1d74f998e2001437bb82a4ae9bee736e48e11670f5cb0d6f66485455dcbd88b",
+  "test_sha256": "4780ee9c8405619d44fac6baf7bd05327e8015ffc743b20d84b6658c448ddf89",
+  "libraries": {
+    "numpy": "2.4.2",
+    "xgboost": "3.4.1"
+  },
+  "cases_passed": 15,
+  "cases": [
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.873392641544342
+    },
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 0.936779260635376
+    },
+    {
+      "seed": 9211,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9735113382339478
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.8951751589775085
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 0.9469906091690063
+    },
+    {
+      "seed": 9212,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9669827818870544
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.8985230326652527
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 0.9517966508865356
+    },
+    {
+      "seed": 9213,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9771223068237305
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.8839043378829956
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 0.9505319595336914
+    },
+    {
+      "seed": 9214,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9671258330345154
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 10,
+      "exact": true,
+      "prediction_spread": 0.9060111045837402
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 20,
+      "exact": true,
+      "prediction_spread": 0.9394178986549377
+    },
+    {
+      "seed": 9215,
+      "training_windows_per_segment": 31,
+      "exact": true,
+      "prediction_spread": 0.9701796174049377
+    }
+  ],
+  "limitations": [
+    "Original numerical function bodies with synthetic in-memory loaders matching source float32 allocation.",
+    "Current XGBoost with source defaults versus serial provider; legacy silent maps to verbosity. No historical-engine or performance claim.",
+    "Source has no scaling or KNN cleanup; NaNs remain missing values.",
+    "Complete serialized graph validation and catalog approval remain outstanding."
+  ]
+}

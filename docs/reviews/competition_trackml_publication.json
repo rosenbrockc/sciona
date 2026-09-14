@@ -1,0 +1,20 @@
+{
+  "applied": true,
+  "rows_created": 56,
+  "trust_tier": 3,
+  "served_provider_versions": 3,
+  "served_execution_cdgs": 1,
+  "input_arity": 1,
+  "output_arity": 1,
+  "graph_sha256": "39fe4a7b3fcb91b85e3dabb5425d53d4d876cdc43baed505a1ab9ff5e442dace",
+  "version_id": "249c8ff0-9e0a-5ccb-823c-2482f8976592",
+  "publication_checks": {
+    "passed": 5,
+    "failed": 0
+  },
+  "publication_code_sha256": {
+    "scripts/promote_trackml_execution.py": "58e5776741928f4d3a9b43b3b007a0d8b97af08519b7a99d2abb530afb4afe58",
+    "tests/test_trackml_publication_contract.py": "ae512928a6fdbf7f576c69efb22c5d5830850c0ae85b0989790fd73ae3e6c1d9"
+  },
+  "repeat_apply_rows_created": 0
+}

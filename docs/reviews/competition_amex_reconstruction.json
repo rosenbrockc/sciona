@@ -1,0 +1,225 @@
+{
+  "status": "partial_independent_reconstruction",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "d505faaa-7277-5559-b32c-f95c9f1f9d63",
+  "source_content_hash": "f03e6e0c5dfb38e00baa98ea53f9a45a43b9ac4536c343bac2449ca09dbff138",
+  "original_stage_ids": [
+    "memory_optimization",
+    "time_series_aggregation",
+    "difference_features",
+    "model_training",
+    "blending"
+  ],
+  "numeric_component": "sciona/amex_numeric.py",
+  "numeric_tests_passed": 11,
+  "numeric_comparison_evidence": "competition_amex_numeric_comparison.json",
+  "source_software_pins_reverified": 13,
+  "findings": [
+    "Numeric denoising floors after multiplication by 100; negative values do not truncate toward zero.",
+    "Most numeric aggregate and difference features use floating floor division by 0.01; ranked last values bypass it.",
+    "Last skips missing values, sample standard deviation uses ddof1, and all-missing sums are zero.",
+    "Last-window numeric summaries omit last; difference calculation preserves missing adjacency."
+  ],
+  "next_actions": [
+    "Prepare exact-source publisher and publication negative gates.",
+    "Run rollback and verify absence, apply idempotently, then execute served catalog graph."
+  ],
+  "limits": [
+    "No source code copied into repository. Specific source reuse grant unresolved; independent numerical reconstruction only.",
+    "Partial synthetic component qualification, not full winning solution or publication approval."
+  ],
+  "categorical_component": {
+    "implementation": "sciona/amex_categorical.py",
+    "evidence": "competition_amex_categorical_comparison.json",
+    "source_comparison_cases": 4
+  },
+  "rank_component": {
+    "implementation": "sciona/amex_ranks.py",
+    "test_evidence": "competition_amex_component_tests.json"
+  },
+  "orchestration_findings": [
+    "Categorical vocabulary is fitted jointly across source training and query rows for each selected population. Missing one-hot rows are zero, categorical unique count excludes NaN and last skips NaN.",
+    "Last3 and last6 populations use descending average-tie timestamp rank, preserving original row order; direct tail slicing is not equivalent.",
+    "Customer-group percentile ranks use average ties and nonmissing denominators, then only unscaled last values.",
+    "Calendar-month percentile ranks span the combined population and receive full six numeric summaries plus floor division, because the source rank-only branch matches a different prefix.",
+    "Earlier numeric summarize(last_window=...) component assumes caller-selected rows; full orchestration must use rank-based selection before requesting window-style output."
+  ],
+  "manual_orchestration": {
+    "implementation": "sciona/amex_manual.py",
+    "evidence": "competition_amex_manual_comparison.json",
+    "compared_blocks": 9,
+    "inputs": "Already denoised numeric values and mapped category codes with explicit runtime time/month/fill roles.",
+    "limits": [
+      "Final learner block concatenation remains pending.",
+      "Absent window groups remain NaN; selected-population vocabulary can differ from full vocabulary.",
+      "Categorical std uses 1e-14 comparison tolerance; quantized numeric blocks matched exactly in tested case."
+    ]
+  },
+  "sequence_component": {
+    "implementation": "sciona/amex_sequence.py",
+    "evidence": "competition_amex_sequence_comparison.json",
+    "tested_lengths": [
+      1,
+      3,
+      13
+    ],
+    "findings": [
+      "Joint one-hot sequence channels are divided by 100, including indicators; missing values become zero.",
+      "Row-model prediction slots are left-padded with NaN to 13, while neural series are right-padded with zero and a separate mask.",
+      "Only tabular neural features are doubled by nonzero 1-x+0.001 complements; computed sequence complement is not returned by source."
+    ]
+  },
+  "manual_learner_block_order": [
+    "full_categorical",
+    "full_numeric",
+    "full_difference",
+    "customer_rank",
+    "last3_categorical",
+    "last3_numeric",
+    "last3_difference",
+    "last6_numeric",
+    "month_rank"
+  ],
+  "binning": {
+    "implementation": "sciona/amex_binning.py",
+    "evidence": "competition_amex_binning_comparison.json",
+    "histogram_cases": 300,
+    "normalized_columns": 3,
+    "limits": [
+      "Source compressed-branch last split omission preserved.",
+      "All-missing feature histogram explicitly rejects undefined source input."
+    ]
+  },
+  "assembly": {
+    "implementation": "sciona/amex_assembly.py",
+    "tests": "tests/test_amex_assembly.py",
+    "routing": "Tree receives source-ordered raw manual blocks plus 13 prediction slots. Neural receives normalized manual blocks plus unbinned prediction slots filled with zero."
+  },
+  "row_model": {
+    "implementation": "sciona/amex_row_model.py",
+    "evidence": "competition_amex_row_training.json",
+    "models": 5,
+    "evaluated_rounds_per_fold": 4500,
+    "split_policy": "Shuffled stratified customer splits expanded to all customer rows; first-appearance customer order supplied explicitly.",
+    "source_seed_default": 42,
+    "source_controls": {
+      "boosting": "dart",
+      "num_leaves": 64,
+      "learning_rate": 0.035,
+      "bagging_freq": 5,
+      "bagging_fraction": 0.7,
+      "feature_fraction": 0.7,
+      "min_data_in_leaf": 256,
+      "max_bin": 63,
+      "min_data_in_bin": 256,
+      "boost_from_average": false,
+      "lambda_l1": 0.1,
+      "lambda_l2": 30
+    },
+    "limits": [
+      "Current LightGBM disables early stopping for DART, so patience is not treated as active.",
+      "One CPU thread, deterministic column-wise mode and in-memory booster reload are independent runtime choices.",
+      "Synthetic four-feature population; no historical volume or winning accuracy claim."
+    ]
+  },
+  "downstream_trees": {
+    "implementation": "sciona/amex_tree.py",
+    "evidence": "competition_amex_tree_training.json",
+    "models": 10,
+    "evaluated_rounds_per_fit": 4500,
+    "variants": [
+      "manual",
+      "manual_with_slots"
+    ],
+    "feature_fraction": 0.05,
+    "bagging_fraction": 0.75,
+    "limits": [
+      "Synthetic manual and probability-slot inputs; complete upstream integration pending.",
+      "Single-thread current DART with no early stopping; no historical accuracy qualification."
+    ]
+  },
+  "neural_source_findings": [
+    "Two variants: packed bidirectional GRU alone, and GRU concatenated with deep tabular branch.",
+    "Source pools the last packed timestep output, not concatenated final hidden states.",
+    "Actual architecture uses hidden width128 and three tabular layers; source input widths are fixed and require explicit generalized dimensional contract.",
+    "Training uses shuffled batches with drop_last=True, binary cross entropy and ten epochs; effective scheduling/checkpoint semantics require complete review.",
+    "Adam12 returns learning rates .001, .0001 after epoch4, and .00001 after epoch8; do not assume top-level lr=.0003 is applied."
+  ],
+  "neural_architecture": {
+    "implementation": "sciona/amex_network.py",
+    "evidence": "competition_amex_network_comparison.json",
+    "cases": 4,
+    "both_variants": true,
+    "source_dimensions_and_gradients": true,
+    "limits": [
+      "Eval-mode identical synthetic weights on current CPU; full neural training not yet qualified."
+    ]
+  },
+  "effective_neural_training": {
+    "epochs": 10,
+    "batch_size": 256,
+    "drop_last_training": true,
+    "loss": "BCELoss without applied label smoothing",
+    "default_amp": false,
+    "gradient_clipping_default_branch": false,
+    "learning_rates_by_zero_based_epoch": {
+      "0-4": 0.001,
+      "5-8": 0.0001,
+      "9": 1e-05
+    },
+    "checkpoint": "Strict improvement in Amex validation metric; patience100 exceeds ten-epoch schedule.",
+    "remaining": "Implement metric, full optimizer/RNG/batch lifecycle, best checkpoint reload and fold aggregation."
+  },
+  "neural_training": {
+    "implementation": "sciona/amex_neural_training.py",
+    "evidence": "competition_amex_neural_training.json",
+    "metric_evidence": "competition_amex_metric_comparison.json",
+    "models": 10,
+    "epochs_per_fold": 10,
+    "hidden_width": 128
+  },
+  "complete_learner_pipeline": {
+    "implementation": "sciona/amex_pipeline.py",
+    "evidence": "competition_amex_pipeline.json",
+    "status": "passed",
+    "models": 25,
+    "actual_upstream_predictions": true,
+    "input_scope": "Already denoised numerics and mapped categories; explicit time/month/fill roles.",
+    "blend_coefficients_in_source_order": [
+      0.3,
+      0.35,
+      0.15,
+      0.1
+    ],
+    "coefficient_sum": 0.9
+  },
+  "raw_execution": {
+    "status": "passed",
+    "preprocessing": "sciona/amex_raw.py",
+    "boundary": "sciona/amex_execution.py",
+    "evidence": "competition_amex_raw_execution.json",
+    "models": 25,
+    "category_policy": "Explicit runtime string mappings with optional missing code; unmapped numeric categories use floor(value*100). JSON null represents missing numeric values.",
+    "privacy_policy": "Detached canonical input, finite JSON cap64MiB, disjoint opaque customer identities, no query labels, valid class folds and full neural batches."
+  },
+  "serialized_graph": {
+    "status": "passed",
+    "evidence": "competition_amex_graph_execution.json",
+    "provider_atoms": 2,
+    "models": 25
+  },
+  "environment": {
+    "status": "passed",
+    "evidence": "competition_amex_environment.json",
+    "dependencies": 22,
+    "distinct_notices": 61
+  },
+  "semantic_review": {
+    "status": "acceptable_with_limits",
+    "proposed_tier": 3,
+    "evidence": "competition_amex_semantic_review.json",
+    "negative_evidence": "competition_amex_review_gates.json",
+    "rejected_cases": 10
+  }
+}

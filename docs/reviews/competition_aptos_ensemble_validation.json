@@ -1,0 +1,19 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "synthetic_only": true,
+  "ensemble_tests_passed": 8,
+  "combined_pooling_and_ensemble_tests_passed": 14,
+  "scope": "Eight-model arithmetic/identity contract and explicit threshold convention only; no eight-model training or historical inference parity claim.",
+  "reference_choices": [
+    "float64 arithmetic mean",
+    "caller must select upper or lower threshold equality policy"
+  ],
+  "sha256": {
+    "sciona/aptos_ensemble.py": "0ab67a978e17226c1f076dce8dc5368a51fe1af74d2dd061ddb5a17531072f22",
+    "tests/test_aptos_ensemble.py": "eceb316aaea04f0193dbcfdaa069fa8015ee08dded6989a00bfec703de21e604",
+    "sciona/aptos_pooling.py": "6c7ffa9346a524370f1e700eb607ca3bbce7829b91e3ef23327c3d4c6466a33f",
+    "tests/test_aptos_pooling.py": "174682431136f577c84f5bc4d8067ada3262d2aa3f21ff57e5e866ee4c7cbf36"
+  }
+}

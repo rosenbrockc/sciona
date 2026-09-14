@@ -1,0 +1,10 @@
+{
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_orbit_radius_proof.py -q",
+  "passed": 18,
+  "failed": 0,
+  "synthetic_only": true,
+  "implementation_sha256": {
+    "sciona/physics_ingest/orbit_radius_proof.py": "1f1059f45f4db4709377c6293684589c67a4e6d3bfe444de54598af3155794d4",
+    "tests/physics_ingest/test_orbit_radius_proof.py": "cc767d174e944024d011532d3c863308c21d03663984ab77233798f5972f52b2"
+  }
+}

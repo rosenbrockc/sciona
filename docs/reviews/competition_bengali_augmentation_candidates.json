@@ -1,0 +1,98 @@
+{
+  "status": "historical_candidates_compared_exact_notebook_environment_unknown",
+  "catalog_mutations": 0,
+  "artifacts": [
+    {
+      "version": "0.4.3",
+      "url": "https://files.pythonhosted.org/packages/f6/c4/a1e6ac237b5a27874b01900987d902fe83cc469ebdb09eb72a68c4329e78/albumentations-0.4.3.tar.gz",
+      "sha256": "358318cc2f8b5ef5a2cb9834d751172cc4c64fa1ef9c8ed9bb9a0ac7afa25b87",
+      "uploaded": "2019-11-15T09:41:05.007442Z",
+      "files": [
+        {
+          "module": "albumentations/augmentations/transforms.py",
+          "sha256": "19d76fbd600f433e6be05bccdaf79452e79297adcb1f572a4698f710cd18242e"
+        },
+        {
+          "module": "albumentations/augmentations/functional.py",
+          "sha256": "d0e6aa4687ea52ddb29a83fe062511761af379d8c5fa9396f75ec11a60f0b094"
+        },
+        {
+          "module": "albumentations/imgaug/transforms.py",
+          "sha256": "20d3b48cf13b8682b186d443d5e09db03abc821b7043e04f5d880d532a3d4011"
+        }
+      ]
+    },
+    {
+      "version": "0.4.5",
+      "url": "https://files.pythonhosted.org/packages/8d/40/a343ecacc7e22fe52ab9a16b84dc6165ba05ee17e3729adeb3e2ffa2b37b/albumentations-0.4.5.tar.gz",
+      "sha256": "77bda58c5cfa5ec8dccd360bf75be52449d6bd7a25dce087192e3c78dd2a439a",
+      "uploaded": "2020-03-08T09:33:35.169905Z",
+      "files": [
+        {
+          "module": "albumentations/augmentations/transforms.py",
+          "sha256": "e92e243d1e27b543f9929f763d12a091d1074de0893d34ba5fbaa6c3543ab47f"
+        },
+        {
+          "module": "albumentations/augmentations/functional.py",
+          "sha256": "b5654b973222558c7dd08a71456e50e6be97dd270e94dc34a35fb1d0c3137775"
+        },
+        {
+          "module": "albumentations/imgaug/transforms.py",
+          "sha256": "20d3b48cf13b8682b186d443d5e09db03abc821b7043e04f5d880d532a3d4011"
+        }
+      ]
+    },
+    {
+      "version": "0.4.6",
+      "url": "https://files.pythonhosted.org/packages/92/33/1c459c2c9a4028ec75527eff88bc4e2d256555189f42af4baf4d7bd89233/albumentations-0.4.6.tar.gz",
+      "sha256": "510ac855a6dc7f80723bba7de98c9ee575997a76cf49192c44c707c904a020f8",
+      "uploaded": "2020-07-09T17:20:45.693434Z",
+      "files": [
+        {
+          "module": "albumentations/augmentations/transforms.py",
+          "sha256": "e3cec52c75a9d1fe56899556d4b6057533e83813713a767f2c30f770fda7fcd5"
+        },
+        {
+          "module": "albumentations/augmentations/functional.py",
+          "sha256": "f6a17b5fd414f097d3bdf39d8549bc5de179599616d3a6d0590382f738a1741b"
+        },
+        {
+          "module": "albumentations/imgaug/transforms.py",
+          "sha256": "74ad506c3dc2b8096ea8096e9d9ec933ce5dc2a27349141bdf1467d37c2b5d1b"
+        }
+      ]
+    }
+  ],
+  "functional_ast_sha256": {
+    "shift_scale_rotate": {
+      "0.4.3": "8233d2094c2b1269051676bb24ac36d7dc5237369ff4f855fdf0ca280637dd5c",
+      "0.4.5": "8233d2094c2b1269051676bb24ac36d7dc5237369ff4f855fdf0ca280637dd5c",
+      "0.4.6": "8233d2094c2b1269051676bb24ac36d7dc5237369ff4f855fdf0ca280637dd5c"
+    },
+    "get_center_crop_coords": {
+      "0.4.3": "b3c0caa33c3a26a6edc00b65157bfc34fe2773a5f9349d13cf4c79daa1e8589b",
+      "0.4.5": "b3c0caa33c3a26a6edc00b65157bfc34fe2773a5f9349d13cf4c79daa1e8589b",
+      "0.4.6": "b3c0caa33c3a26a6edc00b65157bfc34fe2773a5f9349d13cf4c79daa1e8589b"
+    },
+    "get_random_crop_coords": {
+      "0.4.3": "2313a9f7a15375d364bf2b4371403be9c64881bc7155d4423071f60fc85e361e",
+      "0.4.5": "2313a9f7a15375d364bf2b4371403be9c64881bc7155d4423071f60fc85e361e",
+      "0.4.6": "2313a9f7a15375d364bf2b4371403be9c64881bc7155d4423071f60fc85e361e"
+    },
+    "pad_with_params": {
+      "0.4.3": "322cfefc9fe010f85d7a5eb0833cbdaabb348a0272ad58b558f598c561353493",
+      "0.4.5": "322cfefc9fe010f85d7a5eb0833cbdaabb348a0272ad58b558f598c561353493",
+      "0.4.6": "322cfefc9fe010f85d7a5eb0833cbdaabb348a0272ad58b558f598c561353493"
+    }
+  },
+  "findings": [
+    "Inspected constructors and sampling methods agree across0.4.3/0.4.5/0.4.6 for the notebook-used transforms.",
+    "ShiftScaleRotate uses default shift range plus/minus0.0625 and scale0.9..1.1; notebook overrides rotation to plus/minus5degrees.",
+    "IAAAffine turns shear5 into a symmetric range through to_tuple; actual imgaug affine kernel and random-state behavior still require qualification."
+  ],
+  "limits": [
+    "Agreement across candidate releases does not identify the exact notebook dependency.",
+    "No historical package installed or executed; source-only archives verified against PyPI SHA256.",
+    "Font augmentation remains unimplemented until geometric/kernel behavior is established."
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "source_commit": "4ad1aa4ed99bc097289c7593c55bc09234e0fc59",
+  "cases": [
+    {
+      "augmented": false,
+      "secondary_factor": 0.0,
+      "gamma": 0.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": false,
+      "secondary_factor": 0.0,
+      "gamma": 2.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": false,
+      "secondary_factor": 0.4,
+      "gamma": 0.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": false,
+      "secondary_factor": 0.4,
+      "gamma": 2.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": false,
+      "secondary_factor": 1.0,
+      "gamma": 0.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": false,
+      "secondary_factor": 1.0,
+      "gamma": 2.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": true,
+      "secondary_factor": 0.0,
+      "gamma": 0.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": true,
+      "secondary_factor": 0.0,
+      "gamma": 2.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": true,
+      "secondary_factor": 0.4,
+      "gamma": 0.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": true,
+      "secondary_factor": 0.4,
+      "gamma": 2.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": true,
+      "secondary_factor": 1.0,
+      "gamma": 0.0,
+      "scalar_and_gradient_match": true
+    },
+    {
+      "augmented": true,
+      "secondary_factor": 1.0,
+      "gamma": 2.0,
+      "scalar_and_gradient_match": true
+    }
+  ],
+  "both_losses_secondary_factor_respected": true,
+  "augmented_loss_secondary_factor_respected": true,
+  "augmented_loss_primary_dropout_active_in_eval": true,
+  "validator_sha256": "f0785700a5f93bb2e9e6f5be413115ffb744ee69a89c3a3fe41c665017462ac2",
+  "scope": "Original source semantics, synthetic soft labels and deterministic random masks; no correction or full training claim."
+}

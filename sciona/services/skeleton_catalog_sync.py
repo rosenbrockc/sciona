@@ -471,7 +471,7 @@ def enrich_bundle_with_catalog_verification(
         )
 
     leaf_count = max(1, len(sorted_node_ids))
-    coverage = len(bindings) / leaf_count
+    coverage = verified_leaf_count / leaf_count
     any_verified = any(bool(row.get("verified")) for row in verification_matches)
 
     uncertainty_estimates: list[dict[str, Any]] = []
@@ -557,6 +557,8 @@ def enrich_bundle_with_catalog_verification(
         trust_blockers.append("smoke_evidence_incomplete")
     if not benchmark_pass:
         trust_blockers.append("benchmark_evidence_missing")
+    if not structural_pass:
+        trust_blockers.append("structural_evidence_incomplete")
 
     audit_evidence = [
         {
@@ -682,6 +684,7 @@ def enrich_bundle_with_catalog_verification(
     updated_artifact["verified_leaf_coverage"] = coverage
     updated_artifact["is_publishable"] = (
         review_status in {"approved", "transitional"}
+        and structural_pass
         and coverage == 1.0
         and any_verified
         and benchmark_pass

@@ -1,0 +1,16 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_escape_speed_execution.py tests/physics_ingest/test_escape_speed_proof.py tests/physics_ingest/test_infall_speed.py",
+  "test_results": {
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_escape_speed_execution.py": "bd1211e78bdd2a891848a2fe0f142762c059d0e9ec01f29e759337bf8defee0f",
+    "tests/physics_ingest/test_escape_speed_proof.py": "ac7f1180c19521f86b9908750076c50a07316c61a8a71039a12d54f9ca5b845b",
+    "tests/physics_ingest/test_infall_speed.py": "0283a012c777e5c8d707a73bec89d266cfeb3f2ead10bfc0c985fb81a333c8e3"
+  },
+  "provider_sha256": "052c4c4df441de4e206d97f1f583f859ee689b0ddac52d9cab8e3a2ba2db22fa"
+}

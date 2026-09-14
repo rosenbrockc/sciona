@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 10,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Raw/log1p/sqrt-offset/zero-indicator representations",
+    "Log transform precedes standardization",
+    "Independent sample/population scaling oracles",
+    "Constant-column convention",
+    "Reference-only detached statistics and query-row independence",
+    "Invalid finite-value, width and scaling controls rejected"
+  ],
+  "sha256": {
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "tests/test_otto_preprocessing.py": "13c52ef9e48ea10d7b92a75c620c9f31650d92d0aba9b55b6b544f4bcf6f5897"
+  },
+  "limitations": [
+    "Historical scaling population and ddof mapping remain unresolved; callers explicitly select reference population and ddof.",
+    "Constant columns use scale one as an explicit implementation convention.",
+    "Feature component only; TFIDF/t-SNE/clustering and remaining learners remain pending."
+  ],
+  "catalog_mutations": 0
+}

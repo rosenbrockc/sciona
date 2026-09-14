@@ -1,0 +1,23 @@
+{
+  "read_only": true,
+  "targets": [
+    {
+      "artifact_id": "9d6d4a5e-5096-5e3f-a182-fb96c600f2a6",
+      "artifact_kind": "cdg",
+      "status": "approved",
+      "is_publishable": true,
+      "version_id": "122c77f3-c414-5385-a6ae-60ae561b42e8",
+      "content_hash": "ad9ced2b4073e92d1358c47060cc04607081801634c224b104a27cd7eef8edc2",
+      "trust_tier": 3,
+      "is_latest": true
+    }
+  ],
+  "original_source": {
+    "status": "draft",
+    "is_publishable": false,
+    "content_hash": "4acf6f6151a4f16c0aeecf3f9a32bb09d6661b36d45efebcac9cc67e91990960"
+  },
+  "served_cdgs": 62,
+  "graph_round_trip": true,
+  "retained_evidence_hashes_verified": true
+}

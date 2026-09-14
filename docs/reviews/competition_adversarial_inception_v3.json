@@ -1,0 +1,27 @@
+{
+  "format": "adversarial-inception-v3-validation.v1",
+  "result": "passed",
+  "checks": {
+    "pinned_both_branch_topology_retrace": true,
+    "operations": 132,
+    "convolutions": 98,
+    "independent_endpoint_shapes": 15,
+    "full_299_main_and_aux_input_gradients": true,
+    "weighted_gradient_linearity": true,
+    "state_reload_neural_execution_exact": true,
+    "frozen_buffers_modes_rng": true,
+    "parameters": 27127858
+  },
+  "limits": "Topology traced from exact source functions with shape-only Slim/TF adapters. Runtime uses separately validated Torch primitives. No whole-network TensorFlow binary comparison, historical initializer or TF checkpoint mapping, pretrained quality or complete attack claim. Synthetic single-example CPU float32 execution. Max-pool tie-gradient parity unresolved.",
+  "sha256": {
+    "sciona/adversarial_inception_v3.py": "cf2adb7d1b3309bd3665013f8cf0c847302353be52c677b8f619efc7c7b97b71",
+    "sciona/adversarial_inception_v3_topology.json": "59052d911d13a47fb8c9e048e4de3e7fa66d8b4439d715caa1959ad0229c79ed",
+    "sciona/adversarial_inception_ops.py": "2af2b4abb03548fc79a9421496da40e1fc9972afd0f919850ed544c690eb10b7",
+    "sciona/adversarial_normalization.py": "3af9580ea7f45eb3e56b71c8a7bfb308819363f9f9a08a933ca6ec67186aad92",
+    "scripts/trace_adversarial_inception_v3.py": "b35d1d918c180a14a66c5c69bb66bfda5290506922d544adb1cdbda7acb411d6",
+    "scripts/validate_adversarial_inception_v3.py": "34da4b043aae524f98792e7b3b111db7ada8494eccb51e87bfcc67003b37381f",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55",
+    "docs/reviews/competition_adversarial_inception_ops.json": "ef73e4f293dd4ba6198e64f92e60b8d2a3b3baad474048ed565634a7afb13c53",
+    "docs/licenses/Adversarial-non_targeted-Apache-2.0.txt": "d0a8ec9768813e5df91a5355e3279da9bf24fe301a0d6aa2fbf561055d980b3c"
+  }
+}

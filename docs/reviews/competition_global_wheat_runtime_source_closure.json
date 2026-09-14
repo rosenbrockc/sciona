@@ -1,0 +1,230 @@
+{
+  "read_only": true,
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "scope": "Static source-file integrity and local import closure only. No detector import, training or numerical equivalence claim.",
+  "verified_python_files": 20,
+  "files_sha256": {
+    "models.py": "002ae6b58a64a17587c456e78381df4bd382af50d2a9c3a76c734f50371f4adc",
+    "effdet_train.py": "36551e0efd6b7d60778d2c4965a7dc4936e7101937bcde1cda4aeef1b9f5418b",
+    "predict.py": "db2780716d39d8c9c0900c4f4fe309ad5b0243095038631dc6e51f8e8ff4265f",
+    "dataset.py": "0a0c4a66d960b07aa5e56fe51c78b9a4081ae5f977e4969435596562c155e3bd",
+    "utils.py": "7498ce7dbfca13489c66dc515658240fad3156fb1e99ee2c01b56507f2bf5f3a",
+    "effdet/__init__.py": "2f96c925dcdc514b51f951227bd535471ef80eb99384d07537be662937fed53d",
+    "effdet/anchors.py": "ce6523f62fee00e03f6656e6c748f50140effa9a6477ed928266b8cc3492c9a4",
+    "effdet/bench.py": "e5157e6cbee4b573a3e13e76743d7d9b9d7f4369ad03e7508913dc1c205be664",
+    "effdet/config/config.py": "d9ef3fb24b8db88a6faf40f5ad6802a25eb7efee853102964809d1039bb7f9f7",
+    "effdet/efficientdet.py": "9cd87baec44a3ca4ab85bff0d5e0d03930914113bef68cd417c68bdd5a0c1a64",
+    "effdet/helpers.py": "058f1cd85e66653896d05b2177c80703d5c93c1a85bbfb756af30ba23c2e99aa",
+    "effdet/loss.py": "705c62d52e7d5369b5b7ddb305f0c25abc94f4609220127c32dde80df81601f9",
+    "effdet/object_detection/__init__.py": "104afb5ec2dadc7f754ec2893fb4ab45598d347bd812b02e7d2eb3d9ad3c05c3",
+    "effdet/object_detection/argmax_matcher.py": "add79d5cd7531c66ae98ba77745777d5deac6c360f25f7511c2f6e11de2960d6",
+    "effdet/object_detection/box_coder.py": "fe38b1dfbfa6b8eae6c4ba6e3bcdfcafe21873b8af9345c23cc051c02cb9ad74",
+    "effdet/object_detection/box_list.py": "db3b64910e0b0e39a9dd32fec663a7d8d67a3245141bda2e727ed7571664bdf3",
+    "effdet/object_detection/faster_rcnn_box_coder.py": "f3de7cad1003ac9a479140d88910054e4e238f84d79e809c76007afcad914f7d",
+    "effdet/object_detection/matcher.py": "50545caf7d27c9ffa9e3f9694fe19bff31577fe970d9c353f4e1de7288562c8a",
+    "effdet/object_detection/region_similarity_calculator.py": "314c0dc5dce9add9e2ebbad02b242775e70abcce4746aba56972dfc5d2490cc6",
+    "effdet/object_detection/target_assigner.py": "5664f489b1aade99b4f046d8b87b5e6c1253fac88c1b5f7ae1acba7ebc05469c"
+  },
+  "local_import_edges": [
+    {
+      "from": "models",
+      "target": "effdet"
+    },
+    {
+      "from": "models",
+      "target": "effdet.efficientdet"
+    },
+    {
+      "from": "effdet_train",
+      "target": "models"
+    },
+    {
+      "from": "effdet_train",
+      "target": "dataset"
+    },
+    {
+      "from": "effdet_train",
+      "target": "utils"
+    },
+    {
+      "from": "predict",
+      "target": "models"
+    },
+    {
+      "from": "predict",
+      "target": "dataset"
+    },
+    {
+      "from": "predict",
+      "target": "utils"
+    },
+    {
+      "from": "effdet",
+      "target": "effdet.efficientdet"
+    },
+    {
+      "from": "effdet",
+      "target": "effdet.bench"
+    },
+    {
+      "from": "effdet",
+      "target": "effdet.config.config"
+    },
+    {
+      "from": "effdet",
+      "target": "effdet.helpers"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection.argmax_matcher"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection.box_list"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection.faster_rcnn_box_coder"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection.region_similarity_calculator"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.anchors",
+      "target": "effdet.object_detection.target_assigner"
+    },
+    {
+      "from": "effdet.bench",
+      "target": "effdet.anchors"
+    },
+    {
+      "from": "effdet.bench",
+      "target": "effdet.loss"
+    },
+    {
+      "from": "effdet.efficientdet",
+      "target": "effdet.config.config"
+    },
+    {
+      "from": "effdet.object_detection.argmax_matcher",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.object_detection.argmax_matcher",
+      "target": "effdet.object_detection.matcher"
+    },
+    {
+      "from": "effdet.object_detection.faster_rcnn_box_coder",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.object_detection.faster_rcnn_box_coder",
+      "target": "effdet.object_detection.box_coder"
+    },
+    {
+      "from": "effdet.object_detection.faster_rcnn_box_coder",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.object_detection.faster_rcnn_box_coder",
+      "target": "effdet.object_detection.box_list"
+    },
+    {
+      "from": "effdet.object_detection.target_assigner",
+      "target": "effdet.object_detection"
+    },
+    {
+      "from": "effdet.object_detection.target_assigner",
+      "target": "effdet.object_detection.box_list"
+    }
+  ],
+  "unresolved_local_imports": [],
+  "external_import_roots": [
+    "PIL",
+    "albumentations",
+    "apex",
+    "cv2",
+    "numpy",
+    "omegaconf",
+    "pandas",
+    "timm",
+    "torch",
+    "torchvision",
+    "tqdm"
+  ],
+  "environment_comparison": {
+    "torch": {
+      "source_pin": "1.4.0",
+      "installed": "2.11.0",
+      "matches_source_pin": false
+    },
+    "torchvision": {
+      "source_pin": "0.5.0",
+      "installed": "0.26.0",
+      "matches_source_pin": false
+    },
+    "timm": {
+      "source_pin": "0.1.28",
+      "installed": "0.9.2",
+      "matches_source_pin": false
+    },
+    "albumentations": {
+      "source_pin": "0.4.5",
+      "installed": "1.3.0",
+      "matches_source_pin": false
+    },
+    "numpy": {
+      "source_pin": "1.18.1",
+      "installed": "2.4.2",
+      "matches_source_pin": false
+    },
+    "pandas": {
+      "source_pin": "1.0.5",
+      "installed": "2.3.3",
+      "matches_source_pin": false
+    },
+    "Pillow": {
+      "source_pin": "5.4.1",
+      "installed": "11.3.0",
+      "matches_source_pin": false
+    },
+    "omegaconf": {
+      "source_pin": "2.0.0",
+      "installed": null,
+      "matches_source_pin": false
+    },
+    "ensemble-boxes": {
+      "source_pin": "1.0.4",
+      "installed": null,
+      "matches_source_pin": false
+    }
+  },
+  "limits": [
+    "Python AST import closure does not prove dynamic behavior or compatibility with installed external libraries.",
+    "Exact original notebook-attached software-bundle version and full dependency/weight licensing remain separate gates.",
+    "Pinned historical package versions must be qualified without changing active training environments."
+  ]
+}

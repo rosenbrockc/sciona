@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 20,
+  "prefix_and_future_mutation_invariance": true,
+  "current_point_excluded_from_fit": true,
+  "label_independent_detection": true,
+  "hashes": {
+    "tests/test_nab_runtime.py": "df677238d332776ffff495cab6f210bad52740ad4c99ac3b85782e25a9e24f0c",
+    "tests/test_nab_contract.py": "3e6973f85aef2b08610c9eca1793f061539c79a3d8b01921818472985c77a7dc",
+    "sciona/nab_streaming.py": "9f4ca18e0a3cad9eda127ec4f84714d2a07834c715d2e4cb7d885a6dfc6f28f9",
+    "sciona/nab_contract.py": "2532adfe4b55b7ff34b110c9d4dc69cbf5e130deeb3a8008c9cc03c8aefc5179",
+    "sciona/nab_scoring.py": "0cc26cabc078bff6ef6405ec20e0cfd2022460b2b1f414b63ef2affb60cac2f8"
+  }
+}

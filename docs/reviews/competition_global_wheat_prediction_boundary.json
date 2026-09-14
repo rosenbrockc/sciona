@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "exact_source_boundary_cases": 256,
+  "both_detectors": true,
+  "all_source_resolutions_and_views": true,
+  "source_prediction_sha256": "db2780716d39d8c9c0900c4f4fe309ad5b0243095038631dc6e51f8e8ff4265f",
+  "implementation_sha256": {
+    "sciona/wheat_prediction_boundary.py": "bdc08921229695e1f3de97928cd52e9ed0025b27be102e090d4c21f52049eb19",
+    "sciona/wheat_tta.py": "a1e1080b19c42772da8e2dfa65667e2bb060d914c1ae35a0aa0cb7da43944997",
+    "scripts/validate_wheat_prediction_boundary.py": "56487b277f7848ec38b3fcc5813ad4727655b01feb74b231c8fb7702c842911e"
+  },
+  "limits": [
+    "Synthetic detector outputs only; learned prediction quality and detector execution are not qualified.",
+    "Full training, inference integration, dependency qualification and publication remain pending."
+  ]
+}

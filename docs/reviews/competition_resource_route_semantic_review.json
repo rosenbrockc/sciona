@@ -1,0 +1,48 @@
+{
+  "format": "resource-route-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "65947cba-17e3-5a60-ac2b-7a3545885a39",
+  "source_hash": "d07d9ca3d6cf5dc01c2b487384d68cc218797da1504dc97483cbeb69b0f0ee1f",
+  "source_scope": "Generic five-stage agent planning topology; constrained-route search is an explicit permitted realization, not a historical winning solution.",
+  "serialized_graph_sha256": "641f783f01a3e5b5247a0e6fd86969663f48ad0b9c2fae2f037395d84fba191e",
+  "provider_sha256": "177d5adfa135191a5b7def34b85c2bd43393182704d57b341cab1caf177fa2fb",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": {
+    "state_encoder": "encode_state",
+    "candidate_generator": "generate_candidates",
+    "search_or_rollout": "search_routes",
+    "constraint_repair": "validate_route",
+    "plan_selection": "select_plan"
+  },
+  "dependencies": {
+    "annotated-types": "0.7.0",
+    "pydantic": "2.12.5",
+    "pydantic-core": "2.41.5",
+    "typing-extensions": "4.15.0",
+    "typing-inspection": "0.4.2"
+  },
+  "limitations": [
+    "Automated Tier 3 Community only; no human Tier 1 certification or Tier 2 usage qualification. Original intake remains draft with mandatory provenance.",
+    "Complete five-stage generic topology realized as finite directed resource-constrained route planning. No historical winning solution, arbitrary game, stochastic simulation or continuous control claim.",
+    "Costs and resource consumption are nonnegative integers; budgets are finite integer vectors. Closures are explicit. No domain-specific map ingestion or resource estimation.",
+    "Dijkstra operates on node plus consumed-resource state. Nonnegative costs justify stopping at the first popped goal; exhaustion proves no feasible route only after the queue empties. Exact resource labels are retained without dominance pruning.",
+    "An explicit expansion limit returns search_limit without a feasible-route or infeasibility claim. Budget products can make state spaces large; this does not qualify peak memory or production latency.",
+    "Candidate generation filters impossible edges; constraint validation independently checks the selected route against original edges, closures and totals. No invented repaired edges or relaxed constraints.",
+    "Synthetic evidence includes independent exhaustive bounded-walk comparisons and actual five-stage serialized runner execution for optimal, infeasible, limited and identity routes. No real-world generalization claim.",
+    "Algorithm uses Python standard library; graph schema uses pinned existing project dependencies. Qualified only in the recorded provisioned environment; no clean installation, other-platform or process-resume qualification.",
+    "Provider objects are trusted in-process intermediates. Only the input payload and final result are strict JSON boundaries; intermediate persistence/interchange is not qualified."
+  ],
+  "evidence_sha256": {
+    "competition_resource_route_source_triage.json": "4f0765f5486a2364b8c933350ca53fdaf1a3851da90bf4c8217041a41ed6ad2e",
+    "competition_resource_route_runtime_tests.json": "fc710ff2bee9011a2f168d1a6260b0fa048590a4a8f88a8ecdedf16d6a42aa36",
+    "competition_resource_route_graph_execution.json": "f069aac07f9d0de6f5c84af26a066d0ce19d0a252169557bf0dc67cbcc600b71",
+    "competition_resource_route_environment.json": "5f9323881556f59d82149a401cfc260c4827f101146ef43eeee61305b50c3b76"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_resource_route_execution.py": "595632c80141b0a7ab50d9ed47a357a724e67fc1e26f2edae57e7ced69c332ba",
+    "requirements/resource-route-execution.txt": "d479f74b8a8d1387836a46928002d44fcb6afa2145678794c4747dbb49549ace"
+  },
+  "catalog_mutations": 0
+}

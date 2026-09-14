@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "r_version": "R version 4.6.1 (2026-06-24)",
+  "cases": [
+    {
+      "case": "ordinary",
+      "maximum_absolute_errors": {
+        "u": 3.22519788653608e-14,
+        "d": 5.440092820663267e-15,
+        "l": 3.9968028886505635e-15,
+        "r": 4.6629367034256575e-15
+      }
+    },
+    {
+      "case": "constant",
+      "maximum_absolute_errors": {
+        "u": 0.0,
+        "d": 0.0,
+        "l": 0.0,
+        "r": 0.0
+      }
+    },
+    {
+      "case": "partly_constant",
+      "maximum_absolute_errors": {
+        "u": 2.1538326677728037e-14,
+        "d": 6.8833827526759706e-15,
+        "l": 0.0,
+        "r": 4.6629367034256575e-15
+      }
+    }
+  ],
+  "zero_based_matrix_assignment_drops_origin": true,
+  "scope": "Boundary features only; full mosaic construction not yet implemented.",
+  "sha256": {
+    "sciona/tgs_boundaries.py": "edd47fa6fb2d09a41fe05583870992a5ad142d64ef8573e453979a0138369bdf",
+    "scripts/validate_tgs_boundary_reference.py": "03ef5287f0535ae7d8a928a44e365cdeec893d6190e34802a17031c62589ae35"
+  }
+}

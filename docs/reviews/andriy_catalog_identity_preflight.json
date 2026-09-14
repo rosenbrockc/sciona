@@ -1,0 +1,7 @@
+{
+  "read_only": true,
+  "providers": 25,
+  "existing_identities": 0,
+  "new_identities": 25,
+  "version_conflicts": []
+}

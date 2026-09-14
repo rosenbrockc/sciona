@@ -1,0 +1,15 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "tests_passed": 7,
+  "scope": "Input alignment, decoded duplicate rejection and orchestration wiring with stubbed model stages; full trained combined execution and preparation provenance remain unverified.",
+  "sha256": {
+    "sciona/cassava_population_views.py": "3567d995a4de6338caf931c0e3e122c8a17dbe44c05c19c93ac7853a27bea44f",
+    "sciona/cassava_pipeline.py": "52e9f928b718b3a5b25faf472f510cc1216c509b2b4fefb2703134030adf658d",
+    "tests/test_cassava_population_views.py": "ad575b84b90793255cf121d09f5f782266adea52400ebc2faa5db168469322e8",
+    "tests/test_cassava_pipeline.py": "86353a201439947dd1514b00e70cebf4e44855e28e9e942b42c8acefc30e9ef1",
+    "sciona/cassava_family_alignment.py": "7e9ba23e23024ba8f0d4735352e55074cd29c5b118903c0edc3ab56e07b843b2",
+    "sciona/cassava_fold_contract.py": "4761d25e2787a0ffc04170af5e1868ef15b29c9b0967f6d6528638d69fe61a40"
+  }
+}

@@ -1,0 +1,304 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "duplication_check_passed": true,
+  "catalog_atoms_scanned": 3581,
+  "candidate_pattern": "aptos|inception|seresnext|se.resnext|generalized.mean|gem.pool|smooth.l1|pseudo.label|label.refin|group.mean|fold.ensemble|population|cassava",
+  "exact_content_or_fingerprint_duplicates": 0,
+  "reviewed_candidates": [
+    {
+      "fqdn": "sciona.atoms.dl.contrails_execution.contrails_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "084c253b34a2421c8ceadb6c14e061bb20f994ffbf677c18db716b1a2162c815",
+      "decision": "different_behavior",
+      "reason": "Prepares thermal segmentation tensors and scoring masks, not the four ordinal/soft-target roles."
+    },
+    {
+      "fqdn": "sciona.atoms.dl.image_augmentation.fold_ensemble_average",
+      "signature": "(predictions_matrix: 'NDArray[np.float64]', method: 'str') -> 'NDArray[np.float64]'",
+      "function_source_sha256": "55de18f72bdd284b8cad4c9f3ae2c04e6c02c6b008f695cba18d1598033d4894",
+      "decision": "different_behavior",
+      "reason": "Arithmetic reduction is a compatible suboperation, but this atom accepts an anonymous rank-three matrix. It does not enforce eight architecture/replica identities, align private keys, train models or refine targets; no new generic averaging atom is proposed."
+    },
+    {
+      "fqdn": "sciona.atoms.dl.segmentation.hubmap_execution.hubmap_pseudo_labels",
+      "signature": "(models: object, pseudo_sources: object, pseudo_rng: object, inference_geometry: object = None) -> object",
+      "function_source_sha256": "46bfedf63f2d25303948dad16d83dc6d059d0fd8b8ee7167633bbe25463b9725",
+      "decision": "different_behavior",
+      "reason": "Produces stitched binary segmentation masks with four-view inference, not unbounded scalar regression targets."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.amex_execution.amex_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "3b291ac8ef617fd677ffd70dea61ab81da7ecc432e448e4cbd8132d596b5dd12",
+      "decision": "different_behavior",
+      "reason": "Sequence categories and fold populations differ from four image label roles."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.biosignal_sequence_execution.biosignal_sequence_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "5bc8d117acee2954842ef1a5215841192d88f120e6ea01867587cd997fd4b953",
+      "decision": "different_behavior",
+      "reason": "Subject-separated signal/spectral inputs differ from RGB regression populations."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_fold_plan",
+      "signature": "(sample_keys: list, labels: list, assignments: list) -> object",
+      "function_source_sha256": "4c82bf1b8c45bcce130b8c09656d9c93436474413e0381d53734d96924a18026",
+      "decision": "different_behavior",
+      "reason": "Validates five shared held-out folds and class complements, not stage-one/stage-two label-role separation."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.cassava_execution.cassava_train_ensemble",
+      "signature": "(plan: object, source_rows: list, efficientnet_rows: list, query_rows: list, references: dict, torch_batch_size: int, torch_workers: int, efficientnet_batch_size: int, output_directory: str) -> dict",
+      "function_source_sha256": "f222f4561d9832f4c71216b1b1d5417cfb5b8c4ed04662c3a2cb313cc8fb5974",
+      "decision": "different_behavior",
+      "reason": "Trains CV classifiers and a B4 refit with frozen CropNet; no eight-model scalar GeM regression, ensemble teacher or supplemental refinement."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.cornell_execution.cornell_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "5b66bff41883e4f84a7dc3c0e24fc9bd1ac1d0e4536f771e9e47d38071a984f8",
+      "decision": "different_behavior",
+      "reason": "Audio and fold-lifecycle contract differs from image and ordinal refinement inputs."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.future_sales_execution.future_sales_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "68b22b176c9ce6d217417f5c5fe2378d846101ad11d765894f686b8966fcccab",
+      "decision": "different_behavior",
+      "reason": "Entity/period contract differs from RGB populations and supplemental labels."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities",
+      "signature": "(training_features: list, training_labels: list, prediction_features: list, valid_prediction_rows: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "1ee15df03772a5a224b6b3f9c6df56858ae9a4d1ec2511db048254b92e8ad798",
+      "decision": "different_behavior",
+      "reason": "Fits source binary signal-feature models for three populations and aggregates segment scores; different inputs, models and arithmetic from eight image regressors."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.image_tabular_execution.image_tabular_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "f8abe837ef6f7364582bf1f657648ecf57a92bd68c05018b38fc717e6afbcdd8",
+      "decision": "different_behavior",
+      "reason": "Image-plus-metadata grouped-fold contract differs from the four staged label roles."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities",
+      "signature": "(training_features: list, training_labels: list, prediction_features: list, valid_prediction_rows: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "826b63d84076f6ad867e6ea15d62959b7c7e3656ed36384cba569a2b7a133016",
+      "decision": "different_behavior",
+      "reason": "Fits source binary signal-feature models for three populations and aggregates segment scores; different inputs, models and arithmetic from eight image regressors."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.march_execution.march_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "9809aeb6eb481e21e2517bc10884684f551123006a7e896c001b8a0564e1fb44",
+      "decision": "different_behavior",
+      "reason": "Game-population contract differs from RGB regression and soft targets."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.openvaccine_execution.openvaccine_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "cd6ce7ddc2d6657bd562ba4bcc2b1be1ab33c8deef5664e17aa542c09a4c5fb5",
+      "decision": "different_behavior",
+      "reason": "Member-split molecular regression recipe differs from the four image label roles."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.otto_execution.otto_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "17e74b1e19d8c0b47fde80e260d4f8ff20512271df310b650558b79579ae8711",
+      "decision": "different_behavior",
+      "reason": "Nine-class tabular stacking, embedding and meta-fold contract differs from scalar image regression."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.physical_operator_execution.physical_operator_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "fca996a7f87bb1004a927eb69349deece0df857d748b0046fb246a548e3bb793",
+      "decision": "different_behavior",
+      "reason": "Periodic SI state contract differs from image labels and pseudo targets."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.porto_execution.porto_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "04beff13cd66c83c3fe5c9d3bcd94bdba400bcec8fd9961cf36f8cb86fdf37c8",
+      "decision": "different_behavior",
+      "reason": "Binary tabular populations and five denoising/neural controls differ from four image roles and eight GeM models."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.santa_execution.santa_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "36d5177094b4031b5f6f22412221824a6ae8ca1c90f9131d3b185a0db7519d68",
+      "decision": "different_behavior",
+      "reason": "Replay and visible-history contract differs from staged image training."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.santander_execution.santander_execute",
+      "signature": "(prepared: object) -> dict",
+      "function_source_sha256": "3643f5255ff94c404abfe0b9300905033b3489ef1c657b52d5f065461b6ba9fa",
+      "decision": "different_behavior",
+      "reason": "Tabular binary pseudo-label feature regeneration and retraining differ from continuous image targets and native vision backbones."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.santander_execution.santander_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "53a1deaf11c0068c4d6bef0467adba624743f00bcd1548f450a78f0164afc9a0",
+      "decision": "different_behavior",
+      "reason": "Binary tabular matrices, ten-fold branches and retained pseudo-query controls differ from four image label roles."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.sklearn.semi_supervised.self_training_select_pseudo_labels",
+      "signature": "(max_proba: 'NDArray[np.float64]', *, threshold: 'float' = 0.75, criterion: 'str' = 'threshold', k_best: 'int' = 10) -> 'SelfTrainingSelection'",
+      "function_source_sha256": "dcb797dae241ac7e3374aecc92f84a9377adec6b392d6a290d1cdf5f0ef61be6",
+      "decision": "different_behavior",
+      "reason": "Selects confidence-threshold or top-k indices, not continuous teacher targets over every supplied added role."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.tabular_ensemble_execution.tabular_ensemble_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "3af98ab0051dd2d2931fbc4226b596230910dfbb96a29925642ccb91be741969",
+      "decision": "different_behavior",
+      "reason": "Tabular fold and training controls differ from image populations and source label roles."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.tabular.gradient_boosting.extract_pseudo_labels",
+      "signature": "(test_predictions: 'NDArray[np.float64]', upper_threshold: 'float', lower_threshold: 'float') -> 'tuple[NDArray[np.int64], NDArray[np.int64]]'",
+      "function_source_sha256": "c832bd8105f861a1b2094e0e2c312901614ded14cf219120bbde958cde1773eb",
+      "decision": "different_behavior",
+      "reason": "Selects confident positive/negative probability indices; no scalar teacher averaging or four-level group bounding."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.text_pair_execution.text_pair_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "9eb0f465408832de1f27bafc3c65dd23a5607b2778e3da2c7583a8e73de0b7b6",
+      "decision": "different_behavior",
+      "reason": "Text-pair population contract differs from RGB scalar regression."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.video_multilabel_execution.video_multilabel_prepare",
+      "signature": "(payload: dict) -> object",
+      "function_source_sha256": "93466d062985a270aa531fe2928a0f861d43a2974f0436eba4c5ee80f03692d6",
+      "decision": "different_behavior",
+      "reason": "Video-feature multilabel contract differs from RGB scalar regression."
+    },
+    {
+      "fqdn": "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities",
+      "signature": "(training_features: list, training_labels: list, prediction_features: list, valid_prediction_rows: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "cc13f817e5632700d33812431beea0fbcfc48852470d0d3b2eaf3f07ccb8476f",
+      "decision": "different_behavior",
+      "reason": "Fits source binary signal-feature models for three populations and aggregates segment scores; different inputs, models and arithmetic from eight image regressors."
+    },
+    {
+      "fqdn": "sciona.atoms.physics.weighted_population_variance.weighted_population_variance",
+      "signature": "(values: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], weights: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]]",
+      "function_source_sha256": "e16065d4e1f08bd7f8f8e66bd29ff4fdf96ed77eae01c33da826b9e29d422457",
+      "decision": "different_behavior",
+      "reason": "Numerical mean/variance reduction has no ordinal groups, target clipping, identity validation or training lifecycle."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_distribution_features.andriy_distribution_features",
+      "signature": "(windows: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]",
+      "function_source_sha256": "687979cbd6b2a0e5935b6ebb825f92ebdfac0b64fa1b3750a973e081f496ff6f",
+      "decision": "different_behavior",
+      "reason": "Window distribution features are not image label-role preparation or model training."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population.andriy_documented_population",
+      "signature": "(csp_candidates: list, candidate_sequences: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], primary_positive: list, auxiliary_positive: list, negative: list, prediction: list, sampling_frequency: int) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.bool]]]",
+      "function_source_sha256": "61eb47070c59a16f8a24f53c3f0b1bd8bfe53009c64d4e86b55b20a520dff7bd",
+      "decision": "different_behavior",
+      "reason": "Builds signal clip/window features and binary normalized populations; does not implement RGB first-stage base plus averaging/group-bounded/pseudo roles."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population_inputs.andriy_population_inputs",
+      "signature": "(primary_positive: list, auxiliary_positive: list, negative: list, prediction: list) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.bool]]]",
+      "function_source_sha256": "1979f762b20d6893905af436262bc05fc30a2d1e249cb39eb02cbb60f671ed8a",
+      "decision": "different_behavior",
+      "reason": "Builds signal clip/window features and binary normalized populations; does not implement RGB first-stage base plus averaging/group-bounded/pseudo roles."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_populations.andriy_documented_populations",
+      "signature": "(csp_candidates: list, candidate_sequences: list, primary_positive: list, auxiliary_positive: list, negative: list, prediction: list, sampling_frequencies: list) -> tuple[list, list, list, list]",
+      "function_source_sha256": "48b3e7411d0803013c3f1b4ea280f78f5576ef7646d98f38aaa5d4f796ac71d9",
+      "decision": "different_behavior",
+      "reason": "Builds signal clip/window features and binary normalized populations; does not implement RGB first-stage base plus averaging/group-bounded/pseudo roles."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_time_features.andriy_time_features",
+      "signature": "(windows: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]",
+      "function_source_sha256": "c8663ed6f6a10670b819a2244dceea0e387209f7c67c6457f2fedb60f42d28a2",
+      "decision": "different_behavior",
+      "reason": "Signal derivative/time features are not image label-role preparation or model training."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.basic_statistics.channel_basic_statistics",
+      "signature": "(windows: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]",
+      "function_source_sha256": "79f869161a8f1d6d848c7c69555ee8344321b535a3f58e6342b3e5c6361417af",
+      "decision": "different_behavior",
+      "reason": "Window/channel descriptive statistics do not implement any proposed provider boundary."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.collect_population_scores",
+      "signature": "(scores0: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], ids0: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], scores1: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], ids1: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], scores2: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], ids2: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]]) -> tuple[numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]]]",
+      "function_source_sha256": "6a848c0ecfef74b76a741bc9959d05b2e89f6fd2cae38183face63b25c47a6bd",
+      "decision": "different_behavior",
+      "reason": "Concatenates three score/ID groups without training, averaging or supplemental target refinement."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ensemble_population_indices",
+      "signature": "() -> tuple[int, int, int]",
+      "function_source_sha256": "3910e8cc277bc5b47121be6369103cc3a396cc15c5d370b1d201ebaa67fc2a27",
+      "decision": "different_behavior",
+      "reason": "Returns three fixed positions; no population validation or staged target construction."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.ordered_prediction_ids",
+      "signature": "(prediction_populations: list, identity_populations: list) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]]",
+      "function_source_sha256": "4515d563ac3e15d9de9afb58717bb01648578d790813382c2abd28a9a1789433",
+      "decision": "different_behavior",
+      "reason": "Binds clip counts and integer identities; no staged ordinal label roles."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_partitions.select_ensemble_population",
+      "signature": "(training_populations: list, prediction_populations: list, label_populations: list, identity_populations: list, population_index: int) -> tuple[list, list, numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]]]",
+      "function_source_sha256": "2a1afa035400edd80ec76519d393c551926cffa5895755c73b890df70c590f68",
+      "decision": "different_behavior",
+      "reason": "Selects one of three binary clip populations; no four-role soft-target lifecycle."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.ensemble_family_inputs",
+      "signature": "(alex_training_populations: list, alex_prediction_populations: list, alex_label_populations: list, alex_identity_populations: list, feng_training_populations: list, feng_prediction_populations: list, feng_label_populations: list, feng_identity_populations: list, prediction: list, andriy_identity_populations: list) -> tuple",
+      "function_source_sha256": "30d1c30549a5a5249aab4c6dd69ce1d7f6e92fe7e281334915e4437c630397c3",
+      "decision": "different_behavior",
+      "reason": "Forwards distinct signal-family population inputs; no image-role validation or regression fitting."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.ensemble_wiring.pack_eleven_predictions",
+      "signature": "(combined: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], autocorrelation: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], coherence: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], relative_power: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], feng_xgb: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], feng_knn: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], feng_expanded_knn: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], feng_glm: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], andriy_svm: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], andriy_glm: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], andriy_xgb: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]], alex_ids: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], feng_ids: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]], andriy_ids: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.int64]]) -> tuple[list, list]",
+      "function_source_sha256": "785002081150a20e2bbc046c114b09e81554b0433e236ec86a500c24c6843245",
+      "decision": "different_behavior",
+      "reason": "Packs eleven supplied scores and identity groups; no eight-model training or target refinement."
+    },
+    {
+      "fqdn": "sciona.atoms.riemannian_bci.signal_processing.feng_fft.feng_fft_features",
+      "signature": "(filtered_segment: numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float32]]) -> numpy.ndarray[tuple[typing.Any, ...], numpy.dtype[numpy.float64]]",
+      "function_source_sha256": "5d7822c78473c9815d7308e79df681e44199d9c22abb5e496b463eb56a9ebd64",
+      "decision": "different_behavior",
+      "reason": "Signal FFT feature extraction does not implement an image population or training provider."
+    }
+  ],
+  "scope": "All catalog atom versions checked for exact identity; named/description candidates reviewed for semantic overlap. This is a catalog snapshot, not a universal semantic-equivalence proof.",
+  "proposed": {
+    "sciona.atoms.ml.aptos_execution.aptos_population": {
+      "content_hash": "1d3e9e2aaf6b04a253d66036a4c26bb58147a7f2fd0387fb12325e3582d38cf6",
+      "fingerprint": "39c8f00a8ce9154453c81a8e6729ba3a15e3abe67ac9557de379480d340d62a3"
+    },
+    "sciona.atoms.ml.aptos_execution.aptos_train_ensemble": {
+      "content_hash": "565a1b3041b9ed0f42df0fd75a5311aa9eabfae3e3e371dca701246cfc3d5b44",
+      "fingerprint": "35ec136609e3eaf82a47b07aefef9204f6e28021d9e38bc8628bd04ca2f9f13f"
+    }
+  },
+  "sha256": {
+    "scripts/audit_aptos_duplication.py": "091885de06b7d1443637202eb79b63210ff1f35f45d0e9879b1e93d33700e691"
+  }
+}

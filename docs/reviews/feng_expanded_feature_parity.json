@@ -1,0 +1,65 @@
+{
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "41e9a15823c6ee386b2c35e9676a8d9daeb57701637a8319a7825430aa82273a",
+  "provider_sha256": "46226bec7e284a10b6e320b1039f37f721c839cc1b3512335709528ffc70965e",
+  "validation_sha256": "db4a71760dca2a59edd45ec6173859675a750b9a61a849b05d59eb9ffbfb8da0",
+  "test_sha256": "f011d47b29644bd6e44366bf7ceff07aed65748cb76d5767d7ba789371bae49e",
+  "cases_passed": 9,
+  "cases": [
+    {
+      "seed": 9521,
+      "duration_seconds": 50,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9521,
+      "duration_seconds": 100,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9521,
+      "duration_seconds": 600,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9522,
+      "duration_seconds": 50,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9522,
+      "duration_seconds": 100,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9522,
+      "duration_seconds": 600,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9523,
+      "duration_seconds": 50,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9523,
+      "duration_seconds": 100,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9523,
+      "duration_seconds": 600,
+      "max_abs_error": 0.0
+    }
+  ],
+  "libraries": {
+    "numpy": "2.4.2",
+    "pandas": "2.3.3",
+    "sklearn": "1.8.0"
+  },
+  "limitations": [
+    "Python2 integer shape division and removed np.alltrue adapted; numerical source bodies otherwise unchanged.",
+    "Current-library synthetic parity, no historical environment or predictive-performance claim.",
+    "Source fixed 16-channel feature contract; complete model execution and approval remain outstanding."
+  ]
+}

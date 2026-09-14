@@ -1094,3 +1094,26 @@ def test_pdg_phase4_artifact_envelope_requires_fqdn_identity() -> None:
         assert "fqdn_prefix" in str(exc)
     else:
         raise AssertionError("expected missing fqdn identity to fail")
+
+
+def test_repeated_premise_survives_publication_projection():
+    bundle=parse_pdg_document({'equations':[
+        {'id':'eq:in','latex':'x = y'},{'id':'eq:out','latex':'x^2 = y^2'}],
+        'inference_edges':[{'id':'same-edge','source':'eq:in','target':'eq:out',
+          'rule':'multiply expr 1 by expr 2','bindings':{'step_id':'square'}}]*2})
+    result=build_pdg_relationship_ingest(bundle,expression_bindings_by_pdg_node_id={'eq:in':EXPR_BASE,'eq:out':EXPR_SOLVED})
+    rows=build_pdg_publication_write_rows(result).to_insert_rows()
+    signature=json.loads(rows['artifact_cdg_nodes'][0]['type_signature'])
+    assert signature['inputs']==[EXPR_BASE,EXPR_BASE]
+    assert signature['outputs']==[EXPR_SOLVED]
+
+
+def test_multi_output_edges_preserve_slots_without_cartesian_duplication():
+    import pytest
+    from sciona.physics_ingest.pdg_cdg import _step_input_node_ids
+    from sciona.physics_ingest.sources.pdg import PDGInferenceEdge
+    def edge(source,target):return PDGInferenceEdge(source+target,source,target,'rule')
+    edges=[edge(source,target) for source in ['a','a','b'] for target in ['c','d']]
+    assert _step_input_node_ids(edges)==['a','a','b']
+    with pytest.raises(ValueError,match='ordered input slots'):
+        _step_input_node_ids(edges[:-1])

@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 7,
+  "source_version_id": "743c3225-058e-5a7e-ab18-ae5dd1c2b7d4",
+  "source_content_hash": "162915709dcde12f33a88f1d693b169aa8509dbd7e5b29755f89a728d388ee11",
+  "complete_lifecycle_models": 30,
+  "folds_per_stage": 10,
+  "neural_epochs": 15,
+  "checks": [
+    "Initial neural scores actually feed pseudo-label selection",
+    "Both branches regenerate features from their separately expanded labeled populations",
+    "Selected query rows retained in unlabeled count reference explicitly",
+    "Full ten-fold neural/tree retraining and final rank blend",
+    "Invalid selection rejected before either retraining branch"
+  ],
+  "sha256": {
+    "sciona/santander_retraining.py": "e72af657ad01d2596b0a6efb05645897bd781df55ef34b80161cc1be799920b3",
+    "sciona/santander_lifecycle.py": "34bf5d0889b7162486447d2644f35cb4579add6102c52a71d1eaae193e5fc488",
+    "tests/test_santander_retraining.py": "6b9cca9b88b3113721faf5b06d4adbc6bdc5fa6107064969bb089cbf2e76a168",
+    "tests/test_santander_lifecycle.py": "3c66712003629bc8b6731c5c49cb2dc3a9f74f99bc324d9075500b7f95c524dc"
+  },
+  "limits": [
+    "Synthetic tail counts scaled explicitly; default 5000/3000 and 2700/2000 populations not exercised by this report.",
+    "Original selected-row reference membership and pseudo-label CV treatment unresolved; explicit retain-selected and joint stratified-fold choices used.",
+    "Historical tree settings, serialized graph and publication not qualified.",
+    "Global supervised feature generation prevents independent validation claims."
+  ]
+}

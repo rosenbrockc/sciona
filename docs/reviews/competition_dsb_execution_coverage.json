@@ -1,0 +1,102 @@
+{
+  "approved": false,
+  "read_only": true,
+  "synthetic_only": true,
+  "source_version_id": "6625a41e-b5a7-5ee2-86e5-1d2c60d6d185",
+  "execution_graph_sha256": "21c64c5e8d85593534d568543d01b27f32a32c34ad909e153cf4057f637ea962",
+  "source_stage_count": 10,
+  "executed_stage_implementations": {
+    "lung_mask_with_bone_removal": {
+      "dsb_components:mask_and_remove_bone": 1,
+      "dsb_training_preprocessing:prepare_training_masks": 11
+    },
+    "volume_split_combine": {
+      "dsb_components:split_volume": 2,
+      "dsb_components:combine_volume": 1
+    },
+    "coordinate_aware_3d_unet": {
+      "dsb_network:Net.forward": 21,
+      "dsb_network:DetectorNet.forward": 2
+    },
+    "anchor_label_mapping_with_iou_dilation": {
+      "dsb_components:assign_anchor_labels": 14
+    },
+    "online_hard_negative_mining": {
+      "dsb_losses:detector_loss": 6
+    },
+    "size_aware_nodule_oversampling": {
+      "dsb_components:oversample_by_size": 2
+    },
+    "softmax_temperature_proposal_sampling": {
+      "dsb_components:sample_proposals": 9
+    },
+    "center_feature_extraction_3d": {
+      "dsb_network:CaseNet.forward": 15
+    },
+    "noisy_or_pooling": {
+      "dsb_network:CaseNet.forward": 15
+    },
+    "miss_penalty_loss": {
+      "dsb_losses:classifier_loss": 14
+    }
+  },
+  "evidence_sha256": {
+    "competition_dsb_augmentation_validation.json": "3133f490d95af30562cb0f62e3c07423575575170f13b0ef9c494104f444ddd8",
+    "competition_dsb_component_validation.json": "8a8b770d2e2c1eb9c0c5c3c21d636e60be3e296c92bd3b91e32dba09b300c000",
+    "competition_dsb_epoch_validation.json": "9d7614a8ceb6a5eef357e29b1af97d34ac390d4b246840b9beb05ba1e40dd244",
+    "competition_dsb_full_source_execution.json": "264e76542de6720cb38a9e67a9985006da478b382216696eed77ee3754a5653e",
+    "competition_dsb_intake_validation.json": "53c1aa74dd6c5e8b3c11bef7731f2f51452d02bbe25b4f77b3f9702d2c06a827",
+    "competition_dsb_loss_validation.json": "8e43a61c77273f582a18d6bd278a1073707382580fefb5b07cc2348efa2139f9",
+    "competition_dsb_network_validation.json": "44e42dbb3a226115c6ac369cf9b233dfe03928036a69ecb1bab5ac4b6bbfe33e",
+    "competition_dsb_sampling_validation.json": "e858cd04e9581ab931cc94d72e41c56b000be629b5e920f4bb64c83cc0e1db2f",
+    "competition_dsb_schedule_validation.json": "d1ceed8b9df1209b499bfc6489eeff402c159dda262c9c9455a7fdfd8bfb8b38",
+    "competition_dsb_serialized_training.json": "564b3d686352a9f8e4eff7826c2b666ade568871b5549293b290547dd25dda46",
+    "competition_dsb_source_batches.json": "fca089b8236c65ef212859ff01b4e9aa7aeb244d354fc86a3baa8d0fb3faf232",
+    "competition_dsb_source_lifecycle.json": "3de58cecaf1eec27095d2ea889001458f473dd393aec20c477e54b3e4b3941cb",
+    "competition_dsb_source_preparation.json": "34d1a8a42e983ce00127009aa375ae8ed0fa7a2406de41749ea322b07763e48a",
+    "competition_dsb_training_preprocessing.json": "2796e7503ea208f80d236f685bf552384c1c5704da503fda70b1d5c8a170c662",
+    "competition_dsb_training_sequence_validation.json": "1fbeb61e53d4674a17a284b030e91b5b800aacba372640060e415bcd95764cce",
+    "competition_dsb_validation_parity.json": "05ace24cf8622e4ca3a9a03c050373e689480685f15f2bdfb7ef9cb236bb573b",
+    "competition_dsb_validation_samples.json": "2ce53a54f417cff138e7e24be21e56d995a6744854011ba2c4888e587216dd99"
+  },
+  "stale_evidence": [],
+  "implementation_sha256": {
+    "sciona/dsb_anchor_mapping.py": "0ad06f4f883ba1e841544099b41129eb1ed12ca8dacc4e537d8448670cbf936b",
+    "sciona/dsb_augmentation.py": "d32ca4ffa76c7e0a4d2068ca736aec741ecb434122cc370ebddbba1556c54f3b",
+    "sciona/dsb_batches.py": "9d487778aad6b6370e908fe8bd8ee1820ba83a19397f6caac85b42c2b46f1ac1",
+    "sciona/dsb_checkpoint.py": "3d9a8bb416c3055fad1a3c2627eafbab49627e2c0ec903747ed5a4724a00406f",
+    "sciona/dsb_checkpoint_adaptation.py": "05ecb83497d58c5a71e93e67e57d2c892133cf314f3e9139cdba27a2ffad3ed3",
+    "sciona/dsb_components.py": "0fd1509064a803e71c479821065946799c1485a8aaff0cd304797afb21d3e89c",
+    "sciona/dsb_detector_crop.py": "95cf1a3e0d6498276139c78d3f210f524b59fc794c7cac87d8ba5908c72789be",
+    "sciona/dsb_execution.py": "37047af3f659000c090f7dd92fd4075c3527edd0918dc5b95056fe6f00767806",
+    "sciona/dsb_intake.py": "24f91f470c7f642ca03433fec6df8de0dff13fd2c187b1b07fc93a10a0b3e3b4",
+    "sciona/dsb_losses.py": "1dfa838a4bbc0fb7b272b107de269347fc5182113497f419f159fed2918a9d47",
+    "sciona/dsb_network.py": "32a897938064b21e0ba0fee037159cb59befa750e21eba1dd721de8388724efc",
+    "sciona/dsb_pipeline.py": "8ca5ae553a6c05af57c3f433c7a6bba741c4432e21ecfff3a059c346fd3d2f0c",
+    "sciona/dsb_raw_inputs.py": "24438f3ca85ace987462cff8f660675042060ec37ae2db1c6540f4c0cada4a3d",
+    "sciona/dsb_runtime.py": "4660e2dc6268d26b464508a39912d287731175c933bebf5df24db101de17e9e4",
+    "sciona/dsb_sampling.py": "14f57225bcda1679f3ce37e217151d35fa1e04670a0c5fad1fbd8e0081ee5922",
+    "sciona/dsb_schedule.py": "242cffebbd6829eefc3138314cec8806ae7e6d7dfcda350c7b64a277019e9c1a",
+    "sciona/dsb_segmentation.py": "39794cf24f370fe1e62dfcfdd814b4436d3f24a795d30e7ffadcea715c59e8f9",
+    "sciona/dsb_training.py": "7ad662bd73073152f8d0e582ee2a86d6c6fc7a75816343f13ba729eadf448524",
+    "sciona/dsb_training_preprocessing.py": "186e1d86a4424185bc44cc2255a6e06c55bbed096b636473feac0c4fe7699788",
+    "sciona/dsb_training_range.py": "2df3498bfe6dfa16fe4caefaa76a4d04466d4e85a2aee705470679529cc820d4",
+    "sciona/dsb_validation.py": "3ccc70d9bae179083e77644d0901783fc5f5809b7ea95bc646c10cb8183463d1",
+    "sciona/dsb_validation_batches.py": "cc862f49af40b184342d14f0e3c97ed288ffd179ba99f6e36b8d486cb4dc5522",
+    "sciona/dsb_world_preprocessing.py": "b9c68fe689635ba21c74317030da018b7130369a450aca9908d653e2334ced21",
+    "tests/test_dsb_execution.py": "51f56fb224c59acbabeaf571b9a1c8519519dec2d8337676ab6ece6372564aaf",
+    "scripts/audit_dsb_execution_coverage.py": "61e70ddee49cc961c8e6f7287222d12b81bd1f3a4cdae16f9e151a84edbcdceb",
+    "sciona/visualizer/runner.py": "ff289eda92093a164f1691e2453622579cd6357e6292267833f5873a97ad6aa3",
+    "sciona/services/execution_graph_codec.py": "1ad42332f8e28adf4ee3f8d53184a4af8351f66304efa1703c63ed32989082a6"
+  },
+  "provider_sha256": {
+    "sciona-atoms-dl/src/sciona/atoms/dl/detection/dsb_execution.py": "f6b3fd8cbefdfb95158f7cd67fec2437da018e927759d2be25a55ae8bf66fd2c",
+    "sciona-atoms-dl/src/sciona/atoms/dl/detection/dsb_training_execution.py": "846af11481efccc16666e921a204ec44ca9107d1e71a5657ea5610feb39f7750"
+  },
+  "limitations": [
+    "Call coverage does not establish independent whole-graph source parity.",
+    "Center extraction and noisy-OR share the CaseNet forward implementation; their source parity is separate evidence.",
+    "Synthetic runtime states and proposal inputs establish no competition accuracy.",
+    "Catalog provider, lineage, tier and publication gates remain."
+  ]
+}

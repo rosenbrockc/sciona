@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": {
+    "models/detection/rpn.py": "62ea420ac8bba44d91d3b27f46c627fcc6b91c15ae706142fcbe079c10a31751",
+    "models/detection/roi_heads.py": "dfe9ac02abbbd2b6db522d66d00210ad0d7dac1cc66cf1f0c3e9bd628f37be2c"
+  },
+  "exact_loss_and_gradient_cases": 64,
+  "all_background_cases_included": true,
+  "installed_roi_default_difference_observed": true,
+  "regression_contract": {
+    "rpn": "L1",
+    "roi": "Smooth L1 beta=1.0"
+  },
+  "implementation_sha256": {
+    "sciona/wheat_detection_losses.py": "719384771526143c827e028700a2e92135b5f6fba4f47fcff15ce4c51122a062",
+    "scripts/validate_wheat_detection_losses.py": "19111fff1484f240745db2cf5e617cd6a8fc43230f71c9116f8770cb6e87a407"
+  },
+  "limits": [
+    "Loss boundary only; source sampler equivalence and full detector integration remain separate.",
+    "Both paths use installed Torch kernels; no historical native-kernel equivalence claim."
+  ]
+}

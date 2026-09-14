@@ -1,0 +1,110 @@
+{
+  "source_commit": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "41e9a15823c6ee386b2c35e9676a8d9daeb57701637a8319a7825430aa82273a",
+  "provider_sha256": "e5593bd48d977ec52de539fb4f1f3a2a0304cc64737df910d7fc492cf0df5740",
+  "validation_sha256": "9c071e1727ae8bc962a346e5f527b09a711e7c26affe445952028c37cad4e980",
+  "test_sha256": "ccdfac860002bd30c4bfce0d7284a61bee7250836250e88101346e7db393763e",
+  "libraries": {
+    "numpy": "2.4.2",
+    "pandas": "2.3.3"
+  },
+  "cases_passed": 15,
+  "cases": [
+    {
+      "seed": 9101,
+      "duration_seconds": 30,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9101,
+      "duration_seconds": 61,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9101,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9102,
+      "duration_seconds": 30,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9102,
+      "duration_seconds": 61,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9102,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9103,
+      "duration_seconds": 30,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9103,
+      "duration_seconds": 61,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9103,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9104,
+      "duration_seconds": 30,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9104,
+      "duration_seconds": 61,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9104,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9105,
+      "duration_seconds": 30,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9105,
+      "duration_seconds": 61,
+      "exact": true,
+      "max_abs_error": 0.0
+    },
+    {
+      "seed": 9105,
+      "duration_seconds": 600,
+      "exact": true,
+      "max_abs_error": 0.0
+    }
+  ],
+  "limitations": [
+    "Python 2 shape integer division adapted to floor division; numerical function bodies otherwise unchanged.",
+    "Current NumPy/pandas synthetic numerical parity; no historical environment or predictive-performance claim.",
+    "Source undefined log features are preserved for later classifier cleanup.",
+    "Complete model execution and catalog promotion remain outstanding."
+  ]
+}

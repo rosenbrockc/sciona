@@ -1,0 +1,14 @@
+{
+  "format": "adversarial-served-snapshot.v1",
+  "read_only": true,
+  "approved_tier": 3,
+  "catalog_graph_equals_validated_graph": true,
+  "original_intake_remains_draft": true,
+  "counts": {
+    "served_cdgs": 78,
+    "competition_intakes": 142,
+    "covered_competition_intakes": 10,
+    "uncovered_competition_intakes": 132
+  },
+  "limits": "Post-commit catalog identity and decoded graph verified; fresh full neural execution of served retrieval remains pending."
+}

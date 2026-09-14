@@ -1,0 +1,16 @@
+{
+  "format": "dfdc-codec-b7-validation.v1",
+  "result": "passed",
+  "checks": {
+    "full_B7_json_state_tensors_exact": 1202,
+    "restored_380px_model_output_exact": true,
+    "implicit_pickle_load_forbidden": true
+  },
+  "limits": "Random synthetic full B7 state, in-memory JSON, current CPU float32. No real dataset or pretrained state used. Full runtime payload/graph serialization remains separate.",
+  "sha256": {
+    "sciona/dfdc_codec.py": "4256101fe8c78ad8df1eec4ff6db08ae53a7291a4506e73784ffad25ad39b15a",
+    "sciona/dfdc_classifier.py": "42ca019c485a64bb652ff19ddda160ff7c342800ad6ede712bd7ebe854d10c56",
+    "sciona/dfdc_stochastic_depth.py": "e6d6426c069d152fff3ee5dfb0f1cd138cf2b10e42729650de8efbf10e7a60bc",
+    "scripts/validate_dfdc_codec_b7.py": "77d941e2dfa15be807bc2800809d60b3f9816a76d42595bd94cb6587160ec7cf"
+  }
+}

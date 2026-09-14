@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "serialized_graph_sha256": "58b95f839c35d38caafe42dd54cac0fb718c87958f4af3e3a2b7d597a7ac7a87",
+  "provider_sha256": "1711e6fa56c211a0b5505aa2ac20578f7dd1bc49ed74a1451ff8f7314f8a42c1",
+  "code_sha256": {
+    "sciona/image_tabular_contract.py": "cbce3eca663b81da270c56744e01934d193194ff57916930943b88434f2e9991",
+    "sciona/image_tabular_features.py": "5a7b74054d4d8bd0dfb5335a81bad6408b9935a9d874357599b099024dcd763c",
+    "sciona/image_tabular_graph.py": "e4c13c18af7c4666c5cb96220764b359d0aaca52a38a44cdc6a0652a7e71d870",
+    "sciona/image_tabular_network.py": "32fb579e5d6f2ac0c42079e89e31fdcb9c2fb2336b2a26714359decf6732b09f",
+    "sciona/image_tabular_training.py": "3d0a1797390fdfb19d162f26816aa83f1fbd70d015520a2ce033415a4fa26567",
+    "scripts/image_tabular_synthetic.py": "e5a474369d91bfacaef8df2951a78e40183dd8cad998b601493dfdcf55b358ff",
+    "scripts/validate_image_tabular_graph_execution.py": "277270927d97c6bfd163bf794388c611374441a88a335c0fd91db73e6ac088f6"
+  },
+  "checks": {
+    "actual_runner_nodes": 2,
+    "training_rows": 12,
+    "calibration_rows": 4,
+    "query_rows": 2,
+    "folds": 3,
+    "oof_rows": 12,
+    "visual_features": 31,
+    "epochs": 40,
+    "training_improved": true,
+    "strict_json_output": true,
+    "graph_codec_roundtrip": true,
+    "provider_witness_contracts": true
+  },
+  "scope": "Actual synthetic five-stage visual/metadata/fusion/dropout-MLP/fold-calibration execution; no served publication or historical accuracy claim."
+}

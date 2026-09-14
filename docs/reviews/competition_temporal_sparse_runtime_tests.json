@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 36,
+  "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+  "source_content_hash": "5ee3659042611115b7a83dbf165f7b44355a0f09ff346514ce4dd2a15e66340b",
+  "checks": {
+    "all_snapshots_verified_before_fit": true,
+    "source_mutation_rejected": true,
+    "summary_mutation_rejected": true,
+    "limits_checked_before_snapshot": true,
+    "validation_labels_isolated": true,
+    "bounded_prediction_output": true,
+    "snapshots_closed_on_failure": true,
+    "repeatable_execution": true,
+    "private_runtime_paths_excluded_from_results": true
+  },
+  "sha256": {
+    "sciona/temporal_sparse_execution.py": "07857a9f01b4c531ddea33f03611de738c7bd711d7b28e2f3f9190f66b627876",
+    "sciona/temporal_sparse_features.py": "4dc40b7909d9fb8b4516a7256da1ad4c15022c0e7a939286c4cfd4d224f5b450",
+    "sciona/temporal_sparse_source.py": "98b540b7fba296fa7ae27f286fe848daf3fabab440f25e923f47b3611577e3bc",
+    "sciona/temporal_sparse_training.py": "f6261de8467916fc4835fda2be98671e30370120752c6e53ac665562f3637625",
+    "tests/test_temporal_sparse_execution.py": "6a424335ceb9bb10516387329d84f05105e044b841687ebbbf2e6abd74d11a29",
+    "tests/test_temporal_sparse_features.py": "d02eabe9c165027e211bb5e475695b7eb73e903e1451f0320d3c79071dd91679",
+    "tests/test_temporal_sparse_source.py": "a0052135bec2eff9924b72892798fbff83efe8f4e41ee13590d19c0a54ad0b0d",
+    "tests/test_temporal_sparse_training.py": "954c33fe23a881e43a501ba4aa2712394f232afb0c016a2060e165ec9bd9699b"
+  },
+  "scope": "Six-stage temporal sparse regression specialization; independent bounded streaming SGD ensemble with fixed one-pass training.",
+  "catalog_mutations": 0,
+  "serialized_boundary_tests": 13,
+  "stage_mapping": {
+    "efficient_table_loading": "Bounded JSONL reads and private immutable disk snapshots",
+    "temporal_feature_engineering": "Strict-past per-entity rolling/latest-time target means, age/count and periodic features",
+    "categorical_sparse_encoding": "Fixed-width unsigned entity/category hashing, eight numeric features and clipped CSR chunks",
+    "leakage_safe_validation": "Chronological train/validation/query gaps checked before fitting; frozen held-out history",
+    "boosted_sparse_ensemble": "One-pass squared-error and Huber sparse SGD on log1p targets with equal log-score mean",
+    "metric_postprocessing": "Clipped inverse transform, streamed RMSLE and bounded predictions"
+  }
+}

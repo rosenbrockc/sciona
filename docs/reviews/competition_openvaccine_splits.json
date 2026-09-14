@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 13,
+  "hashes": {
+    "sciona/openvaccine_splits.py": "9a58f6ecc97de67c4bb36a2004c7a26accb80b72448d82c3a66763423d706e81",
+    "tests/test_openvaccine_splits.py": "1c0c6e5bbf4327c552ba0b644824c7bc84bd8b14b2e3f6de494ecf2cb8121ca6"
+  },
+  "scope": "Explicit twenty-member train/validation indices with disjointness and observed positive-weight support; does not prove sequence/cluster independence or historical folds."
+}

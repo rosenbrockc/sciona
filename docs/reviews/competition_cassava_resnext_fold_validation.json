@@ -1,0 +1,22 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "epochs_executed": 15,
+  "optimizer_steps": 30,
+  "diagnostic_batch_size": 1,
+  "workers": 0,
+  "pretrained_weights_used": false,
+  "strict_best_epoch": 0,
+  "checkpoint_prediction_replay": true,
+  "scheduler_history_replayed": true,
+  "patience_boundary_verified": true,
+  "scope": "Full-resolution CPU fold diagnostic; original batch/workers, pretrained provenance and complete ensemble remain unqualified.",
+  "sha256": {
+    "sciona/cassava_pretrained.py": "f36039d9cfe94c0bd1d656e42e2430b63a017e5b06cf55fc9e0ae5a375f5140c",
+    "sciona/cassava_resnext_fold.py": "d6055066c07958f79a783698be0c85504e2eae752c20faca7f96ee3b123feaa4",
+    "sciona/cassava_resnext.py": "345001e95bfd0ddfb47524c4dfaca65c04ed9758040f66746a8656e567718f05",
+    "sciona/cassava_resnext_images.py": "c12e01fc43e07f6af5d039bac25e7f58fec9db0464ac862a4048b87301c3dd06",
+    "scripts/validate_cassava_resnext_fold.py": "95650aa8184a31a9f9751560618b5e1570f1c837235b79a5331460f3c707e81e"
+  }
+}

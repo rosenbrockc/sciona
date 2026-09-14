@@ -1,0 +1,31 @@
+{
+  "approved": false,
+  "public_notebook_metadata_verified": {
+    "inference": {
+      "reference": "https://www.kaggle.com/code/jannish/final-version-inference",
+      "version": 8,
+      "is_private": false
+    },
+    "resnext": {
+      "reference": "https://www.kaggle.com/code/hiarsl/cassava-leaf-disease-resnext50",
+      "version": 21,
+      "is_private": false
+    },
+    "vit": {
+      "reference": "https://www.kaggle.com/code/sebastiangnther/cassava-leaf-disease-vit-tpu-training",
+      "version": 3,
+      "is_private": false
+    },
+    "efficientnet": {
+      "reference": "https://www.kaggle.com/code/jannish/cassava-leaf-disease-efficientnetb4-tpu",
+      "version": 11,
+      "is_private": false
+    }
+  },
+  "publisher_viewer_asset": "https://www.kaggle.com/static/assets/KernelViewer.6e0b983d91097433.js",
+  "viewer_asset_sha256": "070f50ead404dcebba30a01401bc4c4df0644b8a035bdbf871c21c0d13ab1f55",
+  "declaration": "This Notebook has been released under the Apache 2.0 open source license.",
+  "condition": "Viewer renders declaration when notebook metadata isPrivate is false.",
+  "license": "Apache-2.0",
+  "scope": "Publisher license declaration for all four pinned public notebook versions; third-party attribution and overall publication qualification remain separate."
+}

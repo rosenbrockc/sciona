@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "checkpoint_sha256": "b121ed2db97ec7e9f55a91300ceaf85a326de955e8a4ae09e3a0c8170d27f14f",
+  "initialized_tensor_count": 777,
+  "historical_feature_maps_exact": {
+    "1": [
+      1,
+      256,
+      200,
+      200
+    ],
+    "2": [
+      1,
+      512,
+      100,
+      100
+    ],
+    "3": [
+      1,
+      1024,
+      50,
+      50
+    ],
+    "4": [
+      1,
+      2048,
+      25,
+      25
+    ]
+  },
+  "freezing_matches_source": true,
+  "full_trainable_backbone_gradients_finite": true,
+  "trainable_parameter_tensors": 144,
+  "implementation_sha256": {
+    "sciona/wheat_legacy_weights.py": "b4a395ea0eb1a67c5c8521d0bd9e0b4977938af6448d72eb3a46bf4b78c8a68f",
+    "sciona/wheat_resnet_backbone.py": "f84f2061fdb3fa1bf231082cfaeabb44fa2dfaf91d16d961a96b9a27ecf0332d",
+    "sciona/wheat_frozen_normalization.py": "a5b798bab7c4e3821e9a0989a684e0b8f612512190c5da18f421befef348cc4b",
+    "scripts/validate_wheat_resnet_backbone.py": "174d5a2286645e4fce0969cc467b94d5fd7b53b0748a0ec9ab00c85ae8b2a1ea"
+  },
+  "limits": [
+    "Backbone only; FPN, RPN, ROI heads, detector training and inference remain unqualified.",
+    "Historical Python architecture runs on installed Torch; historical native-kernel equivalence is not claimed."
+  ]
+}

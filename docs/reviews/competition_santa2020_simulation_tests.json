@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "source_version_id": "8ab2dc68-65da-5415-bf3a-bbebde6fe898",
+  "source_content_hash": "97673ed4eca3bc8d89970aa96b364c4324f0b14b711c45f88c0b282831488291",
+  "checks": [
+    "Simultaneous rewards use pre-round thresholds",
+    "Shared actions cause double post-round decay",
+    "Fractional reward probability matches exhaustive integer draws",
+    "Complete 2000-round fixed-agent and trained-agent execution",
+    "Hidden thresholds not supplied to agent history",
+    "Deterministic random streams and unchanged input thresholds",
+    "Both trained model artifacts unchanged after game",
+    "Invalid round rejection is atomic"
+  ],
+  "sha256": {
+    "sciona/santa_simulation.py": "b47b10574ab715befe688b2a2539192bae8cee0606931d448755c984298f357f",
+    "sciona/santa_boosting.py": "d6a525b6a80a335484d43f8fdf01b5e97bd0c9055ae2ef6262b77bfdab8c4779",
+    "sciona/santa_agent_features.py": "b6cd7831b2dfe7b72024f24273092f5bf62ed297c19d30453cfcf04963b2a127",
+    "sciona/santa_threshold_posterior.py": "17228b0cf24f76d530df7858df037fdef80ef2b5d8df5cb0fec010cb2d7b1b7f",
+    "sciona/santa_replay_training.py": "f0033fc23cc0d7d3c777e5a0c69cbcde9e1b74c868bce32717f343be34892921",
+    "tests/test_santa_simulation.py": "764fbfeedf7e382232aad45184d42c4aad0b0b8fdc24dcd30b50476320d8743b",
+    "tests/test_santa_boosting.py": "faed69f08ac2d41e4cdc71e26aa05524920342fb0a4a042790e89b775ba9f1a6"
+  },
+  "limitations": [
+    "Synthetic random opponent only; no competitive strength or winner-performance claim.",
+    "Simulator uses iterative threshold decay; posterior retains source total-pull exponent convention.",
+    "Complete horizon tested with reduced-cap synthetic fitted models. Source-default fit and strict serialized boundary pending."
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,13 @@
+{
+  "test_results": {
+    "tests": 35,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/test_source_tracking.py": "4a22708ed881beef5db24a579e32e8166a32b4c7d1347bc5a166f7d29c7a4789"
+  },
+  "provider_sha256": "6a32f9327cb1c649dc36ca4c46c61a46b2fb4b76acb6b3880ae7f899244f08d6",
+  "synthetic_only": true
+}

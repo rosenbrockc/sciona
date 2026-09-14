@@ -1,0 +1,18 @@
+{
+  "format": "adversarial-losses-validation.v1",
+  "result": "passed",
+  "checks": {
+    "source_ensemble_loss_cases": 6,
+    "head_gradients_compared": 58,
+    "independent_analytical_gradients": true,
+    "probability_consensus_not_majority": true,
+    "frozen_labels_and_first_class_tie": true,
+    "invalid_inputs_rejected": 4
+  },
+  "limits": "Pinned expression AST with explicit Torch softmax-CE shim; synthetic logits. No historical TensorFlow binary or backbone/input-gradient/iterative execution claim.",
+  "sha256": {
+    "sciona/adversarial_losses.py": "125541dea59d890c0dabb3241536391841567e3c6581af119038c20bd04d355b",
+    "scripts/validate_adversarial_losses.py": "314fe91c24d9a9c8ae02cdc37e7905f32e80f37dca0ac03ac67e8d59f0f89d93",
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  }
+}

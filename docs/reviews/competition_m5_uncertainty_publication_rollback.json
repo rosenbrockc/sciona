@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "catalog_mutations": 0,
+  "rollback": {
+    "applied": false,
+    "rows_created": 40,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "9f79005ad515165770135316304593bf7a981fafb5ab10fd455eb42b769a2324",
+    "version_id": "7a68804f-ce8e-54c2-aee3-3b47ddeb6956"
+  },
+  "checks": {
+    "all_catalog_table_counts_unchanged": true,
+    "target_artifacts_absent": true,
+    "original_intake_unchanged": true
+  },
+  "publisher_sha256": "727b925091bf2a05664ef019c6644cf3a816427cafbc45bd970f5373b8434e00"
+}

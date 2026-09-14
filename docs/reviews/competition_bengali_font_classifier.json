@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "backbone": "efficientnet-b0",
+  "installed_efficientnet_pytorch": "0.7.1",
+  "pretrained_weights": false,
+  "output_shape": [
+    1,
+    14784
+  ],
+  "exact_source_head_logits": true,
+  "exact_source_head_input_gradients": true,
+  "frozen_parameters_and_buffers_unchanged": true,
+  "finite_nonzero_guidance_gradient": true,
+  "source_only_sha256": "600d64d01226bd5ca879a347ca06f148193fd73c88039222cee1832c847bc716",
+  "sha256": {
+    "sciona/bengali_font_classifier.py": "3ffb988219fba2ae6c38b44030c9fbe93b2a161dab7369439d63db4a880330d9",
+    "scripts/validate_bengali_font_classifier.py": "d4eb0b6420ed4b5622dfa986ef0eeb07d442032432b4195e8165772b95916f69"
+  },
+  "limits": [
+    "Head equivalence uses the same installed B0 implementation on both sides; original notebook dependency identity remains unqualified.",
+    "Random weights and synthetic images verify computation and gradients, not font recognition or trained checkpoint fidelity.",
+    "Full pipeline training and promotion remain pending."
+  ]
+}

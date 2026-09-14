@@ -1,0 +1,24 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "checks": {
+    "encoder_comparisons": 16,
+    "input_gradient_comparisons": 16,
+    "full_width_flows": 1
+  },
+  "implementation_sha256": {
+    "sciona/webtraffic_encoder.py": "4861fe7aad9af376f47287ede6342fe098aa10bd88b6a4541ae522fa7a61089b",
+    "scripts/validate_webtraffic_encoder.py": "a5140b48c1bf9daadb715e197ad39fbe47a0e64ba186bedadc3c4af2910d24a7",
+    "sciona/webtraffic_decoder.py": "0a9aed75509a7991b4fb97458f8a5d7b03045519d1feef5fb6787289e90c3436",
+    "sciona/webtraffic_losses.py": "3af5d59fd8c9f43a95e0de1db7d4c18bc315b2382446b9c9078eacb6028711a3",
+    "docs/reviews/competition_webtraffic_source_pins.json": "7788fe1d3bfa4eb5822a75db70627b3efb96e1da7d087f12aa6ff99cfe2e2891",
+    "docs/licenses/WebTraffic-MIT.txt": "78491219830835741fdcca9fb5084538a2fd24a6fec1c89b9a5f3bc249a5cc33"
+  },
+  "equations_source": "https://raw.githubusercontent.com/tensorflow/tensorflow/v1.10.0/tensorflow/contrib/cudnn_rnn/python/ops/cudnn_rnn_ops.py",
+  "limitations": [
+    "Native PyTorch CPU comparison, not original TensorFlow or cuDNN execution.",
+    "Synthetic canonical weights; no source random initialization or checkpoint equivalence.",
+    "Full-width prediction and backward pass omit training dropout and disconnected attention branch.",
+    "Optimizer, EMA, batching and lifecycle validation remain."
+  ]
+}

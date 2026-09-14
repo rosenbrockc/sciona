@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/Arturus/kaggle-web-traffic",
+  "commit": "a9abb80c800409abf0ece21ea244ef779f758f96",
+  "software_notebook": "submission-final.ipynb",
+  "git_blob": "eb49b52ec2ed25824021412c4c77348ee7fa5ee8",
+  "notebook_sha256": "63fde3fc9bf4d32f579554214463ba5b652dc3acc6860d4f5859e3fb08926e41",
+  "code_sha256": "7889fe7bf11825b9b59268f533618e9c91368f2a6e3bbb1467d42bb53e827353",
+  "retained": "Code cells only; outputs and markdown not persisted",
+  "approved": false
+}

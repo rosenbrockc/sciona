@@ -1,0 +1,7 @@
+{
+  "source_version_id": "1587d081-d47c-5595-8bed-d3d3aa6465af",
+  "source_content_hash": "2ab7a80c92296d3fffeb6187655e52443caf311086b4cdc3ed1efde5fe4406c8",
+  "source_scope": "Generic five-stage biosignal spectrogram/sequence topology; independent binary waveform/spectrogram realization.",
+  "implementation_origin": "Independent project code; synthetic signals only, no observed signals or pretrained weights copied.",
+  "catalog_mutations": 0
+}

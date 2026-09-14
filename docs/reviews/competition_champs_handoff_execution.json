@@ -1,0 +1,107 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "variant": "model_H",
+      "parameters": 131445568,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_I",
+      "parameters": 153638464,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_L",
+      "parameters": 191747006,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_A",
+      "parameters": 84239478,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_F",
+      "parameters": 114426628,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_B",
+      "parameters": 84239478,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_C",
+      "parameters": 84239478,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_M",
+      "parameters": 95218444,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_G",
+      "parameters": 97409304,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_E",
+      "parameters": 87423868,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_D",
+      "parameters": 109167004,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_J",
+      "parameters": 108488466,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    },
+    {
+      "variant": "model_K",
+      "parameters": 102887892,
+      "full_padding": true,
+      "high_subtype_id": 118,
+      "finite_forward_backward": true
+    }
+  ],
+  "packer_checks": {
+    "padding": true,
+    "squared_distances": true,
+    "quad_references": true,
+    "target_mask": true,
+    "unknown_label_rejected": true
+  },
+  "scope": "Corrected prepared-table packing through all13 full configured networks with original padding. No raw chemistry, original training schedule, or pretrained prediction parity claim.",
+  "correction_module_sha256": "da41df24e2d86dd9df31048d7502496b59e11517579f62ca1b5a1918656ccd10",
+  "validator_sha256": "eaaf33955b152860b574a99c95caf69a3e12b5c3f9254481086d2b019b8e15f0",
+  "packing_validator_sha256": "45faad75169318d0455f25d0b5d2163b7663064c346983037e9d92728747375f"
+}

@@ -1,0 +1,396 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "fit_count": 63,
+  "counts": [
+    {
+      "fit": "keras.r1.p0.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r1.p0.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p0.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p0.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p0.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p1.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r1.p1.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p1.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p1.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p1.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p2.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r1.p2.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p2.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p2.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p2.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p3.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r1.p3.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p3.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p3.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p3.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p4.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r1.p4.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p4.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p4.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r1.p4.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p0.f0",
+      "training_labeled": 0,
+      "training_query": 999,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r2.p1.f0",
+      "training_labeled": 0,
+      "training_query": 999,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r2.p2.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r2.p2.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p2.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p2.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p2.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p3.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r2.p3.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p3.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p3.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p3.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p4.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r2.p4.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p4.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p4.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p4.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p5.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 11
+    },
+    {
+      "fit": "keras.r2.p5.f1",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p5.f2",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p5.f3",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "keras.r2.p5.f4",
+      "training_labeled": 47,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p0.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p0.f1",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p0.f2",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p0.f3",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p0.f4",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p1.f0",
+      "training_labeled": 48,
+      "training_query": 110,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p1.f1",
+      "training_labeled": 48,
+      "training_query": 110,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p1.f2",
+      "training_labeled": 48,
+      "training_query": 110,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p1.f3",
+      "training_labeled": 48,
+      "training_query": 110,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p1.f4",
+      "training_labeled": 48,
+      "training_query": 560,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p2.f0",
+      "training_labeled": 0,
+      "training_query": 1000,
+      "validation_labeled": 4
+    },
+    {
+      "fit": "torch.p3.f0",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p3.f1",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p3.f2",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p3.f3",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    },
+    {
+      "fit": "torch.p3.f4",
+      "training_labeled": 48,
+      "training_query": 0,
+      "validation_labeled": 12
+    }
+  ],
+  "limits": [
+    "Positional population selection only; complete source training remains unexecuted.",
+    "Caller must supply explicit branch folds and independent labeled/query populations.",
+    "Stable positional ordering replaces source identifier sorting and filesystem enumeration; historical RNG stream identity is not claimed."
+  ],
+  "sha256": {
+    "sciona/tgs_population.py": "e41fba7f0f280a120c19ceea7f5730942375bb4dfd8f462a403aa64faece29b3",
+    "tests/test_tgs_population.py": "32af842e6d331bb3b84b8e6600f360c456409c24633d7e40e593e0251d4f7224",
+    "docs/reviews/competition_tgs_training_plan.json": "377c93c42ea1b68ab82d0a1cca429cb92c0322e09115a545717e9779157d5c5b"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "source_version_id": "1587d081-d47c-5595-8bed-d3d3aa6465af",
+  "source_content_hash": "2ab7a80c92296d3fffeb6187655e52443caf311086b4cdc3ed1efde5fe4406c8",
+  "checks": {
+    "recording_balanced_scaling": true,
+    "class_recording_balanced_loss": true,
+    "augmented_training_loss_below_quarter_initial": true,
+    "mean_window_recording_aggregation": true,
+    "query_batch_independence": true,
+    "frozen_training_scaling": true,
+    "deterministic_repeat": true,
+    "caller_cpu_rng_preserved": true
+  },
+  "sha256": {
+    "sciona/biosignal_sequence_training.py": "c2796713460a1cfc36c6f3ed821b45aeece87edcfa772835880c14d1e470827d",
+    "sciona/biosignal_sequence_features.py": "1c451d7b85429df17c686baa134df0dcb46ac3c00c09d192779fc5217d43d070",
+    "sciona/biosignal_sequence_network.py": "9bd7439b77f3bc96556da67b3b7a846073e328eb3ee2cb6e01c1b8320a5867d7",
+    "tests/test_biosignal_sequence_training.py": "e92abca363c1ad97f33a0677116a84f097dfb467ad5a50bf4651a493e89dfe0f"
+  },
+  "scope": "Synthetic periodic signal training only. Full subject-disjoint lifecycle/threshold boundary and serialized Tier3 review pending.",
+  "limitations": [
+    "Recording labels supervise all included windows",
+    "Recordings receive equal normalization weight; classes equal total loss weight and recordings equal weight within class",
+    "All window features stored in memory; gradient accumulation bounds neural forward batches only"
+  ],
+  "catalog_mutations": 0
+}

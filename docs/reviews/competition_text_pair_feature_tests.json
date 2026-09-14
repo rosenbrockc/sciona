@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "source_version_id": "1169253d-76d3-5b76-885f-07b58bed795c",
+  "source_content_hash": "896ea8e61c63f03fcb22b6bc418126ac23acf0fb3ad55e5a11c3815ae00e1bd7",
+  "tests_passed": 11,
+  "scope": "Generic symmetric binary text-pair matching: normalization, lexical similarities, training-only TF-IDF/LSA and unlabeled pair-graph context.",
+  "implemented_stages": [
+    "pair_normalization",
+    "lexical_similarity_features",
+    "embedding_similarity_features",
+    "pair_context_features"
+  ],
+  "remaining_stages": [
+    "feature_ensemble",
+    "metric_thresholding"
+  ],
+  "sha256": {
+    "sciona/text_pair_features.py": "1113c41b3d8018e603f6afdae71bd4a971fc63c9c95529f56c5c3a8967c890ce",
+    "tests/test_text_pair_features.py": "a92903c19cd2a1e343038d810d3e3d6eb86c3602adc7af8c380a5e9ebe457238"
+  },
+  "limitations": [
+    "NFKC/casefold/word-token normalization, no spelling correction or external semantic corpus",
+    "Input text limited to512 characters; empty normalized text rejected",
+    "LSA dimension must fit training vocabulary/documents; no silent fallback",
+    "Graph describes candidate co-occurrence, not labeled equivalence; current training edge excluded",
+    "Empty-set Jaccard defined as one, zero-norm LSA cosine as zero",
+    "Training/model/calibration and serialized graph validation pending"
+  ],
+  "catalog_mutations": 0
+}

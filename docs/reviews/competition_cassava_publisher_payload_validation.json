@@ -1,0 +1,608 @@
+{
+  "approved": false,
+  "all_compared_payloads_match": true,
+  "all_install_scheme_files_compared": true,
+  "packages": {
+    "absl-py": {
+      "version": "2.5.0",
+      "publisher_wheel_sha256": "0f17b89f2a4eaaedc4f28c622998aa690564b3012a396a4ffad0821007fe03ba",
+      "matched_payload_files": 29,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "albumentations": {
+      "version": "1.3.0",
+      "publisher_wheel_sha256": "294165d87d03bc8323e484927f0a5c1a3c64b0e7b9c32a979582a6c93c363bdf",
+      "matched_payload_files": 42,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "annotated-doc": {
+      "version": "0.0.4",
+      "publisher_wheel_sha256": "571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320",
+      "matched_payload_files": 7,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "anyio": {
+      "version": "4.12.1",
+      "publisher_wheel_sha256": "d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c",
+      "matched_payload_files": 48,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "astunparse": {
+      "version": "1.6.3",
+      "publisher_wheel_sha256": "c2652417f2c8b5bb325c885ae329bdf3f86424075c4fd1a128674bc6fba4b8e8",
+      "matched_payload_files": 9,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "certifi": {
+      "version": "2026.7.22",
+      "publisher_wheel_sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "matched_payload_files": 11,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "charset-normalizer": {
+      "version": "3.5.1",
+      "publisher_wheel_sha256": "e90251c0c7bdd54a100a0dce3c07b7e637278c93af29dbf78ebb89a58c4bac7d",
+      "matched_payload_files": 20,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "click": {
+      "version": "8.3.1",
+      "publisher_wheel_sha256": "981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6",
+      "matched_payload_files": 21,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "filelock": {
+      "version": "3.25.2",
+      "publisher_wheel_sha256": "ca8afb0da15f229774c9ad1b455ed96e85a81373065fb10446672f64444ddf70",
+      "matched_payload_files": 15,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "flatbuffers": {
+      "version": "25.12.19",
+      "publisher_wheel_sha256": "7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4",
+      "matched_payload_files": 13,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "fsspec": {
+      "version": "2026.2.0",
+      "publisher_wheel_sha256": "98de475b5cb3bd66bedd5c4679e87b4fdfe1a3bf4d707b151b3c07e58c9a2437",
+      "matched_payload_files": 60,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "gast": {
+      "version": "0.7.0",
+      "publisher_wheel_sha256": "99cbf1365633a74099f69c59bd650476b96baa5ef196fec88032b00b31ba36f7",
+      "matched_payload_files": 11,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "google-pasta": {
+      "version": "0.2.0",
+      "publisher_wheel_sha256": "b32482794a366b5366a32c92a9a9201b107821889935a02b3e51f6b432ea84ed",
+      "matched_payload_files": 28,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "grpcio": {
+      "version": "1.83.1",
+      "publisher_wheel_sha256": "0468b627f2987c9a77f7580030207cbd85457ffe52998beff4f0b5c38c58a72c",
+      "matched_payload_files": 65,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "h11": {
+      "version": "0.16.0",
+      "publisher_wheel_sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86",
+      "matched_payload_files": 16,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "h2": {
+      "version": "4.3.0",
+      "publisher_wheel_sha256": "c438f029a25f7945c69e0ccf0fb951dc3f73a5f6412981daee861431b70e2bdd",
+      "matched_payload_files": 16,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "h5py": {
+      "version": "3.16.0",
+      "publisher_wheel_sha256": "42108e93326c50c2810025aade9eac9d6827524cdccc7d4b75a546e5ab308edb",
+      "matched_payload_files": 102,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "hf-xet": {
+      "version": "1.4.2",
+      "publisher_wheel_sha256": "e9b38d876e94d4bdcf650778d6ebbaa791dd28de08db9736c43faff06ede1b5a",
+      "matched_payload_files": 6,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "hpack": {
+      "version": "4.1.0",
+      "publisher_wheel_sha256": "157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496",
+      "matched_payload_files": 13,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "httpcore": {
+      "version": "1.0.9",
+      "publisher_wheel_sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55",
+      "matched_payload_files": 35,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "httpx": {
+      "version": "0.28.1",
+      "publisher_wheel_sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad",
+      "matched_payload_files": 28,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "huggingface-hub": {
+      "version": "1.7.1",
+      "publisher_wheel_sha256": "38c6cce7419bbde8caac26a45ed22b0cea24152a8961565d70ec21f88752bfaa",
+      "matched_payload_files": 176,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "hyperframe": {
+      "version": "6.1.0",
+      "publisher_wheel_sha256": "b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5",
+      "matched_payload_files": 9,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "idna": {
+      "version": "3.19",
+      "publisher_wheel_sha256": "815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4",
+      "matched_payload_files": 15,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "imageio": {
+      "version": "2.37.3",
+      "publisher_wheel_sha256": "46f5bb8522cd421c0f5ae104d8268f569d856b29eb1a13b92829d1970f32c9f0",
+      "matched_payload_files": 63,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "jax": {
+      "version": "0.9.2",
+      "publisher_wheel_sha256": "822a8ae155ab42e7bc59f2ae7a28705bcfccb01a7e76abfc8ae996190cdc5598",
+      "matched_payload_files": 620,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "jaxlib": {
+      "version": "0.9.2",
+      "publisher_wheel_sha256": "52a0032508f8cf5791c7a7bee142531ee706c3c05518117fb0b6ee8d5e17fde7",
+      "matched_payload_files": 130,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "jinja2": {
+      "version": "3.1.6",
+      "publisher_wheel_sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+      "matched_payload_files": 30,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "joblib": {
+      "version": "1.5.3",
+      "publisher_wheel_sha256": "5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713",
+      "matched_payload_files": 142,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "keras": {
+      "version": "3.15.1",
+      "publisher_wheel_sha256": "836460e480930acbd19bb7a17e62f9ecad40e8a9af9a651fc8d0586a96d27e20",
+      "matched_payload_files": 908,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "lazy-loader": {
+      "version": "0.5",
+      "publisher_wheel_sha256": "ab0ea149e9c554d4ffeeb21105ac60bed7f3b4fd69b1d2360a4add51b170b005",
+      "matched_payload_files": 5,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "libclang": {
+      "version": "18.1.1",
+      "publisher_wheel_sha256": "0b2e143f0fac830156feb56f9231ff8338c20aecfe72b4ffe96f19e5a1dbb69a",
+      "matched_payload_files": 9,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "markdown": {
+      "version": "3.10.3",
+      "publisher_wheel_sha256": "fa6c92a00a4a3c98b22728c64a935ae1928250ae65058a6ded814d2cc29a4cea",
+      "matched_payload_files": 38,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "markdown-it-py": {
+      "version": "4.2.0",
+      "publisher_wheel_sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+      "matched_payload_files": 73,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "markupsafe": {
+      "version": "3.0.3",
+      "publisher_wheel_sha256": "116bb52f642a37c115f517494ea5feb03889e04df47eeff5b130b1808ce7c219",
+      "matched_payload_files": 10,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "mdurl": {
+      "version": "0.1.2",
+      "publisher_wheel_sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+      "matched_payload_files": 10,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "ml-dtypes": {
+      "version": "0.6.0",
+      "publisher_wheel_sha256": "084dfe51a7ad58b171f05115f8226ed4233a454a1611371947e806e76f0c638d",
+      "matched_payload_files": 9,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "mpmath": {
+      "version": "1.3.0",
+      "publisher_wheel_sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c",
+      "matched_payload_files": 91,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "namex": {
+      "version": "0.1.0",
+      "publisher_wheel_sha256": "e2012a474502f1e2251267062aae3114611f07df4224b6e06334c57b0f2ce87c",
+      "matched_payload_files": 8,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "networkx": {
+      "version": "3.6.1",
+      "publisher_wheel_sha256": "d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762",
+      "matched_payload_files": 600,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "numexpr": {
+      "version": "2.14.2",
+      "publisher_wheel_sha256": "92b00c78664070e3af155c6be713a0a5d75d598647ce32a5609adb79a8f961d3",
+      "matched_payload_files": 33,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "numpy": {
+      "version": "2.2.6",
+      "publisher_wheel_sha256": "f1372f041402e37e5e633e586f62aa53de2eac8d98cbfb822806ce4bbefcb74d",
+      "matched_payload_files": 872,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "opencv-python-headless": {
+      "version": "5.0.0.93",
+      "publisher_wheel_sha256": "030ca5e0837a2963ab36ef896baa9767eb8d2b83353fb28af5a521e40dd8756f",
+      "matched_payload_files": 143,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "opt-einsum": {
+      "version": "3.4.0",
+      "publisher_wheel_sha256": "69bb92469f86a1565195ece4ac0323943e83477171b91d24c35afe028a90d7cd",
+      "matched_payload_files": 31,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "optree": {
+      "version": "0.20.0",
+      "publisher_wheel_sha256": "eefb6f5cedc3ded670a79bcde0985d92e99e0c807787427c310adafafe1b9671",
+      "matched_payload_files": 23,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "packaging": {
+      "version": "26.3",
+      "publisher_wheel_sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "matched_payload_files": 28,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "pandas": {
+      "version": "2.3.3",
+      "publisher_wheel_sha256": "bdcd9d1167f4885211e401b3036c0c8d9e274eee67ea8d0758a256d60704cfe8",
+      "matched_payload_files": 1512,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "pillow": {
+      "version": "12.3.0",
+      "publisher_wheel_sha256": "d69141514cc30b774ceea5e3ed3a6635c8d8a96edf664689b890f4089111fb35",
+      "matched_payload_files": 138,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "protobuf": {
+      "version": "6.33.5",
+      "publisher_wheel_sha256": "a5cb85982d95d906df1e2210e58f8e4f1e3cdc088e52c921a041f9c9a0386de5",
+      "matched_payload_files": 58,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "pyarrow": {
+      "version": "23.0.1",
+      "publisher_wheel_sha256": "6b8fda694640b00e8af3c824f99f789e836720aa8c9379fb435d4c4953a756b8",
+      "matched_payload_files": 749,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "pygments": {
+      "version": "2.21.0",
+      "publisher_wheel_sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "matched_payload_files": 348,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "python-dateutil": {
+      "version": "2.9.0.post0",
+      "publisher_wheel_sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427",
+      "matched_payload_files": 24,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "pytz": {
+      "version": "2026.1.post1",
+      "publisher_wheel_sha256": "f2fd16142fda348286a75e1a524be810bb05d444e5a081f37f7affc635035f7a",
+      "matched_payload_files": 615,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "pyyaml": {
+      "version": "6.0.3",
+      "publisher_wheel_sha256": "2283a07e2c21a2aa78d9c4442724ec1eb15f5e42a723b99cb3d822d48f5f7ad1",
+      "matched_payload_files": 23,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "qudida": {
+      "version": "0.0.4",
+      "publisher_wheel_sha256": "4519714c40cd0f2e6c51e1735edae8f8b19f4efe1f33be13e9d644ca5f736dd6",
+      "matched_payload_files": 6,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "requests": {
+      "version": "2.34.2",
+      "publisher_wheel_sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "matched_payload_files": 25,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "rich": {
+      "version": "15.0.0",
+      "publisher_wheel_sha256": "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb",
+      "matched_payload_files": 104,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "safetensors": {
+      "version": "0.6.2",
+      "publisher_wheel_sha256": "d6675cf4b39c98dbd7d940598028f3742e0375a6b4d4277e76beb0c35f4b843b",
+      "matched_payload_files": 13,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "scikit-image": {
+      "version": "0.26.0",
+      "publisher_wheel_sha256": "98329aab3bc87db352b9887f64ce8cdb8e75f7c2daa19927f2e121b797b678d5",
+      "matched_payload_files": 308,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "scikit-learn": {
+      "version": "1.8.0",
+      "publisher_wheel_sha256": "edec98c5e7c128328124a029bceb09eda2d526997780fef8d65e9a69eead963e",
+      "matched_payload_files": 959,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "scipy": {
+      "version": "1.17.1",
+      "publisher_wheel_sha256": "7ff200bf9d24f2e4d5dc6ee8c3ac64d739d3a89e2326ba68aaf6c4a2b838fd7d",
+      "matched_payload_files": 1422,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "setuptools": {
+      "version": "80.9.0",
+      "publisher_wheel_sha256": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+      "matched_payload_files": 511,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "shellingham": {
+      "version": "1.5.4",
+      "publisher_wheel_sha256": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686",
+      "matched_payload_files": 12,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "six": {
+      "version": "1.17.0",
+      "publisher_wheel_sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+      "matched_payload_files": 5,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "sniffio": {
+      "version": "1.3.1",
+      "publisher_wheel_sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2",
+      "matched_payload_files": 12,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "sympy": {
+      "version": "1.14.0",
+      "publisher_wheel_sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5",
+      "matched_payload_files": 1569,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tensorboard": {
+      "version": "2.20.0",
+      "publisher_wheel_sha256": "9dc9f978cb84c0723acf9a345d96c184f0293d18f166bb8d59ee098e6cfaaba6",
+      "matched_payload_files": 270,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tensorboard-data-server": {
+      "version": "0.7.2",
+      "publisher_wheel_sha256": "7e0610d205889588983836ec05dc098e80f97b7e7bbff7e994ebb78f578d0ddb",
+      "matched_payload_files": 4,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tensorflow": {
+      "version": "2.20.0",
+      "publisher_wheel_sha256": "197f0b613b38c0da5c6a12a8295ad4a05c78b853835dae8e0f9dfae3ce9ce8a5",
+      "matched_payload_files": 11540,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "termcolor": {
+      "version": "3.3.0",
+      "publisher_wheel_sha256": "cf642efadaf0a8ebbbf4bc7a31cec2f9b5f21a9f726f4ccbb08192c9c26f43a5",
+      "matched_payload_files": 7,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tf-keras": {
+      "version": "2.20.1",
+      "publisher_wheel_sha256": "3f0e0a34d9a4c8758f24fdc1053e6e335f16ab5534c7d34f1899b8924779760c",
+      "matched_payload_files": 589,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "threadpoolctl": {
+      "version": "3.6.0",
+      "publisher_wheel_sha256": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb",
+      "matched_payload_files": 4,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tifffile": {
+      "version": "2026.4.11",
+      "publisher_wheel_sha256": "9b94ffeddb39e97601af646345e8808f885773de01b299e480ed6d3a41509ec9",
+      "matched_payload_files": 16,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "timm": {
+      "version": "0.9.2",
+      "publisher_wheel_sha256": "8da40cc58ed32b0622bf87d8714f9b7023398ba4cfa8fa678578d2aefde4a909",
+      "matched_payload_files": 250,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "torch": {
+      "version": "2.11.0",
+      "publisher_wheel_sha256": "1e6debd97ccd3205bbb37eb806a9d8219e1139d15419982c09e23ef7d4369d18",
+      "matched_payload_files": 12409,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "torchvision": {
+      "version": "0.26.0",
+      "publisher_wheel_sha256": "5d63dd43162691258b1b3529b9041bac7d54caa37eae0925f997108268cbf7c4",
+      "matched_payload_files": 194,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tqdm": {
+      "version": "4.67.3",
+      "publisher_wheel_sha256": "ee1e4c0e59148062281c49d80b25b67771a127c85fc9676d3be5f243206826bf",
+      "matched_payload_files": 38,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "typer": {
+      "version": "0.24.1",
+      "publisher_wheel_sha256": "112c1f0ce578bfb4cab9ffdabc68f031416ebcc216536611ba21f04e9aa84c9e",
+      "matched_payload_files": 21,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "typing-extensions": {
+      "version": "4.16.0",
+      "publisher_wheel_sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "matched_payload_files": 4,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "tzdata": {
+      "version": "2025.3",
+      "publisher_wheel_sha256": "06a47e5700f3081aab02b2e513160914ff0694bce9947d6b76ebd6bf57cfc5d1",
+      "matched_payload_files": 632,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "urllib3": {
+      "version": "2.7.0",
+      "publisher_wheel_sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897",
+      "matched_payload_files": 41,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "werkzeug": {
+      "version": "3.1.8",
+      "publisher_wheel_sha256": "63a77fb8892bf28ebc3178683445222aa500e48ebad5ec77b0ad80f8726b1f50",
+      "matched_payload_files": 62,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "wheel": {
+      "version": "0.48.0",
+      "publisher_wheel_sha256": "3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab",
+      "matched_payload_files": 19,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "wrapt": {
+      "version": "2.4.1",
+      "publisher_wheel_sha256": "53e15cd74bd6b84d7fa90b93dda7334d85f4641fae97632de8aa61d268dfd145",
+      "matched_payload_files": 20,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    },
+    "zstandard": {
+      "version": "0.25.0",
+      "publisher_wheel_sha256": "a1a4ae2dec3993a32247995bdfe367fc3266da832d82f8438c8570f989753de1",
+      "matched_payload_files": 10,
+      "unverified_install_scheme_files": [],
+      "failures": []
+    }
+  },
+  "scope": "Publisher-index SHA-256 authenticated wheels and installed library/data payload comparison. Data destinations require unique installed RECORD suffix matches. Installer-generated files are outside wheel payloads; any unresolved schemes are listed explicitly. Fresh installation is not claimed.",
+  "sha256": {
+    "docs/reviews/competition_cassava_published_wheel_audit.json": "a95e89f97cffb59e3bd6c4f60b88e7601a39cbed83fd5685afacb2623cd1d62a",
+    "scripts/verify_cassava_publisher_wheels.py": "2158b7750d42a88bc101fc90c25678de61bd9e493dee9bdc3db69c3bab950544",
+    "requirements/cassava-reference-macos-arm64.lock": "ebd6ddae87b1ff87963ceb06d105e07cd58f5c3096af71c29504815bbc5a9502"
+  }
+}

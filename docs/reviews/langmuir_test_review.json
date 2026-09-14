@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_langmuir.py tests/physics_ingest/test_langmuir_proof.py -q",
+  "test_source_sha256": {
+    "tests/physics_ingest/test_langmuir.py": "0b452dca88028f4859ca34eec843bd9ef15ee8adfdfbfca7cdce9bb2121c76b1",
+    "tests/physics_ingest/test_langmuir_proof.py": "fe359e0affc00fd8cbc8e7b9d98a77757ed30c84aed80afea8596c810720e8ce"
+  },
+  "provider_sha256": "479c8d41e9950e746a84ea958dd9a7678399c1c4fc3260df59443f4932fff937"
+}

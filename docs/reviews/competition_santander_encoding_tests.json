@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 9,
+  "sha256": {
+    "sciona/santander_encoding.py": "db28fc3e83721741929c394a32add8e447b0428f0d1bafd53479b294bbcc25c5",
+    "tests/test_santander_encoding.py": "dad7a08c779f7f6f1ff70424f2e4a4072154cb862e698040eb4f053d0986d96a"
+  },
+  "checks": [
+    "Hand class codes and uniqueness overrides",
+    "Training-row self-exclusion",
+    "All-test prediction rows retained",
+    "Training-mean substitution",
+    "Both-class category",
+    "Global other-label influence explicitly verified",
+    "Row permutations and input immutability",
+    "Invalid populations"
+  ],
+  "limits": "Source-faithful global labeled-reference semantics; not unbiased or fold-isolated CV evidence. Independent implementation with finite floating inputs; no historical accuracy claim.",
+  "catalog_mutations": 0
+}

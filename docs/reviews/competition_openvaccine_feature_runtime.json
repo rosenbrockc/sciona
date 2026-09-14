@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "batch_records": 3,
+  "node_channels": 55,
+  "adjacency_channels": 8,
+  "independent_reference_comparison": true,
+  "probability_inputs_unchanged": true,
+  "invalid_cases": 8,
+  "scope": "Complete loop-label and source feature batching given synthetic folded inputs; no folding engine execution.",
+  "runtime_sha256": "9a176d772feb0734d22221e16269eae77a419ca12268e9e8cadb1824ee455d52",
+  "validator_sha256": "5b48e4c7443b2882c5ab50273dc38bacf2078e7de1c5441cbc7c6766a3c3d86a"
+}

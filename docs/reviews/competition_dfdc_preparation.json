@@ -1,0 +1,27 @@
+{
+  "format": "dfdc-preparation-validation.v1",
+  "result": "passed",
+  "source_commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "checks": {
+    "source_sample_output_rng_cases": 240,
+    "independent_normalization": true,
+    "independent_validity_boundaries": 2,
+    "independent_region_retry_cases": 2
+  },
+  "semantics": [
+    "Source conditional random draws and five-attempt region-mask retry retained.",
+    "Missing difference mask becomes zeros; train labels clip to .01/.99.",
+    "Validity computed before final transforms with source strict pixel-count/value thresholds.",
+    "Active B7 rotation=False/padding_part3/hardcoreTrue configuration retained."
+  ],
+  "limits": "Source __getitem__ uses synthetic in-memory I/O and previously source-validated augmentation components. Actual dlib68-point predictor remains outstanding. No broken-file retries or media identities; malformed explicit inputs rejected. No original media, full lifecycle or promotion claim.",
+  "sha256": {
+    "sciona/dfdc_preparation.py": "34e4c21448c215ccd4adbcad8c4b7476aa555be302e957d3cb1936f147466a41",
+    "sciona/dfdc_transforms.py": "5b1cee757b9ceac53c18e61c5aba489fad629f81dbd78f298945ebb452889f6f",
+    "sciona/dfdc_landmark_removal.py": "f83fbc5da58c730cf711d0ed533799f15af12513cd02a48b9cd81a9038357ae3",
+    "sciona/dfdc_convex_hull.py": "d3453cb21d8097764ddd2d698f5a67db76741a4cf4418fc1530e5ba7e805b0ec",
+    "sciona/dfdc_occlusion_masks.py": "4db7e129faa47d44806328ea4b336711611078533a201d758db0da1b5965cf5b",
+    "scripts/validate_dfdc_preparation.py": "aa965e357b77860183001cbc04b1cd05933ff4bab4b2311cead50018fba82299",
+    "docs/reviews/competition_dfdc_source_pins.json": "ae5735e5999f474478ba44d5236ba897c48fa6d0ba15f9738299d75e2593d871"
+  }
+}

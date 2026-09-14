@@ -1,0 +1,299 @@
+{
+  "repository": "https://github.com/junkoda/kaggle_contrails_solution",
+  "commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "license": "MIT",
+  "source_version_id": "dd8cc8a7-162b-52f1-a74d-256ce661f7ba",
+  "source_hash": "6f8962c26d57adbdead9c31a1ed95d7bc31d66bf4e042f5da564d0c8c6d23dee",
+  "source_status": "draft",
+  "intake_nodes": [
+    "Temporal Windowing",
+    "False-Color generation",
+    "2.5D Stacking",
+    "U-Net Architecture",
+    "Temporal TTA"
+  ],
+  "files": [
+    {
+      "path": "LICENSE",
+      "git_blob": "179762943cb4e8eca08ab8cd21acbf0e65385bf8",
+      "sha256": "80f0d321ccf7c0947dd460be98aaaec3f10a1b06f0fc27825ea8fd315897d864"
+    },
+    {
+      "path": "README.md",
+      "git_blob": "c67dd626d88cd84992b03e9adfa96a75909c41aa",
+      "sha256": "66e53229b1a7a76111b81cd5901b3ab0bb457e488dd68da2434fb5ca940544a0"
+    },
+    {
+      "path": "notebook/README.md",
+      "git_blob": "370f6d6fbbfd27792f5d1a54bf0d506534c569a1",
+      "sha256": "44dbc0cc22f2167d997d0d0dd7ebad9269c347bacf8ee0ea025f406b1398da0f"
+    },
+    {
+      "path": "requirements.txt",
+      "git_blob": "69f9d44671a67d9ad72d9033320b0cc489426514",
+      "sha256": "ea3dfa6d06376eaa9ac0bad19721e0cd88fbdf9cdfe2f122d70b3e877c3e3701"
+    },
+    {
+      "path": "src/README.md",
+      "git_blob": "5398b892597d4345efd83a55e18698644541ea50",
+      "sha256": "e73c09ae85118a7cb199a7be1c7f5dab8be961fe6a8760cb9d2aa856d9ba4e6f"
+    },
+    {
+      "path": "src/script/README.md",
+      "git_blob": "b268bc36af346887258dd82c29e37233d24da6da",
+      "sha256": "bcdd5765b5a2648ab86b251dc3aced46ab92aa82bd559c14694b173d7c01e01b"
+    },
+    {
+      "path": "src/script/prepare.py",
+      "git_blob": "38cf83ffafdc3ef8ae4e5016141ee26d18aff448",
+      "sha256": "fb2b939cd622c6730a457a5a2defd01cf8aa13d0730f9578c55c72c89f7bad19"
+    },
+    {
+      "path": "src/submit/score.py",
+      "git_blob": "733b170874b6c26ff8816a8880eff4031f34013f",
+      "sha256": "15435b6502fca9616d1b0bfb86410a3823cbc6308acfc4b58fdd96793a14d56f"
+    },
+    {
+      "path": "src/submit/submit.py",
+      "git_blob": "bb987169aae753822d412961f35b48b2e6b1b900",
+      "sha256": "ecb1cc5ebf0a85e4fa1b1b7de1945e3c5be0ced345967b71fd58010f514f8fa3"
+    },
+    {
+      "path": "src/submit/unet1024/__init__.py",
+      "git_blob": "13a58a65b3a58a23c0bb8c0c554995da54a32f11",
+      "sha256": "1e14d14d8dd9fd5c97821aa0ff70571b85c36492b74abcbec2cdd8516cac99b5"
+    },
+    {
+      "path": "src/submit/unet1024/data.py",
+      "git_blob": "b73b1f90172832e34c9f607f6d83b97a49a7e83d",
+      "sha256": "2e9d204bbd795714274a97da5588dee2e6255266868992b2825fe1143e4a6b0f"
+    },
+    {
+      "path": "src/submit/unet1024/model.py",
+      "git_blob": "c56082cc2ba8c781f748c8ecf5d94efd1e79de40",
+      "sha256": "39b5e904ba74e18037d70969b3baf986c5c03f8b10e8c7d44da6e280f5202dc7"
+    },
+    {
+      "path": "src/submit/unet1024/predict.py",
+      "git_blob": "b79e9dd390cabdf7de5edf0c968d4547a19e218e",
+      "sha256": "83cec057f5991e1c0bbdccfae5407cad4fa1d923e9391a27c2fba6508e70c577"
+    },
+    {
+      "path": "src/submit/unet1024/unet_decoder.py",
+      "git_blob": "e17c9f267f8635edd59e9ff9693e754e72cff304",
+      "sha256": "eb3292ad8bcf51a9205c540782c9a68a3bbf102f0f9b5f71a1887304b0128032"
+    },
+    {
+      "path": "src/submit/unet5/__init__.py",
+      "git_blob": "13a58a65b3a58a23c0bb8c0c554995da54a32f11",
+      "sha256": "1e14d14d8dd9fd5c97821aa0ff70571b85c36492b74abcbec2cdd8516cac99b5"
+    },
+    {
+      "path": "src/submit/unet5/data.py",
+      "git_blob": "2bc3d393f536f895eb2d3ac34b8ebc453c41c528",
+      "sha256": "c214f8d7999669874a68d26057630b079421a633666b2d4decd5ad532e0e4f6c"
+    },
+    {
+      "path": "src/submit/unet5/model.py",
+      "git_blob": "93b361aa52874c06ceb2208404d4e753ec82685d",
+      "sha256": "55f13988788a07e25a2c5550a14184c06b1f50fb433a1f672da6dee8186640b2"
+    },
+    {
+      "path": "src/submit/unet5/predict.py",
+      "git_blob": "cc676de50bd4164a47d9716bb50b6711dd831d22",
+      "sha256": "84e07c07d8cb163d59ddec7ec12beb40c80a19108e6a32ef1ceea373a34ddda8"
+    },
+    {
+      "path": "src/submit/unet5/tta.py",
+      "git_blob": "e0f90a02ca855fd01ce841b023b83f54ee6bb1c0",
+      "sha256": "39f0a6f3ae6ff143bc9b2bb52b2c9dc08c8f55557989b9222c0a5e8eaca25d98"
+    },
+    {
+      "path": "src/submit/unet5/unet_decoder.py",
+      "git_blob": "cbd167ca4d0971d7c83dfdd29c6439efcd4f79b2",
+      "sha256": "6e66af99414138bfc005951a7abd5cf113d0166758b281d39a8da66001ea083c"
+    },
+    {
+      "path": "src/submit/util.py",
+      "git_blob": "ae6d46976224a451c95f4d7c0fe80285b43e62ee",
+      "sha256": "1baf8fb60050540579a931f998be9c543e5538a29ae88b3e22f30c43de1ff8c3"
+    },
+    {
+      "path": "src/submit/vit4/__init__.py",
+      "git_blob": "13a58a65b3a58a23c0bb8c0c554995da54a32f11",
+      "sha256": "1e14d14d8dd9fd5c97821aa0ff70571b85c36492b74abcbec2cdd8516cac99b5"
+    },
+    {
+      "path": "src/submit/vit4/data.py",
+      "git_blob": "a22b31738d7c5c8891e4778042de0215a4de45e4",
+      "sha256": "927cc0489354376870c1227111940e6b6721c641ca15fbbb525c60cf95a95349"
+    },
+    {
+      "path": "src/submit/vit4/model.py",
+      "git_blob": "e746ff1f1cfd41ecf79672d6fd66a7867cd4d5fb",
+      "sha256": "4adb87ae97ba21b354f2c9bcc1d5e56446a71b29d4ef40ca45af69215ba228dd"
+    },
+    {
+      "path": "src/submit/vit4/predict.py",
+      "git_blob": "ce135be7fa65284b54736a437e2185a8985635dd",
+      "sha256": "72990c2100e5e59e4478a43857576fce67ac920393243aeaf99385c0680b66b9"
+    },
+    {
+      "path": "src/submit/vit4/unet_decoder.py",
+      "git_blob": "cbd167ca4d0971d7c83dfdd29c6439efcd4f79b2",
+      "sha256": "6e66af99414138bfc005951a7abd5cf113d0166758b281d39a8da66001ea083c"
+    },
+    {
+      "path": "src/unet1024/data.py",
+      "git_blob": "ad7432c4a6a7871a2d1e9d5e0ca5bca44e3afb2d",
+      "sha256": "1953ef575d4210b51e8b92a1bf9e93e1bc7aeecda8ee09fa1906d8225240989f"
+    },
+    {
+      "path": "src/unet1024/evaluate.py",
+      "git_blob": "c408f43f299ff6e244081640606611dbad67e0e2",
+      "sha256": "20863f6a95bbfe5072390b0347144aff8e3ceeedb3c49386c761340d38f6318e"
+    },
+    {
+      "path": "src/unet1024/grid.py",
+      "git_blob": "0bec48ea5bf2c630a26c76d4ccd170084c8babe3",
+      "sha256": "ea0cc45fddbb6696784e164cfc9dac71dc866cd6ec5184b66950401afd84b92a"
+    },
+    {
+      "path": "src/unet1024/losses.py",
+      "git_blob": "97ab21334b04b34bf22233dc305ab28bd1b69f71",
+      "sha256": "f5b82a30aa8555c48c3898472bee52f156a0b2bb80868ebf9961e156c0aec201"
+    },
+    {
+      "path": "src/unet1024/lr_scheduler.py",
+      "git_blob": "2452fcbd17bf50110177784e3e7f235f5e05adde",
+      "sha256": "3ab975160c264a6d9581db7bc005af613a3993582cb44adc024948b3c60945e5"
+    },
+    {
+      "path": "src/unet1024/model.py",
+      "git_blob": "35c3e6ef9f7bcbff61cd50fe0bf18650ff6b973a",
+      "sha256": "3b30bf92af41a19b97d106112e31adc9c80f12f7231b669849fd17f1f488fb10"
+    },
+    {
+      "path": "src/unet1024/score.py",
+      "git_blob": "7de77f069e6e6f38a7dd5630b515c1733a8e1d98",
+      "sha256": "5d5e906f0302d579e48fb6332c7d1dc7d62d2bbbcbf404ce4b3384042d561f28"
+    },
+    {
+      "path": "src/unet1024/unet_decoder.py",
+      "git_blob": "597b44a45c7f01a7cf0eb9c0f61be7c4f0e8b84a",
+      "sha256": "47d8700733e535149529f911fb551c8b27660da054ad9279b8bfb8b11c486456"
+    },
+    {
+      "path": "src/unet1024/util.py",
+      "git_blob": "f89d419d52bac699398fce0fe3c345880e839668",
+      "sha256": "dff053938421abe117bf8628b9aea440e108304c245aea3b45bb1397bdb09242"
+    },
+    {
+      "path": "src/unet5/README.md",
+      "git_blob": "8ebf7055e78327e7347bd89fbfdb26ef77666d43",
+      "sha256": "b8f1f46c9d782b896ac9f5ea2abdc9840fa84a2d1d66caba7637d162c5903bc1"
+    },
+    {
+      "path": "src/unet5/data.py",
+      "git_blob": "5b48a0c580de6d3db26160985ae3e3f3f7bf4c39",
+      "sha256": "78e347b081c3be138f0b49c852342803d207d786c129bd77107ca6a741f2772b"
+    },
+    {
+      "path": "src/unet5/evaluate.py",
+      "git_blob": "5a5d49bb487cb6eb68e1b49319b6eb418c225677",
+      "sha256": "42d5945245a37d97bd6ddb34f51cfd9213e0ff4803f5628017af53b575301096"
+    },
+    {
+      "path": "src/unet5/grid.py",
+      "git_blob": "6672c0cf3984b8c5995e2bfacfbf71ea8af250ad",
+      "sha256": "ed1c1f0059ef4c82f3d695015754bb26ee176677263f60dd7fab682d0261bd86"
+    },
+    {
+      "path": "src/unet5/losses.py",
+      "git_blob": "86967ca5e4378c31000cc80320c4e00f880e0855",
+      "sha256": "dcd65b6afd8c7c89da6311a385315751f811cbc9175c7b9c7863b9639fefdaa9"
+    },
+    {
+      "path": "src/unet5/lr_scheduler.py",
+      "git_blob": "e0ec76361d19baf56234d16c679c613b97e8c0a2",
+      "sha256": "bf9b0de95fcc1688736199af8bf511f696aa33d67693881a8df4ab83d3b55e51"
+    },
+    {
+      "path": "src/unet5/model.py",
+      "git_blob": "9b71b0d63acf626b31a63c859bc3d65454f6581f",
+      "sha256": "21e70fdae2ebf6c8f2075196c1bb3a11cd306f964e5c64bb03220c6353987433"
+    },
+    {
+      "path": "src/unet5/score.py",
+      "git_blob": "e5f3cb06043a327716b3a62244606fba4310307f",
+      "sha256": "3eada298bf9f47e1d92a0f7ed11a7629a451571660b04fac3d84a6b8e55e38f2"
+    },
+    {
+      "path": "src/unet5/unet_decoder.py",
+      "git_blob": "23603b1c7a228ca3109b79cce6fe6a94df92616b",
+      "sha256": "c5c79bef058f955e195b5f2428d97a317ce67c88a5cbfdc721c56fb547170b7c"
+    },
+    {
+      "path": "src/unet5/util.py",
+      "git_blob": "258eec5e8f85d068eee86d58a33ad982d152246b",
+      "sha256": "1018562d0d76e8bd66faf6f6b7094dd3781e7cd3cebfe33dd7ecd240c1659075"
+    },
+    {
+      "path": "src/vit4/data.py",
+      "git_blob": "eebae9ec5f1578d3c86481771a5797c5a9f65570",
+      "sha256": "374b7eedd158dd016bf4ab40547aa94e7adb92c92b98237ca2efee0e865bd6e0"
+    },
+    {
+      "path": "src/vit4/evaluate.py",
+      "git_blob": "0013ca5048b2902979094653410124f0d71e58c5",
+      "sha256": "7613279181c0c5d05d0a0d7ae0e9b46fdc72b10dd995f9f3b2b92034bcad5e54"
+    },
+    {
+      "path": "src/vit4/grid.py",
+      "git_blob": "0bec48ea5bf2c630a26c76d4ccd170084c8babe3",
+      "sha256": "ea0cc45fddbb6696784e164cfc9dac71dc866cd6ec5184b66950401afd84b92a"
+    },
+    {
+      "path": "src/vit4/losses.py",
+      "git_blob": "97ab21334b04b34bf22233dc305ab28bd1b69f71",
+      "sha256": "f5b82a30aa8555c48c3898472bee52f156a0b2bb80868ebf9961e156c0aec201"
+    },
+    {
+      "path": "src/vit4/lr_scheduler.py",
+      "git_blob": "2452fcbd17bf50110177784e3e7f235f5e05adde",
+      "sha256": "3ab975160c264a6d9581db7bc005af613a3993582cb44adc024948b3c60945e5"
+    },
+    {
+      "path": "src/vit4/model.py",
+      "git_blob": "2ce3edc50d12c007ad3c9bbef697235dd7f9ee08",
+      "sha256": "0dbdd10e736e8034d38bb4f78e39f95295236cf68bba9dadb6aefca14c4fc4e1"
+    },
+    {
+      "path": "src/vit4/score.py",
+      "git_blob": "7de77f069e6e6f38a7dd5630b515c1733a8e1d98",
+      "sha256": "5d5e906f0302d579e48fb6332c7d1dc7d62d2bbbcbf404ce4b3384042d561f28"
+    },
+    {
+      "path": "src/vit4/unet_decoder.py",
+      "git_blob": "bec7af50b36667d82ca39557faa40d23d2616f9c",
+      "sha256": "373c988af9fff519f926d021e4d44e7c71c5351f27f955712eb1d50ea3d81122"
+    },
+    {
+      "path": "src/vit4/util.py",
+      "git_blob": "f89d419d52bac699398fce0fe3c345880e839668",
+      "sha256": "dff053938421abe117bf8628b9aea440e108304c245aea3b45bb1397bdb09242"
+    },
+    {
+      "path": "test_run.sh",
+      "git_blob": "ec5a17124512ff9fa4e58a66c14604c25eeb4ca4",
+      "sha256": "d93270a65ac08c8680977ec1ce3fe1f0f97b43c08cf2ea7aa8e65d0bb1a32b97"
+    },
+    {
+      "path": "train_all.sh",
+      "git_blob": "c5413349d4530f0089508028f54d25f87f618911",
+      "sha256": "e3270e71005b71ef801afd228c0c69e0cc7f8d83c97637546b40bb955b272cbc"
+    }
+  ],
+  "approved": false,
+  "scope": "Public software only. No images, labels, weights or notebook outputs fetched."
+}

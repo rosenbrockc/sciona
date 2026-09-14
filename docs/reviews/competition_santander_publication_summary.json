@@ -1,0 +1,20 @@
+{
+  "status": "published_and_served_execution_verified",
+  "local_catalog_only": true,
+  "trust_tier": 3,
+  "version_id": "c53d5b4a-252a-5610-b9dd-8c453f772fcc",
+  "graph_sha256": "c765dd322eb6c923282e7a114c3e3e79e6163ad218dd5300ce620c0abc10b767",
+  "source_version_id": "743c3225-058e-5a7e-ab18-ae5dd1c2b7d4",
+  "provider_versions": 2,
+  "publication_rows_created": 40,
+  "idempotent_reapply_rows_created": 0,
+  "semantic_negative_gates": 10,
+  "publication_negative_gates": 6,
+  "tests_passed": 106,
+  "served_cdgs": 98,
+  "competition_intakes": 142,
+  "covered_intakes": 31,
+  "remaining_intakes": 111,
+  "served_verification_sha256": "5a79b363b5177f7d84c678c2181c7bec93f0d45569f0c99a5294f51ffffcfd6c",
+  "commit_or_push": false
+}

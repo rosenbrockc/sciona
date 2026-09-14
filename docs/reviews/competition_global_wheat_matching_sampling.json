@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_sha256": "cb80cd35f7f0ba41e5929c1bf37b1096ce6d2f0d1a34954d9dfa8d9ac3e29484",
+  "matcher_exact_cases": 128,
+  "sampler_mask_and_rng_exact_cases": 128,
+  "threshold_ties_all_background_all_positive_and_empty_cases_included": true,
+  "empty_matcher_inputs_rejected_by_both": true,
+  "validator_sha256": "b0edb4ba8866ea391d70808523c34eb5a17e73b103ab8db6f613b4c6ad5d071e",
+  "limits": [
+    "Matching and sampling utilities only; complete target assignment and detector integration remain separate.",
+    "Historical TorchScript decorators omitted for eager comparison; historical runtime equivalence is not claimed."
+  ]
+}

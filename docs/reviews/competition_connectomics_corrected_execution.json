@@ -1,0 +1,29 @@
+{
+  "checks": [
+    {
+      "mode": "simple",
+      "pca_fits": 240,
+      "distinct_preprocessed_inputs": 204,
+      "max_abs_covariance_reference_error": 6.64088498636417e-08,
+      "preprocessing_support_exact": true,
+      "max_abs_preprocessing_error": 2.384185791015625e-07,
+      "preprocessing_rtol": 2e-06,
+      "preprocessing_atol": 2e-06
+    },
+    {
+      "mode": "tuned",
+      "pca_fits": 480,
+      "distinct_preprocessed_inputs": 410,
+      "max_abs_covariance_reference_error": 3.743520338161943e-08,
+      "preprocessing_support_exact": true,
+      "max_abs_preprocessing_error": 9.5367431640625e-07,
+      "preprocessing_rtol": 2e-06,
+      "preprocessing_atol": 2e-06
+    }
+  ],
+  "grid_entries": 120,
+  "unique_thresholds": 110,
+  "scope": "Complete corrected simple/tuned sweeps, scalar-indexed preprocessing reference and float64 SVD/covariance inverse. Historical source PCA runs float32; no original buggy-output parity claim.",
+  "runtime_sha256": "5c8b13850cdb0a58f3587543decc303dc8c5a8eaf93dcb9f57f427c7c10336d1",
+  "validator_sha256": "cd96397472348d033200f515b3cd639aefd561d5541433a70c188c66dc68c68e"
+}

@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "exact_box_cases": 80,
+  "exact_tensor_and_list_view_cases": 40,
+  "all_eight_source_views": true,
+  "all_four_detector_resolutions": true,
+  "caller_inputs_unchanged": true,
+  "source_sha256": "0a0c4a66d960b07aa5e56fe51c78b9a4081ae5f977e4969435596562c155e3bd",
+  "implementation_sha256": {
+    "sciona/wheat_tta.py": "a1e1080b19c42772da8e2dfa65667e2bb060d914c1ae35a0aa0cb7da43944997",
+    "scripts/validate_wheat_tta.py": "0e85392cafeaf156aad6fd03c8efb0718ec4206f57877ca67a095a62a3ad8c2b"
+  },
+  "limits": [
+    "Image permutations and inverse boxes only; detector inference and full pipeline remain pending.",
+    "Current NumPy/Torch execute both paths; historical dependency equivalence is separate."
+  ]
+}

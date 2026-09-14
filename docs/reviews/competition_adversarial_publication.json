@@ -1,0 +1,36 @@
+{
+  "format": "adversarial-publication.v1",
+  "rollback": {
+    "applied": false,
+    "rows_created": 46,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "2e7db7d5d1134a6df3e1b6c91f27b343ce02af56accd21173a57a52da21f9dd5",
+    "version_id": "63259d9b-ad20-5a69-85ba-6df6ae07bee3"
+  },
+  "apply": {
+    "applied": true,
+    "rows_created": 46,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "2e7db7d5d1134a6df3e1b6c91f27b343ce02af56accd21173a57a52da21f9dd5",
+    "version_id": "63259d9b-ad20-5a69-85ba-6df6ae07bee3"
+  },
+  "idempotent_reapply": {
+    "applied": true,
+    "rows_created": 0,
+    "trust_tier": 3,
+    "served_provider_versions": 2,
+    "served_execution_cdgs": 1,
+    "input_arity": 1,
+    "output_arity": 1,
+    "graph_sha256": "2e7db7d5d1134a6df3e1b6c91f27b343ce02af56accd21173a57a52da21f9dd5",
+    "version_id": "63259d9b-ad20-5a69-85ba-6df6ae07bee3"
+  }
+}

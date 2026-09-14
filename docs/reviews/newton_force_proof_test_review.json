@@ -1,0 +1,10 @@
+{
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_newton_force_proof.py -q",
+  "passed": 8,
+  "failed": 0,
+  "synthetic_only": true,
+  "implementation_sha256": {
+    "sciona/physics_ingest/newton_force_proof.py": "b3675c5a24bb186e837be9337b26fb84e93d3e47edb5e8eb352683b1bad8ece7",
+    "tests/physics_ingest/test_newton_force_proof.py": "b5042566814eff94a8543543582838addd416801812dc618c3f65562717b88ab"
+  }
+}

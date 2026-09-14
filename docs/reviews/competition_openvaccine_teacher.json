@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "autoencoder_pretraining_steps": 1,
+  "trained_checkpoint_members": 20,
+  "supervised_steps_per_member": 1,
+  "restored_teacher_reference_comparison": true,
+  "unseen_synthetic_prediction_inputs": true,
+  "missing_duplicate_population_rejected": true,
+  "scope": "Complete trained reconstructed teacher from shared synthetic pretrained base; no student refinement rounds, historical fold provenance or historical recipe equivalence.",
+  "runtime_sha256": "deb36faa4eed9f3c78164434c59a0af2781b1e10c63ae630bb5a02cc13cf7f5a",
+  "validator_sha256": "27c1f040d2f7dba934e668c4fc5941269d604c381d1cfe3c01eacdff7f30fdc0"
+}

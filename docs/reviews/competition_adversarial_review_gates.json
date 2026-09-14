@@ -1,0 +1,13 @@
+{
+  "format": "adversarial-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 6,
+    "unaltered_audit_passes": true
+  },
+  "limits": "Read-only semantic audit injections. Transactional publication and served-catalog gates are separate and not yet exercised.",
+  "sha256": {
+    "scripts/review_adversarial_execution.py": "4c6e9940ffab281e21ccace36f98795564075215db2453d8e35c2394ba8aaeef",
+    "scripts/validate_adversarial_review_gates.py": "3667bcc3315286dcaecc9f0330101585fd5df598e23729bad02dd2bb59e51bb6"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "models_completed": 13,
+  "training_phases": 17,
+  "continuation_phases": 4,
+  "all_source_configurations": true,
+  "full_30_second_training": true,
+  "ten_copy_inference": true,
+  "all_selected_checkpoints_reloaded": true,
+  "window_count": 6,
+  "classes": 264,
+  "runtime_sha256": {
+    "sciona/cornell_augmentation.py": "6bbf78731304a7e0ff71acc8d2c8c50f0a6c82433c423939efd455f38e175141",
+    "sciona/cornell_lifecycle.py": "d12ec363160c543fe83220327058f00b0a500fea3fa73026b594d28085e3c08c",
+    "sciona/cornell_model.py": "f314808e37c9188e371d022fd72fe613926011e0c04bb8fbd2fcae4c8a207a52",
+    "sciona/cornell_population.py": "d3b45637c1a10a635a8cc6a39ce9d700c4f1b29b8813e7d3810c6142f08d0dd6",
+    "sciona/cornell_sampling.py": "d15565e956868e62d1e2d49c70a2470a6bec8a3d4f5093347999a2714db20879",
+    "sciona/cornell_schedule.py": "b374deb86e605f8c3479e32ccaf614558225bc0382bab935410e1324163e71ea",
+    "sciona/cornell_training.py": "deda1c6c66d6fb80cdc111befb960a74e7c87dfd61fee41d1d13f5a406e22c5b",
+    "sciona/cornell_validation.py": "5e248a8fe58b3ce0a12e1acc8fde9b856dfbf294ad4083db1624ba9771d34ad8",
+    "sciona/cornell_voting.py": "b78d50ae9b7ecf8ccab18dee2d939833e779e66b21e8dfaee0635450c7144323"
+  },
+  "validator_sha256": "ce9b03635f6e88d0eabdf6d369e5bf3a0fb92d955c79a583d88537eccb24fedf",
+  "scope": "All full source models and17phases; two synthetic epochs each with batch2 and offline random initial weights. No competition accuracy or historical checkpoint/pretraining parity. Full graph and publication review remain separate."
+}

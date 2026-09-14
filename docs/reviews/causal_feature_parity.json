@@ -1,0 +1,28 @@
+{
+  "synthetic_only": true,
+  "implementation_hashes": {
+    "sciona.atoms.causal_inference.feature_primitives.atoms": "e47b7957d1e0c9b8929080261cda1b4fa52233319debb732ff161ea1b84ca401",
+    "sciona.atoms.causal_inference.feature_primitives.selected_features": "98e353b180574cef7b52bf89d435f905cf5e87df8c331e19eef281578908d022",
+    "sciona.atoms.causal_inference.conditional_statistics.atoms": "7fac09b8d0f6df472275abdf869626e60f2ae32c6ab284d9cc121b59e34605e2",
+    "sciona.atoms.causal_inference.conditional_statistics.source_entropy": "410116e36632b71c8f658f5113e743c491c6a8c33755dad9354761d9e1e9fea4"
+  },
+  "library_versions": {
+    "numpy": "2.4.2",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0"
+  },
+  "source_commit": "f4d0f0d8cd160ce0d39a88c0bdc81c1723024acd",
+  "source_hashes": {
+    "features.py": "1f70b47017370c2642c31cfe3a3727d5cd29d7743f8de538a186afdf8d1b4e5e",
+    "estimator.py": "a685f8c7afad368afe78191fd8647381c8d262201d7b4411fe9032c205b2d070",
+    "hsic.py": "e11fc510d45ebdd3ef1f67ba99604e45628e28d4abd618bd0c0ab50dbbd337b6"
+  },
+  "port": "Python 2 collection materialization, operator.div -> true division; current installed scientific libraries retained",
+  "counts": {
+    "orientations": 162,
+    "compared": 162,
+    "all_features_match": 162
+  },
+  "mismatch_counts": {},
+  "maximum_absolute_error_by_feature": {}
+}

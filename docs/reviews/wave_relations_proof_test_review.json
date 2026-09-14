@@ -1,0 +1,16 @@
+{
+  "approved": false,
+  "scope": "Source and proof only; runtime and publication pending",
+  "test_results": {
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "source_sha256": {
+    "tests/physics_ingest/test_wave_relations_proof.py": "139d9a7c3cc6aa2104657ddb1da28dc7870e2c8daaf47394ee850b350be388ed",
+    "sciona/physics_ingest/wave_relations_proof.py": "6f2d0594a96f1944f80e68ce669f2b3b812d231cdae81dfda82694c77905e386",
+    "scripts/validate_wave_relations_source.py": "eed85a16ce7d875d0a2813b8f4c53621b2b16de32aed0707d54b1041e6b92dbb"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "format": "dfdc-facenet-dependency-review.v1",
+  "source_commit": "787da06156087cd6b616fe6608213722bddc30cd",
+  "license": "MIT, copyright 2019 Timothy Esler",
+  "historical_version_match": "unproven; original dependency unversioned",
+  "installed_package": false,
+  "scope": "Software review and synthetic torchvision NMS availability only; no MTCNN execution.",
+  "findings": [
+    "MTCNN constructs PNet, RNet and ONet with implicit pretrained states loaded from package files. A safe explicit-state adaptation must disable all three constructor loads before instantiation.",
+    "Detector entrypoint uses image_size160, min_face_size20, pyramid factor0.709; DFDC overrides thresholds to [0.7,0.8,0.8] and margin0.",
+    "detect_face requires Torch interpolation and torchvision batched_nms. Synthetic CPU NMS check passed with suppression within groups and retention across groups.",
+    "No detector weights, images or observations fetched. Four source/license files are pinned, and license notice preserved."
+  ],
+  "next": "Adapt the complete detector cascade with explicit caller-provided tensor states; verify source AST deltas and actual synthetic PNet/RNet/ONet/cascade execution. Do not substitute an external box-only stub for the final detector stage.",
+  "sha256": {
+    "docs/reviews/competition_dfdc_facenet_source_pins.json": "64c37605ad55ebdecf58bac2fd6d1df18a7a87b6e6c046c43c66961a91e1e2d8",
+    "docs/licenses/FacenetPytorch-MIT.txt": "9fac5781e1529f4dd1a045716e1859436038d2def9e108d101b6df20c5a11318"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "format": "adversarial-graph-contract.v1",
+  "result": "passed",
+  "approved": false,
+  "checks": {
+    "serialized_nodes": 2,
+    "serialized_edges": 1,
+    "provider_witnesses": 2,
+    "wrong_witness_rejected": true
+  },
+  "graph_sha256": "2e7db7d5d1134a6df3e1b6c91f27b343ce02af56accd21173a57a52da21f9dd5",
+  "provider_sha256": "4f3c569667377520c79c8fd937f1e5f311c664caa010fb340002578219f5fc2e",
+  "sha256": {
+    "sciona/adversarial_graph.py": "1d154b164bfd2012622222821769ad0b61bacad2736adcfb14145b8796167f29",
+    "scripts/validate_adversarial_graph_contract.py": "2b2fc8106663e1d67634e8da909e17cf255c4ba9759a9430c22a6a838896af47"
+  },
+  "limits": "Structural codec and witness validation only. No real runner execution, serving or publication claim."
+}

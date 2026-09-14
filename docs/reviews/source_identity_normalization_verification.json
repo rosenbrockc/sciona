@@ -1,0 +1,10 @@
+{
+  "read_only": true,
+  "alternatives": {
+    "versions": 58,
+    "preserved_drafts": 58
+  },
+  "variables": 218,
+  "served_cdgs": 29,
+  "repeat_import_created_versions": 0
+}

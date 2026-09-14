@@ -1,0 +1,14 @@
+{
+  "test_results": {
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_curl_curl.py": "e17c522f2c36a41a2bc92c0d416c5ef9a6f70e3dadb112d832d23f53981e8908",
+    "tests/physics_ingest/test_curl_curl_proof.py": "95bca753948fff201fb063baf5beb41f5cf11a8b46603e5af4ec1097f93e7c44"
+  },
+  "provider_sha256": "627511eb02d3df0b38a4a602dccb4f47f553a6be0b06effee6cb2762e96f2aa5",
+  "synthetic_only": true
+}

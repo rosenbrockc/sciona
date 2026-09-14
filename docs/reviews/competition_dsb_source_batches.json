@@ -1,0 +1,78 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "cases": [
+    {
+      "variant": 3,
+      "seed": 0,
+      "exact_batches": 6,
+      "exact_rng_continuation": true
+    },
+    {
+      "variant": 3,
+      "seed": 7,
+      "exact_batches": 6,
+      "exact_rng_continuation": true
+    },
+    {
+      "variant": 3,
+      "seed": 41,
+      "exact_batches": 6,
+      "exact_rng_continuation": true
+    },
+    {
+      "variant": 4,
+      "seed": 0,
+      "exact_batches": 6,
+      "exact_rng_continuation": true
+    },
+    {
+      "variant": 4,
+      "seed": 7,
+      "exact_batches": 6,
+      "exact_rng_continuation": true
+    },
+    {
+      "variant": 4,
+      "seed": 41,
+      "exact_batches": 6,
+      "exact_rng_continuation": true
+    }
+  ],
+  "validation_cases": [
+    {
+      "seed": 0,
+      "exact_batches": 10,
+      "exact_dtypes_and_rng": true
+    },
+    {
+      "seed": 7,
+      "exact_batches": 10,
+      "exact_dtypes_and_rng": true
+    },
+    {
+      "seed": 41,
+      "exact_batches": 10,
+      "exact_dtypes_and_rng": true
+    }
+  ],
+  "limitations": [
+    "Prepared arrays supplied directly; raw preprocessing and optimizer execution are separate checks.",
+    "Source loader integer labels compared by value; training model paths perform their dtype conversions.",
+    "Explicit RNG and sample orders replace clock reseeding and worker scheduling; identity eligibility mapping only."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_batches.py": "9d487778aad6b6370e908fe8bd8ee1820ba83a19397f6caac85b42c2b46f1ac1",
+    "sciona/dsb_training.py": "7ad662bd73073152f8d0e582ee2a86d6c6fc7a75816343f13ba729eadf448524",
+    "sciona/dsb_components.py": "0fd1509064a803e71c479821065946799c1485a8aaff0cd304797afb21d3e89c",
+    "sciona/dsb_detector_crop.py": "95cf1a3e0d6498276139c78d3f210f524b59fc794c7cac87d8ba5908c72789be",
+    "sciona/dsb_augmentation.py": "d32ca4ffa76c7e0a4d2068ca736aec741ecb434122cc370ebddbba1556c54f3b",
+    "sciona/dsb_anchor_mapping.py": "0ad06f4f883ba1e841544099b41129eb1ed12ca8dacc4e537d8448670cbf936b",
+    "sciona/dsb_validation_batches.py": "cc862f49af40b184342d14f0e3c97ed288ffd179ba99f6e36b8d486cb4dc5522",
+    "sciona/dsb_intake.py": "24f91f470c7f642ca03433fec6df8de0dff13fd2c187b1b07fc93a10a0b3e3b4",
+    "scripts/dsb_source_batches.py": "49db8886d7066ed2115d0d8b5db8f9d0f3ff21efe733f80468e3d2aaa07e0ac7",
+    "scripts/validate_dsb_source_batches.py": "f15360efdb689c71a39598dc65d38e64b1e69d442ea80c90f2d838bf5ef06ddc",
+    "scripts/validate_dsb_validation_samples.py": "55de1261b4b66f4b7bb90069aad15ed286979ede52dc2f9263c5ff1e6935c975"
+  }
+}

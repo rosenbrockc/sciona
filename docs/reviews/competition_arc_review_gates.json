@@ -1,0 +1,25 @@
+{
+  "format": "arc-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_intake_hash",
+    "wrong_source_commit",
+    "sanitizer_failure",
+    "missing_search_mode",
+    "incomplete_lifecycle",
+    "children_not_reaped",
+    "reduced_graph_execution",
+    "altered_provider",
+    "stale_runtime_code",
+    "wrong_runtime_dependency"
+  ],
+  "sha256": {
+    "scripts/review_arc_execution.py": "0814f7852a803d0ffa43affa03df5b767e734dc7c83ae1295e33accb5907946e",
+    "scripts/validate_arc_review_gates.py": "8703a6c3c811ddc76c6ba175d0be8ffaca553afbb2fb1fb27ebc575f4f158e01"
+  },
+  "limits": "Read-only review injections; transactional publication and served-catalog verification are separate."
+}

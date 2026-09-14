@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "transaction_rolled_back": true,
+  "proposed_rows": 40,
+  "derived_version_absent": true,
+  "served_cdg_count": 83,
+  "publisher_sha256": "a2b4057443917ecc795bae5e5a5721fe16181df897e07f197ea174c95141e903"
+}

@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Zero count before raw missing conversion",
+    "Nine binary one-vs-rest label vectors",
+    "Independent scores retained without normalization",
+    "Seeded repeat and query population independence",
+    "Input immutability",
+    "Invalid controls and absent classes rejected before training"
+  ],
+  "sha256": {
+    "sciona/otto_ovr_boosting.py": "28cfb7c28aab6b08e5fb0d798cd7c245e433ce31682edebf84eeb68a14ab34b7",
+    "sciona/otto_preprocessing.py": "54fd5f9e605f7a16dfe85b7e295141c7a4892e8845ef42ed5de1b5c0c59cb50b",
+    "tests/test_otto_ovr_boosting.py": "9b78dedce46db1e448858a82f07ecdc2a4883b65ac3dd091e7d1975e3174fb50"
+  },
+  "limitations": [
+    "Python XGBoost 3.4.1 independent realization; original R XGBoost settings/behavior unresolved.",
+    "Appended zero count remains observed even when zero; historical treatment unspecified.",
+    "Fixed explicit boosting controls; five-fold orchestration pending."
+  ],
+  "catalog_mutations": 0
+}

@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "pretrained_weights_used": false,
+  "families": {
+    "inception_resnet_v2": {
+      "matched_backbone_tensors": 1304,
+      "original_classifier_rows": 1001,
+      "backbone_source_sha256": "eba4e193378f11515444399c3b63d40dc3e5ccd645f2b956710eb8212f2a572d"
+    },
+    "inception_v4": {
+      "matched_backbone_tensors": 894,
+      "original_classifier_rows": 1001,
+      "backbone_source_sha256": "35d027d3315bcc572714ecb3740bdfb200cba7e624c7bdc0fe19ba1c6d8af51d"
+    },
+    "seresnext50": {
+      "matched_backbone_tensors": 382,
+      "original_classifier_rows": 1000,
+      "backbone_source_sha256": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243"
+    },
+    "seresnext101": {
+      "matched_backbone_tensors": 756,
+      "original_classifier_rows": 1000,
+      "backbone_source_sha256": "963eefa3484bf98343f40810e0be444bb95bbb950de5ecea43b1774b25fdb243"
+    }
+  },
+  "temporary_checkpoints_removed": true,
+  "scope": "Actual legacy backbone state roundtrip; not publisher weight provenance, training or full-workflow qualification.",
+  "sha256": {
+    "sciona/aptos_initialization.py": "049020432c1ff43f11210ecb484d9f231a2846508ed8059533d667214f5411b9",
+    "sciona/aptos_models.py": "71859184e8a87f25115db150acfd3bcd8ffdb3856743d5bb914202db306d8b16",
+    "sciona/aptos_pooling.py": "6c7ffa9346a524370f1e700eb607ca3bbce7829b91e3ef23327c3d4c6466a33f",
+    "scripts/validate_aptos_initialization.py": "9600edca8a78d8fec4839a45df9cd314c3ffc89680ea3122061d73072095bc2d",
+    "tests/test_aptos_initialization.py": "85e20ef341c77455e49dd160e149704db2a63f01c5dfe21df92c7f51e4898e85"
+  }
+}

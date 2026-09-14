@@ -1,0 +1,25 @@
+{
+  "status": "implementation_in_progress",
+  "source_version_id": "e6803752-90ef-5cab-8b30-5ebeec716c15",
+  "source_content_hash": "ffde31b5d874a8d6fafa0103988b0b9a8e0f13a0169f39ff6dce4e30369423e2",
+  "catalog_mutations": 0,
+  "source_scope": "Generic benchmark topology with competition landing-page reference; no historical winning implementation identified.",
+  "references": [
+    "https://www.kaggle.com/competitions/competitive-data-science-final-project/discussion/42488",
+    "https://lightgbm.readthedocs.io/en/stable/pythonapi/lightgbm.early_stopping.html",
+    "https://optuna.readthedocs.io/en/stable/reference/samplers/generated/optuna.samplers.TPESampler.html"
+  ],
+  "implementation_choices": [
+    "Private integer day ordinals and explicit boundaries define periods. Caller supplies a fixed active store-item/category population; missing observed-period transactions mean zero. Final-period targets are unobserved NaN.",
+    "Net quantities sum before clipping to [0,20], retaining negative returns within aggregation. Lags, full-width shifted rolling means and entity/store/item/category/global expanding means use prior clipped targets only.",
+    "Explicit cold-start mean and periodic sin/cos controls. No inferred holidays, promotions, source calendar parsing or embeddings. These are alternatives/examples in the generic intake, not a historical winner recipe.",
+    "LightGBM squared-error training uses native categorical entity slots. Validation metric and final forecasts clip predictions to [0,20]. No XGBoost or optional ensemble blend is implemented.",
+    "Explicit bounded TPE search includes trials beyond random startup; model-based sampler path verified. Early stopping uses rolling one-step validation; final model refits all observed rows from selected start with the selected iteration count.",
+    "Validation features may use earlier validation-period observations. This is not fixed-origin multi-period forecasting, and the hyperparameter-selection score is not an unbiased held-out performance estimate.",
+    "Optuna verbosity is temporarily suppressed and restored to avoid emitting private objective metrics; LightGBM logging is disabled. Dedicated process isolation remains preferable for concurrent callers.",
+    "Published graph candidate executes numerical training in a fresh same-environment process after the in-process graph segfaulted. Direct and isolated results match; exact native crash cause is unestablished."
+  ],
+  "next_steps": [
+    "Dependency/license/source-scope review, negative gates and authorized Tier 3 rollback/apply/idempotency/served verification."
+  ]
+}

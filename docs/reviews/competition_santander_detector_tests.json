@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 14,
+  "scope": "Independent implementation of test-only singleton retention; not full feature encoding or competition lifecycle.",
+  "checks": [
+    "Correct retention polarity",
+    "Test-only counting population counterexample",
+    "Row/column permutation equivariance",
+    "Input immutability",
+    "Duplicate and singleton populations",
+    "Exact float equality and unsigned integer precision",
+    "Nonfinite and invalid shape/type rejection"
+  ],
+  "sha256": {
+    "sciona/santander_features.py": "4ee95e6f91b5839d423f257a98c01383ae991bdd3279e59620db4861101b35e6",
+    "tests/test_santander_features.py": "ecf8b85dca61a6c6bfc8361e1f19304acc1018c62b272803591c73dc84eccaf5"
+  },
+  "catalog_mutations": 0
+}

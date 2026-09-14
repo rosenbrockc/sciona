@@ -1,0 +1,27 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 6,
+  "combined_component_and_crossfit_tests_passed": 12,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Actual 54 native binary fits across five folds and full reference query refit",
+    "Categorical encoding sees exactly each excluding-fold reference and then full training",
+    "Synthetic OOF and query nine-class learning",
+    "Heldout labels cannot change own fold scores",
+    "Changed query population cannot change OOF scores",
+    "Overlap, deficient class fold, negative values and invalid folds rejected before fitting"
+  ],
+  "sha256": {
+    "sciona/otto_libfm_crossfit.py": "8627de5375761ea3874a35dcb1a18ee829c245f5e932b3b2784eda044c33d4b4",
+    "tests/test_otto_libfm_crossfit.py": "8177e165a5c04b1794924bf906dcb027ad88cbc38ab5e934d6385dc3c70fa6d7",
+    "sciona/otto_libfm.py": "8be7d1f4fa73943f1945b27eb06567bdd8f1a04aa265b50efe72fa1b9af358b9"
+  },
+  "limitations": [
+    "Independent SGD one-vs-rest realization; winner multiclass reduction, optimizer controls and exact version unresolved.",
+    "Remaining full-stack implementation and publication gates pending.",
+    "Native runtime dependency and license closure pending."
+  ],
+  "catalog_mutations": 0
+}

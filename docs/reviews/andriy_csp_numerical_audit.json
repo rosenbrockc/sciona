@@ -1,0 +1,31 @@
+{
+  "source_revision": "00f937cc7710977dc812d9fc675864e2b8288658",
+  "source_sha256": "dd045065f6b0562ebcb86ce922c2104305b6e468f3a9fdd55cdd7cab588365f0",
+  "validation_sha256": "59674d530e8e35c594109f1106cd2a4af93119583e6971de386df3d17fd1a0ec",
+  "octave_version": "11.3.0",
+  "numpy_version": "2.4.2",
+  "scipy_version": "1.17.1",
+  "cases": [
+    {
+      "seed": 581,
+      "unit_norm_maximum_error": 3.0988598561651073,
+      "max_component_maximum_error": 1.7053025658242404e-13
+    },
+    {
+      "seed": 582,
+      "unit_norm_maximum_error": 2.4124008053593613,
+      "max_component_maximum_error": 2.8332891588433995e-13
+    },
+    {
+      "seed": 583,
+      "unit_norm_maximum_error": 3.051614183427236,
+      "max_component_maximum_error": 1.1457501614131615e-13
+    }
+  ],
+  "limitations": [
+    "Audit only; no provider or catalog promotion.",
+    "Eigenvector signs aligned for comparison. Repeated eigenvalues and singular class covariances are not covered.",
+    "Current Octave generalized eigenvector scaling; historical MATLAB scaling is unproven.",
+    "Caller training selection, spatial projection, AR features, and complete model pipeline are not validated here."
+  ]
+}

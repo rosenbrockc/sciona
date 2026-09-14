@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "checkpoint_counts": {
+    "keras": 20,
+    "pytorch": 18
+  },
+  "limits": [
+    "Actual model inference and disk checkpoint retrieval exercised for all final-round selections.",
+    "Diagnostic deliberately reuses untrained branch states across fit identities; no trained ensemble, fit completion or promotion claim.",
+    "Final mosaic postprocessing and complete training lifecycle still require integration."
+  ],
+  "sha256": {
+    "sciona/tgs_round_inference.py": "a1cd99ac880186169f55b228538a90f0f376820cff8b0fe1db3e5fa372a33d24",
+    "tests/test_tgs_round_inference.py": "343b51ad02461031b20a9dc2c05082f56b35e9ab193431770ad05b2ab0be6c54"
+  }
+}

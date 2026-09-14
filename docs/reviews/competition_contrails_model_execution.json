@@ -1,0 +1,38 @@
+{
+  "approved": false,
+  "cases": [
+    {
+      "branch": "sciona.contrails_single_model",
+      "finite_parameter_gradients": 482,
+      "source_inactive_parameters": 6,
+      "full_eight_way_inference": true,
+      "corrected_shape": [
+        1,
+        1,
+        256,
+        256
+      ],
+      "elapsed_seconds": 26.038201832969207
+    },
+    {
+      "branch": "sciona.contrails_temporal_model",
+      "finite_parameter_gradients": 488,
+      "source_inactive_parameters": 0,
+      "full_eight_way_inference": true,
+      "corrected_shape": [
+        1,
+        1,
+        256,
+        256
+      ],
+      "elapsed_seconds": 24.029055749997497
+    }
+  ],
+  "scope": "Full synthetic 1024-square training forward/backward and eight-way inference using newly initialized models. No optimizer lifecycle, pretrained checkpoint quality or competition accuracy claim.",
+  "hashes": {
+    "sciona/contrails_single_model.py": "7e8c6aae4f73326a5a40b106f6e2f9057afe1a78fb0670602dea19003f263328",
+    "sciona/contrails_temporal_model.py": "c31ad4e3bce828e411b7eec24e4516fdb76d106056000aff0550099ea008bb39",
+    "sciona/contrails_single_inference.py": "64f2a8464904a2ea3195cd10e3e18f25ca15cd566bb50034ba99191fd7e8cada",
+    "sciona/contrails_temporal_inference.py": "85c8bf1b70d36d29f4a621f38e37415c5b3e62174a2fb2fee2dc757b47cbb29a"
+  }
+}

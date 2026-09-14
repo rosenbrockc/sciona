@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "shuffle_seeds_checked": 16,
+  "training_and_validation_rows_exact": true,
+  "empty_query_negative_retained": true,
+  "empty_heldout_annotations_excluded": true,
+  "global_numpy_rng_unchanged": true,
+  "source_sha256": "7498ce7dbfca13489c66dc515658240fad3156fb1e99ee2c01b56507f2bf5f3a",
+  "implementation_sha256": {
+    "sciona/wheat_pseudo_population.py": "4bea880e7b3d59a11329729b97fb766680328fd4d4e8f4f7a801d2d5b95bbc4b",
+    "scripts/validate_wheat_pseudo_population.py": "e453aeea58fde8bc98f9243383a555ad8207f51c3ffa6e43b4ae79b3f20b3771"
+  },
+  "limits": [
+    "Synthetic population construction only; no detector predictions or pseudo-model training executed.",
+    "Reference and reconstruction share installed pandas/NumPy; historical library identity remains separate.",
+    "Unique original row index required; source duplicate-index side effects are rejected.",
+    "Full pipeline and publication gates remain pending."
+  ]
+}

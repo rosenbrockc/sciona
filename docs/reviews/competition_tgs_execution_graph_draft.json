@@ -1,0 +1,46 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "graph_sha256": "319684062988b1acf3e0a004b81033afe73a7898b7729ace53f9033647b0243b",
+  "nodes": [
+    {
+      "node_id": "execute",
+      "parent_node_id": "",
+      "name": "tgs_execute",
+      "description": "Execute all63 source-budget fits, both pseudo-label rounds, selected checkpoint/TTA ensembles and final mosaic propagation",
+      "concept_type": "custom",
+      "status": "atomic",
+      "matched_primitive": "sciona.atoms.ml.tgs_execution.tgs_execute",
+      "type_signature": "{\"format\":\"sciona.execution_graph.v1\",\"graph\":{\"edges\":[],\"metadata\":{\"artifact_source\":\"competition_source_corrected_execution\",\"choices\":[\"63fits and6530epoch ceiling with source early stopping; no reduced execution budget.\",\"Corrected checkpoint copies, independent fold initialization, eval dropout and mosaic origin indexing.\",\"Modern CPU reconstruction preserves reviewed Keras2.2.0 variance correction and source photometric/metric behavior.\",\"Positional inputs replace source identifier sorting and filesystem enumeration; explicit seeds govern reconstruction.\"],\"limitations\":[\"Draft callable target is not yet registered or qualified for selection.\",\"Complete training execution, provider source binding and publication rejection/rollback/served checks remain pending.\",\"No historical GPU equivalence, competition performance or human Tier1 certification claim.\",\"External reference rights and aligned/disjoint population identity are caller responsibilities.\"],\"num_edges\":0,\"num_nodes\":1,\"publication_status\":\"draft\",\"scope\":\"Complete corrected TGS training and transductive prediction workflow; original conceptual intake remains draft.\",\"source_content_hash\":\"0a144d569512b1cae9884bbbb48ee831ede61475c68fbf1f1732752351d91a3e\",\"source_version_ids\":[\"1796103a-eea9-5b66-9dff-ecdea34a459d\"],\"target_tier\":3,\"training_plan_sha256\":\"377c93c42ea1b68ab82d0a1cca429cb92c0322e09115a545717e9779157d5c5b\"},\"nodes\":[{\"action_class\":\"replace_stage\",\"boundary_kind\":\"none\",\"boundary_port_name\":\"\",\"children\":[],\"concept_type\":\"custom\",\"conceptual_summary\":\"\",\"critic_notes\":\"\",\"decomposition_rationale\":\"\",\"depth\":0,\"description\":\"Execute all63 source-budget fits, both pseudo-label rounds, selected checkpoint/TTA ensembles and final mosaic propagation\",\"fixed_point_convergence_field\":\"\",\"fixed_point_max_iterations\":0,\"inputs\":[{\"constraints\":\"Aligned labeled/query populations in Keras BGR0..255 and PyTorch grayscale0..1 representations; binary labeled masks; explicit branch folds, nonconstant flags and pseudo-only labeled validation indices. Caller establishes identity and disjointness.\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"populations\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Caller-entitled ResNet34 and ResNeXt50 pretrained file paths and exact qualified hashes; no model artifacts bundled.\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"reference_artifacts\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"},{\"constraints\":\"Private writable directory outside source repositories for verified checkpoint and workflow-state persistence.\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"runtime_directory\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"str\"},{\"constraints\":\"Explicit uint32 initialization/sampling seed; immutable across resumed workflow context.\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"seed\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"int\"}],\"is_external\":false,\"is_opaque\":false,\"is_optional\":false,\"map_hop_size\":0,\"map_window_size\":0,\"matched_primitive\":\"sciona.atoms.ml.tgs_execution.tgs_execute\",\"name\":\"tgs_execute\",\"node_id\":\"execute\",\"outputs\":[{\"constraints\":\"Private ordered query binary masks plus aggregate verified execution counts; runtime arrays must not be published as catalog evidence.\",\"data_kind\":\"\",\"default_value_repr\":\"\",\"dim_signature\":\"\",\"name\":\"result\",\"provenance\":\"\",\"required\":true,\"time_basis\":\"\",\"type_desc\":\"dict\"}],\"parallelizable\":false,\"parent_id\":null,\"primitive_binding_confidence\":0.0,\"primitive_binding_source\":\"\",\"resolution_reason\":\"\",\"resolved_by\":\"\",\"status\":\"atomic\",\"type_signature\":\"\"}],\"planning_artifact\":null},\"snapshot_hash\":\"319684062988b1acf3e0a004b81033afe73a7898b7729ace53f9033647b0243b\"}"
+    }
+  ],
+  "edges": [],
+  "metadata": {
+    "artifact_source": "competition_source_corrected_execution",
+    "publication_status": "draft",
+    "target_tier": 3,
+    "source_version_ids": [
+      "1796103a-eea9-5b66-9dff-ecdea34a459d"
+    ],
+    "source_content_hash": "0a144d569512b1cae9884bbbb48ee831ede61475c68fbf1f1732752351d91a3e",
+    "scope": "Complete corrected TGS training and transductive prediction workflow; original conceptual intake remains draft.",
+    "training_plan_sha256": "377c93c42ea1b68ab82d0a1cca429cb92c0322e09115a545717e9779157d5c5b",
+    "choices": [
+      "63fits and6530epoch ceiling with source early stopping; no reduced execution budget.",
+      "Corrected checkpoint copies, independent fold initialization, eval dropout and mosaic origin indexing.",
+      "Modern CPU reconstruction preserves reviewed Keras2.2.0 variance correction and source photometric/metric behavior.",
+      "Positional inputs replace source identifier sorting and filesystem enumeration; explicit seeds govern reconstruction."
+    ],
+    "limitations": [
+      "Draft callable target is not yet registered or qualified for selection.",
+      "Complete training execution, provider source binding and publication rejection/rollback/served checks remain pending.",
+      "No historical GPU equivalence, competition performance or human Tier1 certification claim.",
+      "External reference rights and aligned/disjoint population identity are caller responsibilities."
+    ],
+    "num_nodes": 1,
+    "num_edges": 0
+  },
+  "limits": [
+    "Structural serialization only; registered callable binding and full execution evidence still pending."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "exact_notebook_comparison_cases": 72,
+  "all_three_stage_thresholds_checked": true,
+  "empty_views_retained_in_confidence_denominator": true,
+  "incomplete_view_inventory_rejected": true,
+  "publisher_wheel_sha256": "2f39ae15304b8b60524d41b5b4ce4bdef3a5732ded5668544bf016ce0bfe67e8",
+  "verified_wheel_payload_files": 10,
+  "implementation_sha256": {
+    "sciona/wheat_fusion.py": "28a656a0cfc307386085e4359ae47f931cf9be5210c24e340dd3653c3c8c4ba9",
+    "scripts/validate_wheat_fusion.py": "14fee23a917c5dd490e5f5e6ed1ecca300c0e2842652e28f58bc15ad8671a69b"
+  },
+  "limits": [
+    "Both wrapper paths use the same hash-verified1.0.4fusion package; this is not independent WBF algorithm reimplementation.",
+    "Installed NumPy/Numba backend is used; historical numeric/runtime dependency qualification remains separate.",
+    "Full detector predictions, TTA reversal, pseudo training and publication remain pending."
+  ]
+}

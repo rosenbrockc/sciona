@@ -1,0 +1,73 @@
+{
+  "format": "temporal_sparse-semantic-review.v1",
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_version_id": "ad8e992f-1e5d-530c-9475-c9caf4a08bad",
+  "source_hash": "5ee3659042611115b7a83dbf165f7b44355a0f09ff346514ce4dd2a15e66340b",
+  "source_scope": "Six-stage temporal sparse regression specialization; independent bounded streaming SGD ensemble with fixed one-pass training.",
+  "serialized_graph_sha256": "a09b614fbdc7f3ca46db3cbbb746c45b8a6d691d8be0b9ad0e36cd4f779c0f26",
+  "provider_sha256": "59d7cf3a4853146fc7edf22db73071b496e0c3d63b522d05616c63c0fb76f0c6",
+  "provider_package_sha256": "fd931143ec119d4b9240927e41af05dcfecc82cf8e4d396d62e7b20633e7e22d",
+  "intake_stage_mapping": {
+    "efficient_table_loading": "Bounded JSONL reads and private immutable disk snapshots",
+    "temporal_feature_engineering": "Strict-past per-entity rolling/latest-time target means, age/count and periodic features",
+    "categorical_sparse_encoding": "Fixed-width unsigned entity/category hashing, eight numeric features and clipped CSR chunks",
+    "leakage_safe_validation": "Chronological train/validation/query gaps checked before fitting; frozen held-out history",
+    "boosted_sparse_ensemble": "One-pass squared-error and Huber sparse SGD on log1p targets with equal log-score mean",
+    "metric_postprocessing": "Clipped inverse transform, streamed RMSLE and bounded predictions"
+  },
+  "dependencies": {
+    "joblib": "1.5.3",
+    "numpy": "2.4.2",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.17.1",
+    "threadpoolctl": "3.6.0"
+  },
+  "limitations": [
+    "Automated Tier 3 Community only; no Tier 1 human certification or Tier 2 usage qualification. Original intake remains draft with mandatory provenance.",
+    "Six-stage nonnegative temporal regression specialization. Uses allowed sparse linear models and hashed encoding; fixed one-pass training omits intake early stopping. No historical winning recipe or empirical accuracy guarantee.",
+    "Caller supplies private globally time-ordered JSONL event streams and positive resource limits. All source snapshots verified before fitting. Bytes, row parsing and output predictions are bounded by explicit caller controls; no measured high-volume throughput qualification.",
+    "Targets become available immediately after their event timestamp. Same-time labels remain invisible across chunks; latest timestamp ties are averaged. Delayed labels unsupported. Entity keys retained after history expiration; capacity exhaustion fails closed.",
+    "Fixed-width unsigned hashing has intentional collisions. Features comprise value, seasonal sine/cosine, rolling and latest-time target means, history age/count and presence. Fixed clipping is applied to CSR features without learned population statistics.",
+    "Strict chronological train/validation/query separation with configured gaps. Validation and query never supply targets to training history or update estimators. Validation RMSLE is descriptive only; no rolling refit, early stopping or model selection.",
+    "Two seeded online SGD regressors with squared-error and Huber losses on log1p targets. One pass with fixed learning rate and L2 penalty. Training depends on chunk configuration; tested chunk invariance applies to features and prediction only. Equal log-score mean clipped before inverse transform.",
+    "Synthetic isolation, numerical and serialized lifecycle evidence only. Private in-process prepared descriptors; source paths and digests must not be published. Pinned installed CPU dependencies and notices retained; clean-install, cross-platform and resource-performance behavior unqualified."
+  ],
+  "evidence_sha256": {
+    "competition_temporal_sparse_source_triage.json": "4b11b3f4adffacb7b1efe4f3c93f88f470651156172804bcabe8bde33c2b1582",
+    "competition_temporal_sparse_runtime_tests.json": "08038d621838d76a0cc80f4e87ca900a45388efae9c22075fa9d667a67e933ae",
+    "competition_temporal_sparse_graph_execution.json": "ff83d8dc5dfba01b35fd47a9af4151ba943aaf54218b01a3a9d20afd1e47b50b",
+    "competition_temporal_sparse_environment.json": "5802997390665ee3052717f6229e21d0b76f454028d978912eafc25d0f618506",
+    "competition_temporal_sparse_components.json": "5bf3f7e224f6f36dd212ff24caa9596e2b05b2b6ae29bc56c7b0c518a56c9d3b",
+    "competition_temporal_sparse_training.json": "9f2efbf7400b084b49dcbd13c43c54daf1fe85bf9c7dab2de4de0bc6eac92b0d",
+    "competition_temporal_sparse_source_tests.json": "3a1fab1157d0e88bfb86ada6793f60b56f9069eb89ef1601dfdb08532c77e208"
+  },
+  "auxiliary_sha256": {
+    "scripts/review_temporal_sparse_execution.py": "93001787fe55d7ac12606e78d6a01aac94385e76d1a74dcdca7af2eb91803329",
+    "requirements/temporal-sparse-execution.txt": "e60b311cb4bfcd42e1627036821f64565c64f0bc9d06c14cc5a7c24b730d0707",
+    "docs/reviews/competition_temporal_sparse_references.json": "4095f84ec014ed62762aaf8cc5afeb9d67e9c1ed8a2ab13296d07c715a928b87",
+    "docs/licenses/TemporalSparse-joblib-0-LICENSE.txt": "42612911c1872c5e4b43f6ae0e8ee59467cd350332241cf72ce90640264fae6a",
+    "docs/licenses/TemporalSparse-numpy-0-LICENSE.txt": "649a589ab31076e79e9ce62ba24eae9959598124176640dbc95f87bd10f34fcf",
+    "docs/licenses/TemporalSparse-numpy-1-LICENSE.txt": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec",
+    "docs/licenses/TemporalSparse-numpy-2-COPYING": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98",
+    "docs/licenses/TemporalSparse-numpy-3-LICENSE": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af",
+    "docs/licenses/TemporalSparse-numpy-4-dragon4_LICENSE.txt": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c",
+    "docs/licenses/TemporalSparse-numpy-5-LICENSE.md": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910",
+    "docs/licenses/TemporalSparse-numpy-6-LICENSE": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9",
+    "docs/licenses/TemporalSparse-numpy-7-LICENSE.md": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056",
+    "docs/licenses/TemporalSparse-numpy-8-LICENSE.txt": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55",
+    "docs/licenses/TemporalSparse-numpy-9-LICENSE": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6",
+    "docs/licenses/TemporalSparse-numpy-10-LICENSE.md": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f",
+    "docs/licenses/TemporalSparse-numpy-11-LICENSE.md": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face",
+    "docs/licenses/TemporalSparse-numpy-12-LICENSE.md": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156",
+    "docs/licenses/TemporalSparse-numpy-13-LICENSE.md": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918",
+    "docs/licenses/TemporalSparse-numpy-14-LICENSE.md": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800",
+    "docs/licenses/TemporalSparse-numpy-15-LICENSE.md": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f",
+    "docs/licenses/TemporalSparse-numpy-16-LICENSE.md": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9",
+    "docs/licenses/TemporalSparse-scikit-learn-0-COPYING": "35cbd755e60614a6a7b03fd29c3e95779ed3e991333f7e9e5947797916dd2e37",
+    "docs/licenses/TemporalSparse-scipy-0-LICENSE.txt": "60a7d05d729ed5c763852a324a1cb4223d665d4ad3f4b8a0c130ae5c60c93e49",
+    "docs/licenses/TemporalSparse-threadpoolctl-0-LICENSE": "81ac619075248b06e53660b652d10e485f4675f5d0ae0f97ea22370da1f7e23b"
+  },
+  "catalog_mutations": 0
+}

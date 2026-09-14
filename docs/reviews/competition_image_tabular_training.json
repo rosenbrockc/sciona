@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 5,
+  "source_version_id": "4d7b7da1-6568-56b0-aa5e-7e2e7a275556",
+  "source_content_hash": "41907e416953f825b93f7b409d3fb36f16fce58303147e7540566f90bdcc622f",
+  "checks": {
+    "group_consistent_folds": true,
+    "fold_local_preprocessing": true,
+    "heldout_feature_label_isolation": true,
+    "complete_oof_coverage": true,
+    "equal_fold_probability_ensemble": true,
+    "dropout_rng_isolation": true,
+    "caller_cpu_rng_preserved": true,
+    "deterministic_repeat": true,
+    "query_batch_independence": true
+  },
+  "sha256": {
+    "sciona/image_tabular_training.py": "3d0a1797390fdfb19d162f26816aa83f1fbd70d015520a2ce033415a4fa26567",
+    "sciona/image_tabular_features.py": "5a7b74054d4d8bd0dfb5335a81bad6408b9935a9d874357599b099024dcd763c",
+    "sciona/image_tabular_network.py": "32fb579e5d6f2ac0c42079e89e31fdcb9c2fb2336b2a26714359decf6732b09f",
+    "tests/test_image_tabular_training.py": "480443707982d3b6bd8bd9bf48f110c9fddc655faf06b678ee47431f8c5f59ba"
+  },
+  "scope": "Synthetic three-fold40-epoch dropout/label-smoothed training. No historical accuracy claim; full population boundary and serialized Tier3 review pending.",
+  "limitations": [
+    "Caller-supplied folds must preserve meaningful groups",
+    "Each fold retains its own preprocessing and model; final predictions average those models, with no full-data refit",
+    "Full-batch CPU training and dense fused features; resource use unqualified"
+  ],
+  "catalog_mutations": 0
+}

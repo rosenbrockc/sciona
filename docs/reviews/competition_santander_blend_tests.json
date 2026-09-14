@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 8,
+  "sha256": {
+    "sciona/santander_blend.py": "c5acf4b55cae02d0a21b5830540a884a78da1fc7850476632bc2eb1dcbebee74",
+    "tests/test_santander_blend.py": "ffc24da24053bcba8647237efd65b714302e37b3f5025bf1548ebc992d4fcd2b"
+  },
+  "checks": [
+    "Hand rank weights and average ties",
+    "Monotonic transformation invariance",
+    "Query permutation and singleton",
+    "Invalid score rejection"
+  ],
+  "limits": "Final scoring operation only, not full ensemble execution. Average-tie policy explicit; scores are not probabilities.",
+  "catalog_mutations": 0
+}

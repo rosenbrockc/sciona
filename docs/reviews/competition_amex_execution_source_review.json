@@ -1,0 +1,18 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "d505faaa-7277-5559-b32c-f95c9f1f9d63",
+  "source_content_hash": "f03e6e0c5dfb38e00baa98ea53f9a45a43b9ac4536c343bac2449ca09dbff138",
+  "source_scope": "Independent full Amex raw preprocessing, manual/sequence features, grouped row DART, downstream tree/neural variants and literal blend on CPU.",
+  "stage_mapping": {
+    "memory_optimization": "Correct generic memory optimization to explicit numeric flooring and runtime category mapping. Independent floating-point storage; no historical memory/downcast equivalence.",
+    "time_series_aggregation": "Nine manual blocks, joint categorical and month ranks, timestamp-rank windows, row-model predictions, opposite padding directions and greedy normalized features.",
+    "difference_features": "Ordered within-customer differences preserve missing adjacency; source mean/std/min/max/sum/last and floating floor division retained.",
+    "model_training": "Five grouped row DART models plus two downstream five-fold DART and two five-fold neural variants. Remove unsupported XGBoost/CatBoost; preserve effective epochs, schedule, pooling and checkpoint metric.",
+    "blending": "Literal ordered probability sum .30 manual tree + .35 tree with slots + .15 sequence neural + .10 combined neural; coefficients sum .90 with no normalization or rank averaging."
+  },
+  "classification": "material_intake_correction_required",
+  "primary_source": "https://github.com/jxzly/Kaggle-American-Express-Default-Prediction-1st-solution",
+  "source_pins_sha256": "073426bae899f52b26996294d4df83a6e9151b8e3edfae4b3dc3b5032cfdbf73",
+  "source_reuse": "Independent reconstruction; original source grant unresolved; no original code copied into repository."
+}

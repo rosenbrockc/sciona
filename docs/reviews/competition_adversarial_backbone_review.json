@@ -1,0 +1,28 @@
+{
+  "format": "adversarial-backbone-review.v1",
+  "status": "implementation_in_progress",
+  "required_families": [
+    "InceptionV3",
+    "InceptionV4",
+    "InceptionResnetV2",
+    "ResNetV2-101"
+  ],
+  "source_contracts": [
+    "Attack entrypoints override classification size to1001 and use299x299 NHWC inputs.",
+    "All backbones execute is_training=False, so moving BN statistics and disabled dropout must be preserved while input differentiation stays enabled.",
+    "InceptionV3 auxiliary features come from Mixed_6e; V4 from Mixed_6h; InceptionResnetV2 from PreAuxLogits. create_aux_logits defaults true independently of is_training.",
+    "ResNetV2-101 has block unit counts3,4,23,3 with final-unit stride2,2,2,1 and preactivation/postnorm structure; it has no auxiliary logits.",
+    "ResNet conv2d_same uses explicit effective-kernel padding, including stride>1; generic strided SAME padding can shift even-sized inputs.",
+    "Inception BN scopes specify epsilon0.001/decay0.9997. ResNet specifies epsilon1e-5/decay0.997/scale=True. Unspecified Slim defaults still require explicit dependency characterization."
+  ],
+  "environment": "TensorFlow package absent from matcher venv. No dependency installation performed; Torch adaptations must be independently validated against source semantics.",
+  "next": [
+    "Preserve explicit padding and frozen batch normalization semantics in differentiated primitives.",
+    "Implement source-complete backbone topology and auxiliary endpoints; do not substitute logits-only torchvision inference.",
+    "Validate full299resolution input gradients and connect all8/5/2 model branches."
+  ],
+  "sha256": {
+    "docs/reviews/competition_adversarial_source_pins.json": "2aed3607458c133fa2a82f89cecdeac6b6d271f012e77a3b6cd2d53492335b55"
+  },
+  "catalog_mutations": 0
+}

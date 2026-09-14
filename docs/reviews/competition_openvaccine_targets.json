@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 15,
+  "hashes": {
+    "sciona/openvaccine_targets.py": "029519e4cba198239a8197b79b3d5e3476acafedd93c6e418489fa5a3e5ff420",
+    "tests/test_openvaccine_targets.py": "6697cd3039f426431f039d01e4b36e5c3ee982b45db1e7ad95773fdede5ac808"
+  },
+  "scope": "Uncertainty eligibility, caller-supplied proportional perturbation and strict absolute validation rollback decision; no training-section execution.",
+  "source": "https://www.kaggle.com/competitions/stanford-covid-vaccine/writeups/jiayang-gao-1st-place-solution",
+  "explicit_reconstruction_choices": [
+    "Caller defines threshold, eligibility, dimensionless draws and metric tolerance; writeup does not determine all numeric settings.",
+    "Optimizer rollback semantics and full training blend provenance remain unresolved."
+  ]
+}

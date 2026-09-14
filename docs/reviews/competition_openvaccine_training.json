@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "families": [
+    {
+      "family": "gru",
+      "pretraining_steps": 1,
+      "supervised_sections": 2,
+      "pseudo_label_sections": 2,
+      "rollback_count": 1,
+      "checkpoint_prediction_exact": true
+    },
+    {
+      "family": "lstm",
+      "pretraining_steps": 1,
+      "supervised_sections": 2,
+      "pseudo_label_sections": 2,
+      "rollback_count": 0,
+      "checkpoint_prediction_exact": true
+    },
+    {
+      "family": "forward",
+      "pretraining_steps": 1,
+      "supervised_sections": 2,
+      "pseudo_label_sections": 2,
+      "rollback_count": 1,
+      "checkpoint_prediction_exact": true
+    },
+    {
+      "family": "wave",
+      "pretraining_steps": 1,
+      "supervised_sections": 2,
+      "pseudo_label_sections": 2,
+      "rollback_count": 1,
+      "checkpoint_prediction_exact": true
+    }
+  ],
+  "separate_synthetic_training_validation_inputs": true,
+  "partially_observed_validation": true,
+  "scope": "Four full member pretraining/supervised/PL/checkpoint lifecycles with supplied synthetic teacher statistics; no complete twenty-member teacher generation, fold provenance or historical recipe equivalence.",
+  "runtime_sha256": "52284758a32e8170d46d3fa423b2848f544673ac6b67d7dc45a71b5140393ccf",
+  "validator_sha256": "826a92482b83693efe8487d80f0620e3e4c45b38a96194f899b3bdfba462e658"
+}

@@ -1,0 +1,12 @@
+{
+  "read_only": true,
+  "served_cdgs": 76,
+  "competition_intakes": 142,
+  "intakes_with_served_derivative": 8,
+  "uncovered_competition_intakes": 134,
+  "newly_served_scope": "Contrails source-faithful execution",
+  "tier": 3,
+  "version_id": "d87014a1-f827-53af-aaf7-388f69c7fe8b",
+  "source_intake_preserved_as_draft": true,
+  "served_runtime_replay": "passed; exact recorded serialized output and current evidence hashes verified"
+}

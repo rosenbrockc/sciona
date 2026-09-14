@@ -1,0 +1,21 @@
+{
+  "applied": true,
+  "target_tier": 3,
+  "provider_versions": 2,
+  "execution_cdgs": 1,
+  "rows_created": 70,
+  "reapply_rows_created": 0,
+  "rollback_validated": true,
+  "graph_sha256": "30fe0b129a99f14429acc3c583411ace824f6439db06b4c24aa2cc9feedb49fd",
+  "version_id": "a8275111-4de0-5010-9494-ff24a5756cf0",
+  "served_cdgs": 104,
+  "competition_intakes": 142,
+  "covered_intakes": 37,
+  "remaining_intakes": 105,
+  "served_execution_verification": "passed",
+  "publisher_sha256": "f4681ff4e71b0e0bded57db3d5b301212e0f8c21fd7d6675bf2c502c5173c831",
+  "served_execution_verification_evidence": "docs/reviews/competition_cassava_publication_verification.json",
+  "served_execution_verification_sha256": "833525e41c442752605178c78dd3fdc09490a6645648b2bd1ff0ad2c5939048a",
+  "served_execution_verified_trainable_fits": 16,
+  "served_execution_verified_frozen_models": 1
+}

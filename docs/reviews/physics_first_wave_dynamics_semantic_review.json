@@ -1,0 +1,24 @@
+{
+  "review_source": "automated",
+  "proposed_tier": 3,
+  "verdict": "acceptable_with_limits",
+  "source_hash": "97dbc4000139b6514d678829e16c39e045f02f47ecbe91356863028decb932b3",
+  "evidence_sha256": {
+    "physics_first_wave_dynamics_review.json": "8dcf00518e6be2061d439b1eed7b5226858aaad0bdce174230ab36271b331c1f",
+    "physics_first_wave_dynamics_execution.json": "c96e1e20aa0b9eaa20c08f405fee1a4ac54d3c4abcbf0f14f7179364becbc096",
+    "physics_first_wave_dynamics_graph.json": "46f386c61c23f355530dbfe5f88705c231b240d64e33e256c8f62c44c604ce3d"
+  },
+  "findings": [
+    "Corrected generated-source derivation; original derivative parse and missing-premise gaps retained in source review, not certified.",
+    "Positive constant mass, one inertial Cartesian component and twice differentiable position; acceleration equals second time derivative.",
+    "Force is net force in the chosen component. SI units and coefficient consistency are caller premises, not inferred by expression grammar.",
+    "Actual symbolic differentiation, force calculation and acceleration solve; formal unspecified position retains a derivative, sampled outputs require evaluable expressions.",
+    "No numerical force integration, global smoothness certification or Tier1 human expert review.",
+    "Synthetic analytic/proof and serialized graph evidence; automatic Tier3 only, no Tier2 community-use evidence."
+  ],
+  "references": [
+    "https://openstax.org/books/university-physics-volume-1/pages/5-3-newtons-second-law",
+    "https://openstax.org/books/university-physics-volume-1/pages/3-3-average-and-instantaneous-acceleration"
+  ],
+  "provenance": "Generated first-wave source pinned by catalog hash; new implementation of mathematical relations, no copied textbook prose or implementation."
+}

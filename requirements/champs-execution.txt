@@ -1,0 +1,8 @@
+# Direct dependencies used by the reviewed CHAMPS CPU execution
+torch==2.11.0
+numpy==2.4.2
+pandas==2.3.3
+rdkit==2026.3.6
+openbabel-wheel==3.1.1.23
+networkx==3.6.1
+scipy==1.17.1

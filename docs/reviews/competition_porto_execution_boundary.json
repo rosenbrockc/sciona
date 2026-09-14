@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "ad3239bf-5a38-565a-81da-3d3cba9a02b0",
+  "source_content_hash": "8b42f3175fa6408c91c325e24784554cc480637a33673bd7a2128e2e657b8dd8",
+  "provider_sha256": "78bc42f10309977214c3b8b169ddd78165ae1c00a1696a9144f1f96e4b5be11c",
+  "tests_passed": 11,
+  "sha256": {
+    "sciona/porto_execution.py": "195e71c6429e65c3b6ba3ba727571883bced256be4081eb9c36a0ca2c841f735",
+    "tests/test_porto_execution.py": "8c8995ea46624f7d9cd3fca590247db65afa3db53b523967f964159ffee82aa3",
+    "scripts/porto_synthetic.py": "bd7bde3d53c5ef74ef274c5fb244ca1eafc0b8ef451137f5d957280a6bb1b626"
+  },
+  "checks": [
+    "Detached canonical finite JSON input",
+    "Unique disjoint opaque row identities",
+    "Exact training/query fields reject query labels",
+    "Duplicate model, invalid roles, binary values, seeds and nonfinite values rejected",
+    "Prepared integrity and canonical encoding checked before training"
+  ]
+}

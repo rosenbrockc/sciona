@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "exact_source_preparation_cases": 12,
+  "scope": "Both branches, three annotation modes, source rotation augmentation on/off, entirely synthetic arrays.",
+  "hashes": {
+    "sciona/contrails_grid.py": "6c45607d7e5aa75df90ecba4d93ead9ac6e1a233640ea4e9a33640a150a37258",
+    "sciona/contrails_preparation.py": "af1868eb6af3899ccb1e65b80473839fc57004f0d69b2034f50b698fe19c74a6",
+    "scripts/validate_contrails_preparation.py": "868c11a51401a6534ce211bca8f72ce6d80b3116094e0ab62388b2f07965ff02"
+  }
+}

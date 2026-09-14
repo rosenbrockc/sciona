@@ -1,0 +1,14 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "passed": true,
+  "synthetic_only": true,
+  "tests_passed": 10,
+  "scope": "Identity-aligned supplied ordinal and first-stage prediction averaging only. Teacher aggregation, group outlier bounding and full training lifecycle remain separate.",
+  "output_policy": "float64 soft targets without clipping or rounding",
+  "sha256": {
+    "sciona/aptos_refinement.py": "2599304219bdb8e91bdda98633c96db30f0abe6abfcb115b06b3f7f0d3cdbae5",
+    "sciona/aptos_ensemble.py": "0ab67a978e17226c1f076dce8dc5368a51fe1af74d2dd061ddb5a17531072f22",
+    "tests/test_aptos_refinement.py": "63911794ca7f9bfa623b2aabfdec19719c86b0f709c215a4dae3e8e48fd4fa93"
+  }
+}

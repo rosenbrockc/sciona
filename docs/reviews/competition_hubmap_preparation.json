@@ -1,0 +1,20 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_preparation_cases": 27,
+  "lossy_jpeg_cases": 21,
+  "selected_tiles": 15,
+  "exact_selection_bins_presence": true,
+  "implementation_sha256": {
+    "sciona/hubmap_preparation.py": "6d879b22aafa81cbbc091727a1d35078a4a8f885160e8cd258f8050a0406122c",
+    "scripts/validate_hubmap_preparation.py": "11253a53d95ab52fb41e98811c381f346abad3ddec03537ad7a75efaff879d31",
+    "tests/test_hubmap_preparation.py": "b491cdc91f915621fd28bb7c728cfb60319936dd22a2c5fede5ea442b7315595",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced",
+    "docs/reviews/competition_hubmap_loader_pins.json": "8d899b3a997ae1f937c91999f912cc8e7f127d8d013750732ac8cd97bc31abd5"
+  },
+  "limitations": [
+    "Current OpenCV JPEG defaults match original file IO under the same backend; historical codec binaries excluded.",
+    "Temporary synthetic files only; no real data or identifying metadata retained.",
+    "Preparation and selection components; full raw-input training and inference graph remain."
+  ]
+}

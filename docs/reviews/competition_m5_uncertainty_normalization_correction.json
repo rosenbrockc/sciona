@@ -1,0 +1,36 @@
+{
+  "status": "component_validated",
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 85,
+  "policy": "retained_base_reference",
+  "problem": "Pinned source normalization is undefined after aggregate-only filtering, and for aggregate outlet roles even when base rows remain.",
+  "correction": [
+    "Keep existing filtered base-series denominators whenever available.",
+    "For a missing concrete-outlet denominator, use the daily mean of pre-filter base histories for that outlet.",
+    "For an aggregate outlet role, use the daily mean of the full pre-filter base history pool.",
+    "Apply the same zero/missing propagation to reference histories; an all-missing daily pool uses denominator one, matching the defined source convention.",
+    "Never use future observations or change unit/revenue aggregation, level factors, target scaling or forecast averaging."
+  ],
+  "checks": [
+    "Defined source partition equivalence",
+    "Independent pandas daily mean oracle",
+    "Aggregate batch composition invariance",
+    "Prefix causality",
+    "Input immutability",
+    "Concrete outlet isolation",
+    "Default source mode still rejects undefined denominators"
+  ],
+  "limitation": "This is an independently specified reconstruction correction. It is not proven to match the original winning run and must be disclosed in the execution review, graph description and publication evidence. No historical score or replication claim is justified.",
+  "remaining": [
+    "Complete per-level schedule execution",
+    "Provider graph and serialization",
+    "Environment/license review",
+    "Semantic and publication gates",
+    "Served graph execution"
+  ],
+  "sha256": {
+    "sciona/m5u_preparation.py": "3d505e82ccdff8c7fb232517d579b4c9fb717f7a9975036d75c6cbd8bb4ec36b",
+    "tests/test_m5u_preparation.py": "ef0dd8166f9c457c126e1ab83eed1e2e344aaa03555f31a55d101efff49d762e"
+  }
+}

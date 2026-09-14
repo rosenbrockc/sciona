@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "configured_engine_cases": 6,
+  "complete_feature_cases": 6,
+  "nondefault_posterior_cases": 5,
+  "engine_commit": "64f01d52f8fcba2b88c0011d56360554b9a95012",
+  "binary_sha256": "892a04952375e6ed540bb7695852108e80e90a39c9cbc1e4ae11d6b3fe04eaef",
+  "parameters_sha256": "1421e89cc8df24b53a320eff6c72b8acfdb2771faba29ab9c798f7bdfc853a8a",
+  "decoder": "default MEA",
+  "posterior_cutoff": 1e-10,
+  "scope": "Pinned CONTRAfold-SE with historical-byte-matched EternaFold coefficients and full features on synthetic inputs; no historical competition-output or independent numeric folding parity claim.",
+  "validator_sha256": "d022b29292a171b34d69f5454dc2cc69f7cc55d17b5da1c9fbcbd49a52b24e67"
+}

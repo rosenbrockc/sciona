@@ -1,0 +1,38 @@
+{
+  "approved": false,
+  "source": "Kaggle public winning discussion 221957 notebook links",
+  "notebooks": {
+    "inference": {
+      "url": "https://www.kaggle.com/code/jannish/final-version-inference",
+      "http_status": 200,
+      "code_sha256": "6e1d756ae2fb3345472fab68132e5353665451039066364e97890510db10cc7e",
+      "code_cells": 12,
+      "outputs_saved": false,
+      "version": 8
+    },
+    "resnext": {
+      "url": "https://www.kaggle.com/code/hiarsl/cassava-leaf-disease-resnext50",
+      "http_status": 200,
+      "code_sha256": "c9c32bdb815f57a657d4ff05e6553b3155cab919bc75645f60b590d974213935",
+      "code_cells": 11,
+      "outputs_saved": false,
+      "version": 21
+    },
+    "vit": {
+      "url": "https://www.kaggle.com/code/sebastiangnther/cassava-leaf-disease-vit-tpu-training",
+      "http_status": 200,
+      "code_sha256": "5f432696816958720af30b3196d1808489836b62de9ba0417bede96c94a244fa",
+      "code_cells": 16,
+      "outputs_saved": false,
+      "version": 3
+    },
+    "efficientnet": {
+      "url": "https://www.kaggle.com/code/jannish/cassava-leaf-disease-efficientnetb4-tpu",
+      "http_status": 200,
+      "code_sha256": "3d8bec7047a2cdcb474ba8a23fa3a30433bda8cf247ab9168276de5e559c4211",
+      "code_cells": 11,
+      "outputs_saved": false,
+      "version": 11
+    }
+  }
+}

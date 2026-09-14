@@ -1,0 +1,158 @@
+{
+  "format": "arc-source-contract-review.v1",
+  "status": "implementation_in_progress_not_approved",
+  "intake_version_id": "4a5eaed3-fbc0-564f-b12b-120a76304e05",
+  "intake_content_hash": "6be75e601582ede9f8122169f2ff4a763759a628a0631acae25b34a3fda826bf",
+  "source_commit": "9407072659de1270358c2ba34c527785214dd68b",
+  "source_pins_sha256": "aebb89e39091fe6ac6f8e9d1718c088d90a1a87b0efd0adfe8c88c39176b68fc",
+  "execution_evidence_sha256": "d2631d2c72c283ae0df42d7e4ce6747bb3e875a7d7c95e5876c95702cc053575",
+  "corrections": [
+    {
+      "stage": "grid_translation",
+      "actual": "C++ Image with position, dimensions and signed-char pixel mask; normalizeCols supplies reversible color normalization. Components and bounding boxes are DSL operations, not a mandatory Python graph conversion.",
+      "source": [
+        "headers/utils.hpp",
+        "src/normalize.cpp",
+        "src/runner.cpp"
+      ]
+    },
+    {
+      "stage": "dsl_construction",
+      "actual": "initFuncs3 registers scalar and vector image operations with costs; functions include color filters, rigid transforms, splits, joins, embedding and composition.",
+      "source": [
+        "src/brute2.cpp"
+      ]
+    },
+    {
+      "stage": "tree_search",
+      "actual": "Cost-limited DAG state expansion followed by cross-example piece extraction, greedy composition and outer-product deduction. The active DAG::build loop iterates appended nodes; it is not the claimed A* search. Output-size deduction runs a separate piece search capped at cost 30.",
+      "source": [
+        "src/brute2.cpp",
+        "src/pieces.cpp",
+        "src/compose2.cpp",
+        "src/deduce_op.cpp",
+        "src/brute_size.cpp"
+      ]
+    },
+    {
+      "stage": "program_validation",
+      "actual": "evaluateCands accepts at least one exact training match, subject to output validity, and scores goods - .01*(max_depth + .001*cnt_pieces). It does not require every training example to match, and the runner exports predicted grids and scores rather than a saved executable program.",
+      "source": [
+        "src/compose2.cpp",
+        "src/runner.cpp"
+      ]
+    },
+    {
+      "stage": "inference",
+      "actual": "Test input participates in parallel DAG evaluation. Runner hash-deduplicates to at most three candidate grids, reverses color normalization, adjusts flip scores, and serializes answers. Python scheduler merges runs by descending (score, serialized image), exact string deduplication and top three.",
+      "source": [
+        "src/runner.cpp",
+        "src/read.cpp",
+        "safe_run.py"
+      ]
+    }
+  ],
+  "argument_semantics": {
+    "default": 2,
+    "cost_limit": "10 * (argument % 10)",
+    "12": "cost20 without color normalization",
+    "23": "cost30 with additional main-diagonal transposed training pairs",
+    "33": "cost30 with additional opposite-diagonal transformed training pairs",
+    "flip_score_divisor": 1.99999,
+    "submission_sequence": [
+      3,
+      23,
+      33,
+      4
+    ]
+  },
+  "execution": {
+    "build": "18 full source translation units, Apple clang16, C++17/O2, explicit signed char",
+    "portability_changes": [
+      "experimental filesystem replaced by C++17 filesystem in isolated copy",
+      "explicit map and chrono includes; original relied on transitive headers"
+    ],
+    "synthetic_checks": 12,
+    "cases": [
+      "identity",
+      "transpose"
+    ],
+    "all_expected_answers_in_top_three": true,
+    "test_labels_supplied": false
+  },
+  "remaining": [
+    "Source-complete semantic review and negative publication gates.",
+    "Transactional Tier 3 publication and served execution verification."
+  ],
+  "tier_policy": "Candidate for automated Tier 3 only after remaining checks; no Tier 1 human review or Tier 2 usage qualification claimed.",
+  "runtime_progress": {
+    "contract": "sciona/arc_contract.py",
+    "process": "sciona/arc_process.py",
+    "boundary_tests_passed": 28,
+    "full_source_process_runs_passed": 8,
+    "forced_time_memory_limits_passed": true,
+    "binary_hash_rejection_passed": true,
+    "process_evidence_sha256": "c85fe56e7d0084b315a69b7f2a844380416fccf84af8a945d1b364dd71f6db82",
+    "explicit_adapter_limits": {
+      "maximum_training_pairs": 20,
+      "maximum_test_inputs": 20
+    },
+    "source_scheduler_defect": "safe_run.py runAll removes processes reporting per-process TLE/MLE without killing or reaping them; adapter run_once explicitly kills and waits on every limit path.",
+    "dependency": "psutil==7.0.0"
+  },
+  "scheduler_progress": {
+    "module": "sciona/arc_schedule.py",
+    "source_policy_differential_phases": 4,
+    "concurrency": [
+      4,
+      4,
+      4,
+      2
+    ],
+    "phase_arguments": [
+      3,
+      23,
+      33,
+      4
+    ],
+    "full_solver_runs": 8,
+    "global_limits_and_reaping_verified": true,
+    "contract_scheduler_tests_passed": 34,
+    "evidence_sha256": "4ca13ff8fc7aa398b33e993a8f7c4c95bc4b9ba8a30080afd111dbf2adb5c123",
+    "explicit_adaptations": [
+      "Monotonic global deadline and ten-millisecond RSS sampling.",
+      "Kill and reap all limited or cancelled children.",
+      "Do not dispatch remaining phases after global deadline or invent baseline measurements for tasks never started.",
+      "Expose missing predictions instead of fabricating successful fallback answers when no run completed.",
+      "Zero sampled baseline RSS implies zero derived memory cap and explicit limit failure, not an increased budget."
+    ]
+  },
+  "build_progress": {
+    "module": "sciona/arc_build.py",
+    "review_sha256": "464f655fe8d8f1d3394f1ab78c76a0ce19a28e9e5603131f232bf701a0de8869",
+    "gates_sha256": "8c4d018444c4e56ebfe710794183c6317f91278faeddf15a1aa80edb31466977",
+    "same_toolchain_release_builds_byte_identical": true,
+    "synthetic_cases": 5,
+    "search_modes_per_case": 6,
+    "sanitized_release_comparisons": 30,
+    "address_undefined_sanitizer_failures": 0,
+    "source_and_manifest_tamper_rejected_before_compile": true,
+    "limitations": [
+      "Sanitizer coverage limited to synthetic cases; not proof for arbitrary input.",
+      "Same installed Apple clang/platform reproducibility only."
+    ]
+  },
+  "integration_progress": {
+    "runtime": "sciona/arc_runtime.py",
+    "provider": "sciona.atoms.ml.arc_execution",
+    "graph": "sciona/arc_graph.py",
+    "build_identity_sha256": "5f011c13990165f5ae8e0a7028dd4e28b20a55f0faec837b18957bea1e014b66",
+    "graph_evidence_sha256": "570f7e7da7486abc22f32b3664900d2bc357859d83a56270e8de5b5c73bf4f5a",
+    "runtime_gates_sha256": "b0f37c041ddcc43d1c0b74c8f8565d61a8364b582a78ecfb79784fb7852a27ed",
+    "tests_passed": 50,
+    "real_runner_nodes": 2,
+    "full_solver_searches": 8,
+    "deployment_bundle_rejection_checks": 4,
+    "contract": "Version1 task plus explicit seconds/memory_mib within source defaults. Full four-phase search only. Runtime-configured reviewed binary; no payload paths or implicit downloads. Explicit missing predictions and completion flag."
+  }
+}

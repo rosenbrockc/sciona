@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 26,
+  "catalog_mutations": 0,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "sha256": {
+    "sciona/otto_execution.py": "45bd0699ae1e88d9ffe1e7e2264e3734f95c19947703d69d863ff55517aecf81",
+    "sciona/otto_graph.py": "d0d3e6ac0260a43ea6db5d4df875ccbc244dd03025fb9f445d9a5e2e73d04342",
+    "scripts/otto_synthetic.py": "5d87a19c52e39947430b80d9f94e5bdbb14d4d7904833905a3b943d222a4f1d3",
+    "tests/test_otto_execution.py": "d371a670ba71ada26da300e8dcfd29de0dbf550e238032939214fbb96a4a7849"
+  },
+  "provider_sha256": "69fc77adbfb5eeac3620b8ba585b40508886acb14786e672347f88a5e4c0f950",
+  "scope": "Preparation, rejected malformed populations and altered prepared input, codec and provider signatures/witnesses. Actual native graph execution is separate pending evidence.",
+  "checks_added": [
+    "JSON interaction triples converted to native tuples without changing feature products",
+    "Malformed and duplicate triples rejected before fitting"
+  ]
+}

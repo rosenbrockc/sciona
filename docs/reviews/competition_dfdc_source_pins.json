@@ -1,0 +1,226 @@
+{
+  "format": "dfdc-source-pins.v1",
+  "repository": "https://github.com/selimsef/dfdc_deepfake_challenge",
+  "commit": "89c6290490bac96b29193a4061b3db9dd3933e36",
+  "intake_version": "95e3414b-c0ed-5816-b944-4466d697d9fc",
+  "intake_content_hash": "66f965f75d83ba4ec2daf15afcfa7a657589938dc98c00722b9ccea7eec92679",
+  "selection": "Retained public computational Python, configs, entrypoint scripts, container recipe, README and license only. A source module embedding public validation membership was discovered in the initial software fetch and removed from the cache and manifest. No frames, observations, model weights, logs or notebook outputs were fetched. Validation membership is not retained or used.",
+  "files": [
+    {
+      "path": "Dockerfile",
+      "git_blob_sha1": "8745c0c37a11c6bd3abf4a579dfae7742e9fd979",
+      "sha256": "f356d671f903196912d8766a400bcc68c9f4b19f31b4cbcf4488e67fdf419ee1",
+      "bytes": 1955
+    },
+    {
+      "path": "LICENSE",
+      "git_blob_sha1": "69832490ceba1c969d07507be2bd891cf63f9f1a",
+      "sha256": "0671780885c3623f2f1320c9668eea54252deea384a86acb8013abc3d3adf64c",
+      "bytes": 1073
+    },
+    {
+      "path": "README.md",
+      "git_blob_sha1": "fb8ef5b7f6de3fd950217311420c06d444e87313",
+      "sha256": "5f723e7632ca99cf7a1a6dbe74736887980937f365a015475fd4ea17554bbfe7",
+      "bytes": 8372
+    },
+    {
+      "path": "configs/b5.json",
+      "git_blob_sha1": "f32e6d00f853ed34a05ccac376a6e1b74e85132f",
+      "sha256": "0dbdfe065a1edd6669909cdb9659788c95824fa5732b10275dc2d91af3dd771d",
+      "bytes": 646
+    },
+    {
+      "path": "configs/b7.json",
+      "git_blob_sha1": "8b0ec549a1ca41fb00029d0a25bf5940390efcde",
+      "sha256": "543dc76cf59a5084a7f45df6f9321d66cad68a0a3dad123433d0a85dbb187247",
+      "bytes": 649
+    },
+    {
+      "path": "kernel_utils.py",
+      "git_blob_sha1": "c65b9c5c9fc587263bcc939153092bc89c8c99ba",
+      "sha256": "642ee395aee079aa2d29b31c4bf086065e7eb8dca09d25a8627d423055aee6cb",
+      "bytes": 13721
+    },
+    {
+      "path": "predict_folder.py",
+      "git_blob_sha1": "84ca0a63b930d18a44d91b9383cd0fc8fc87ba08",
+      "sha256": "f1827cd84024abdd1dbc8bc813f514a84d0e8d388808d037d3539c51d84a7521",
+      "bytes": 2195
+    },
+    {
+      "path": "predict_submission.sh",
+      "git_blob_sha1": "13fd6d98aa77c0c9bd653f39f61ac864aa628a86",
+      "sha256": "ec6a05edcda59ad49582b86506df59cb5006b30a0970995d235883bd8984db4f",
+      "bytes": 513
+    },
+    {
+      "path": "preprocess_data.sh",
+      "git_blob_sha1": "ad5606170193c5834024d3fa91cec9c2b204ccbe",
+      "sha256": "56ce313fe9a9f97e662ef43e9d0116a204c2ea8f348667cbf985a8ba3c6dc9c5",
+      "bytes": 595
+    },
+    {
+      "path": "preprocessing/__init__.py",
+      "git_blob_sha1": "a21a707f7e4361a8b93f99ed12ed80e785bcf2ab",
+      "sha256": "059903cf302a714533f390f47420f1b01367f27e5c8c6a18f486b5e222ad14fa",
+      "bytes": 28
+    },
+    {
+      "path": "preprocessing/compress_videos.py",
+      "git_blob_sha1": "3bc1bc367bcf356405e9bae25913765b8b6c9891",
+      "sha256": "86867ad86692fa6084489034d6720459770b0e1b5f7c10cf670c82ba56c71a9d",
+      "bytes": 1487
+    },
+    {
+      "path": "preprocessing/detect_original_faces.py",
+      "git_blob_sha1": "0940f6d3b999edae1a0c07c1e79dc91c443ef5e1",
+      "sha256": "e247a52a5b615f93be1d5da01bd1967b8bba4903060cf0840f5cccec397e42db",
+      "bytes": 1843
+    },
+    {
+      "path": "preprocessing/extract_crops.py",
+      "git_blob_sha1": "b6f906575d2b11516065074571d3255febf75ff9",
+      "sha256": "cee95665004553474c95be300db72aa68a9d84747c01507adb7c3b93ccb6237e",
+      "bytes": 2830
+    },
+    {
+      "path": "preprocessing/extract_images.py",
+      "git_blob_sha1": "52857c294e7a84a56357b0b69f0f02dbc8f52dd2",
+      "sha256": "a7b31ebc3cfdff72af433da070d3593cc0222837b740e1816010073e00763559",
+      "bytes": 1381
+    },
+    {
+      "path": "preprocessing/face_detector.py",
+      "git_blob_sha1": "070b51a686ac2ce4edc676f2d7f546bd2f7941dd",
+      "sha256": "d6244ecd7e417765f1c931d9744a70179c7ed34672bf05ae2187008556481b55",
+      "bytes": 1942
+    },
+    {
+      "path": "preprocessing/face_encodings.py",
+      "git_blob_sha1": "39ea545d04e4f2e31d57ab29a3006598c61765e9",
+      "sha256": "30161de9bd00a3ea87d5e24de8d203bffc525faf57a1f93f7b85ca1dec0b6939",
+      "bytes": 1725
+    },
+    {
+      "path": "preprocessing/generate_diffs.py",
+      "git_blob_sha1": "269f6eab2dc1b36d9b1bd6d96cecf4f1a5829a8c",
+      "sha256": "32c22a2cfade1b7ddfc719a7a6ea69b5d2d7802985cff9c9b6e3d6902af273ce",
+      "bytes": 2328
+    },
+    {
+      "path": "preprocessing/generate_folds.py",
+      "git_blob_sha1": "fc2a95b058ce58c4e2dc5ab985c1c0cf732399b1",
+      "sha256": "f3df3f4e79e6f03d6f09136b0d773ded8414896a4fd7ce5f1d9e2cd0cf2b48d6",
+      "bytes": 4315
+    },
+    {
+      "path": "preprocessing/generate_landmarks.py",
+      "git_blob_sha1": "37f0b523b49b3864656ce5c1302855bfe05a8075",
+      "sha256": "7e2b44bfcf701118e04f30a77f95e9ce02943a4c15dd1b996c51919158b30094",
+      "bytes": 2361
+    },
+    {
+      "path": "preprocessing/utils.py",
+      "git_blob_sha1": "e54ae3aac7516f7c11bdc1a3fbd75696c66cf20a",
+      "sha256": "6eccd30502498e3be7d8feef34f73a6a5f1188f7abf5ecdf1a48e1bd0d0a0911",
+      "bytes": 1570
+    },
+    {
+      "path": "train.sh",
+      "git_blob_sha1": "e339ddb8bdc4045c60d0258eaa59f91b814b0d2f",
+      "sha256": "698a3d1ebc0312e47e50820258b1f0e0b0c9ae5889f19755661916156646b554",
+      "bytes": 1697
+    },
+    {
+      "path": "training/__init__.py",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "training/datasets/__init__.py",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "training/datasets/classifier_dataset.py",
+      "git_blob_sha1": "28bcb6c6418ea0d0da05366704af5d0945a0f953",
+      "sha256": "c5c83729ce1bddf3116574e6685318a4f548f4f7eb85200eeda348319afa1b9d",
+      "bytes": 13674
+    },
+    {
+      "path": "training/losses.py",
+      "git_blob_sha1": "a9bbb41dc6128e12fbf3989734b9b6d4c08a8977",
+      "sha256": "fad0f601a0d62f1e8bac3d17c03089dab9ce16f4e748d7b86e7fc28412628c80",
+      "bytes": 850
+    },
+    {
+      "path": "training/pipelines/__init__.py",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "training/pipelines/train_classifier.py",
+      "git_blob_sha1": "cd9682591d5564bcf88fa9306f8246eb3fea4662",
+      "sha256": "0a55698c94c2d353e019984c2e5389f6785151fb25f4dfaf70106502df8ed728",
+      "bytes": 15529
+    },
+    {
+      "path": "training/tools/__init__.py",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "training/tools/config.py",
+      "git_blob_sha1": "51145222df6fd7026dfbc435785b610fc08c041f",
+      "sha256": "0b2ff14c7e0bcb99139111de570840205c8a3de9a99e14be6b766d67e92311ea",
+      "bytes": 1046
+    },
+    {
+      "path": "training/tools/schedulers.py",
+      "git_blob_sha1": "e41f1a6fd8a913d382c2a5f99c23d7946c5cd22a",
+      "sha256": "fd55b5002e0f845c83f47618a3b2ef206b918d27c54b8a5a0732567d56b2544b",
+      "bytes": 1733
+    },
+    {
+      "path": "training/tools/utils.py",
+      "git_blob_sha1": "9b22dd6910b47bf7e2e01acbd95ee2dcf61d44b7",
+      "sha256": "3aab4551e7a517164a8f0a3a148d9eb003b6fcd2f665baeb88aecdca7068e85b",
+      "bytes": 4864
+    },
+    {
+      "path": "training/transforms/__init__.py",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "training/transforms/albu.py",
+      "git_blob_sha1": "07ede53248e3ee041c8a157169eafe614e0b3c6b",
+      "sha256": "b0128041ceb621a4f72a7a08f285a215b8ce5d77c03987c6e1013bcbf0fe85c3",
+      "bytes": 3951
+    },
+    {
+      "path": "training/zoo/__init__.py",
+      "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "training/zoo/classifiers.py",
+      "git_blob_sha1": "f5899c3ee9d71d3f9ea7ad31c53ce6ed3f9c7e2c",
+      "sha256": "6a9061a716fdeef1f63efaf7eaa07ca6a1f8bd2c9c92297872d5510bb522fadf",
+      "bytes": 6159
+    },
+    {
+      "path": "training/zoo/unet.py",
+      "git_blob_sha1": "e190ea7f341a176d44aa5da472a2753502163b77",
+      "sha256": "e04386835d19322ca4343563b477b3c973661c5196fa0bf4dad67907df3b985a",
+      "bytes": 5543
+    }
+  ]
+}

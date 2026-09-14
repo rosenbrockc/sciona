@@ -1,0 +1,14 @@
+{
+  "intake_applied": true,
+  "states": [
+    {
+      "status": "draft",
+      "is_publishable": false,
+      "trust_tier": 3,
+      "count": 7
+    }
+  ],
+  "served_new_adapters": 0,
+  "idempotent_dry_run_new_rows": 0,
+  "approval_applied": false
+}

@@ -1,0 +1,19 @@
+{
+  "format": "alice-source-triage.v1",
+  "status": "deferred_contradictory_source_attribution_not_approved",
+  "intake_version": "be1520eb-8c2a-5d1f-b439-753b1fcdcf67",
+  "intake_hash": "4d0af1cc0d30805271b921e492dd3bd73497f164c18eb62f39726bc3566d89d2",
+  "intake_stages": [
+    "vocal_isolation",
+    "phoneme_extraction",
+    "text_processing",
+    "forced_alignment",
+    "post_processing"
+  ],
+  "finding": "Nested template.audit.references exists in both original generated CDG and version-bound snapshot, despite no artifact_references rows. It attributes lyric alignment to the general audio-captioning task. Official DCASE task describes free-text sound descriptions, not supplied-lyric timestamp alignment; this reference does not establish the claimed ALiCE first-place method.",
+  "next": "Retain draft until attributable lyric-alignment competition/source can be provided or recovered. Do not substitute DCASE captioning or another lyric challenge under this identity.",
+  "catalog_mutations": 0,
+  "version_bound_audit_reference": "https://dcase.community/challenge2024/task-automatic-audio-captioning",
+  "verified_official_task": "https://dcase.community/challenge2024/task-automated-audio-captioning",
+  "correction": "Earlier reference absence applied to catalog artifact_references and top-level fields only; nested audit references must also be inspected."
+}

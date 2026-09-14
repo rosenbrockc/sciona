@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "approved": false,
+  "tests_passed": 7,
+  "source_version_id": "dc4969f7-e5a4-5644-a9d0-fa10493458ed",
+  "source_content_hash": "13be8fd78b963daf9fd05fb5758e1d36fa98d4ed8cfdde85eb829c94f73af30a",
+  "checks": [
+    "Signed embedding coordinates supported",
+    "Exactly two reference-fitted k-means models",
+    "Three coordinates plus two assignment columns",
+    "Independent scalar nearest-center oracle",
+    "Reference population captures and no refit during identity lookup",
+    "Actual t-SNE followed by deterministic clustering",
+    "Invalid cluster counts and unknown population identities rejected"
+  ],
+  "sha256": {
+    "sciona/otto_tsne_clusters.py": "e8872ae4914895d9bd1a08a5e3fe188f27a409bb228101ee3979bb1902427d31",
+    "tests/test_otto_tsne_clusters.py": "e7942a02cd9823b06ed82df36f67cbc0d41a9042f966f0a4b8c4b8272321e7eb",
+    "sciona/otto_tsne.py": "5a5d98faf3a390fc8f7b83067e9b324d25b59e386d45f075e9447d47cc52e0c0"
+  },
+  "limitations": [
+    "Historical cluster counts, assignment encoding and population scope unresolved.",
+    "Five features are not nine class scores; source-entry-ten stack-width ambiguity remains.",
+    "Clustering reference exclusion does not remove transductive influence from previously fitted embedding.",
+    "Downstream Sofia/boosting assembly and publication gates pending."
+  ],
+  "catalog_mutations": 0
+}

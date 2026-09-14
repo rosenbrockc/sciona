@@ -1,0 +1,13 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "passed": true,
+  "tests": 9,
+  "contract": "Full-image square bilinear Pillow resize at family resolution, RGB float32 CHW and legacy publisher normalization. Interpolation and normalization are explicit reference choices; training augmentation is separate and not implemented here.",
+  "sha256": {
+    "sciona/aptos_preprocessing.py": "a9e97fc62963d698966bc97805e6c4bbd104cf74dde5bd167f56853d0dbc7010",
+    "sciona/aptos_models.py": "71859184e8a87f25115db150acfd3bcd8ffdb3856743d5bb914202db306d8b16",
+    "tests/test_aptos_preprocessing.py": "87ee987c4f79618e1a977d7cc71a671230d3a663f32f93cff4c1aa3a96868092"
+  }
+}

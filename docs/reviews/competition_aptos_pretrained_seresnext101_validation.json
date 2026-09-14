@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_inputs_only": true,
+  "pretrained_weights_used": true,
+  "family": "seresnext101",
+  "artifact_sha256": "488eac4a2ec841fcaf518ed13670b07c4dc07c8428df3e5111aa4520659623b8",
+  "matched_backbone_tensors": 652,
+  "initialized_legacy_batch_counters": 104,
+  "full_resolution": 384,
+  "independent_pool_head_comparison": true,
+  "scope": "Pinned maintainer mirror backbone load and full-resolution forward. Scalar head newly initialized. No training, original-winner identity or complete workflow claim.",
+  "sha256": {
+    "sciona/aptos_initialization.py": "049020432c1ff43f11210ecb484d9f231a2846508ed8059533d667214f5411b9",
+    "sciona/aptos_models.py": "71859184e8a87f25115db150acfd3bcd8ffdb3856743d5bb914202db306d8b16",
+    "sciona/aptos_pooling.py": "6c7ffa9346a524370f1e700eb607ca3bbce7829b91e3ef23327c3d4c6466a33f",
+    "sciona/aptos_preprocessing.py": "a9e97fc62963d698966bc97805e6c4bbd104cf74dde5bd167f56853d0dbc7010",
+    "scripts/validate_aptos_pretrained.py": "8bf54a65d5d7874b6bb8277301585ccce693ee28d5e8e0ed058a0bd34fad1c98",
+    "docs/reviews/competition_aptos_pretrained_mirror_pins.json": "6cc1fbea809c017040be7cd7c637dec87a9d8f99dd06c2dd7600df05987b9012"
+  }
+}

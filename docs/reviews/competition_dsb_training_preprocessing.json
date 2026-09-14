@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "exact_preprocessing_cases": 6,
+  "exact_annotation_cases": 18,
+  "exact_world_annotation_cases": 18,
+  "exact_auxiliary_preparation_cases": 4,
+  "adaptations": [
+    "Boolean subtraction explicitly converted to integer subtraction in reference.",
+    "Array IO and source identifier lookup excluded; empty source sentinel converted to loader-ready empty array."
+  ],
+  "limitations": [
+    "Source image IO/orientation extraction not covered; caller supplies explicit orientation."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_training_preprocessing.py": "186e1d86a4424185bc44cc2255a6e06c55bbed096b636473feac0c4fe7699788",
+    "tests/test_dsb_training_preprocessing.py": "efd38f88b45648a99eb6bc676abbf295f1be106dd599c2c0c133e24807c64dd8",
+    "sciona/dsb_world_preprocessing.py": "b9c68fe689635ba21c74317030da018b7130369a450aca9908d653e2334ced21",
+    "tests/test_dsb_world_preprocessing.py": "150ccda701e29537e329e5b56e8f1c3d5cd045d43b3cdc918660203d5dbea9e2",
+    "scripts/validate_dsb_training_preprocessing.py": "6cdd54d509219eed7f9402c13b5fff41d2310fa378eb675a35b244cd7627719d"
+  }
+}

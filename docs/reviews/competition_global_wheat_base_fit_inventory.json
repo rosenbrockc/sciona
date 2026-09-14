@@ -1,0 +1,185 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_readme_sha256": "4035e2f5868492c50d1edeff92faede465b0b820cc36fd68705c636290b8ba5e",
+  "source_script_sha256": {
+    "effdet_train.py": "d469f63af50abdb8a9e704bb756a569fd5f06383d3a5d09bd36b951220dbec4c",
+    "faster_rcnn_fpn_train.py": "46086931f010b57fdb31e0f613dfa4fdd4a76461d39c742edd288144dbc5a588"
+  },
+  "base_fit_count": 10,
+  "base_fits": [
+    {
+      "script": "effdet_train.py",
+      "fold": 0,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 768,
+        "batch_size": 8,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 1,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 768,
+        "batch_size": 8,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 2,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 768,
+        "batch_size": 8,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 3,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 768,
+        "batch_size": 8,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 4,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 768,
+        "batch_size": 8,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 1,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 1024,
+        "batch_size": 4,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 3,
+      "controls": {
+        "backbone": "ed7",
+        "img_size": 1024,
+        "batch_size": 4,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 4,
+      "controls": {
+        "backbone": "ed5",
+        "img_size": 512,
+        "batch_size": 20,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "initial_ensemble"
+    },
+    {
+      "script": "effdet_train.py",
+      "fold": 1,
+      "controls": {
+        "backbone": "ed6",
+        "img_size": 640,
+        "batch_size": 12,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.0005,
+        "warmup_factor": 10,
+        "use_amp": true
+      },
+      "role": "pseudo_initialization"
+    },
+    {
+      "script": "faster_rcnn_fpn_train.py",
+      "fold": 1,
+      "controls": {
+        "backbone": "resnet152",
+        "img_size": 1024,
+        "batch_size": 20,
+        "workers": 16,
+        "warm_epochs": 20,
+        "epochs": 100,
+        "patience": 40,
+        "init_lr": 0.005,
+        "warmup_factor": 10
+      },
+      "role": "initial_ensemble"
+    }
+  ],
+  "limits": [
+    "Source command inventory only; fits have not been executed.",
+    "Publisher commands use 16 data workers and Apex O1 for EfficientDet; CPU execution differences require explicit qualification."
+  ]
+}

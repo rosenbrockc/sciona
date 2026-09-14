@@ -1088,7 +1088,7 @@ def _build_cdg_candidate_manifests(
         edge = edges_for_step[0]
         step_id = f"pdg_step_{index}"
         operation_kind = _manifest_operation_kind(edge)
-        input_node_ids = _unique_texts(edge.source_node_id for edge in edges_for_step)
+        input_node_ids = _step_input_node_ids(edges_for_step)
         output_node_ids = _unique_texts(edge.target_node_id for edge in edges_for_step)
         input_refs = [bindings[node_id].to_manifest_ref() for node_id in input_node_ids]
         output_refs = [bindings[node_id].to_manifest_ref() for node_id in output_node_ids]
@@ -1252,6 +1252,24 @@ def _candidate_manifest_to_cdg_rows(
         )
 
     return rows, diagnostics
+
+
+def _step_input_node_ids(edges: Sequence[PDGInferenceEdge]) -> list[str]:
+    """Recover input slots from source edges without discarding multiplicity.
+
+    Input/output Cartesian expansion repeats the input sequence per output.
+    Repeated premises within that sequence are distinct rule arguments.
+    Ambiguous projections require source reconciliation, never guessed inputs.
+    """
+    by_output: dict[str, list[str]] = {}
+    for edge in edges:
+        by_output.setdefault(edge.target_node_id, []).append(edge.source_node_id)
+    sequences = list(by_output.values())
+    if not sequences:
+        return []
+    if any(sequence != sequences[0] for sequence in sequences[1:]):
+        raise ValueError("PDG step outputs disagree on ordered input slots")
+    return list(sequences[0])
 
 
 def _edge_step_group_key(edge: PDGInferenceEdge, *, fallback_index: int) -> str:

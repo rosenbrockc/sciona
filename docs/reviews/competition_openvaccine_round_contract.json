@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "tests_passed": 16,
+  "hashes": {
+    "sciona/openvaccine_round_contract.py": "fd3cf44f9cc868c148274c154e42cf134535a523f540d34c86cbc5218648711d",
+    "sciona/openvaccine_round.py": "8f2155e5065f2f5d68088f2c3a1e6f38cd4d7008db215248ad8104ee10b140e0",
+    "tests/test_openvaccine_round_contract.py": "b3f2a628695cd561d892006d40e3519fa2182b9d95ff9daaef5d019a76f180b8"
+  },
+  "scope": "Masked validation/effective-weight gates passed contract tests and a complete raw-input twenty-member lifecycle under current contract.",
+  "full_round_revalidation_pending": false,
+  "full_round_evidence": "docs/reviews/competition_openvaccine_lifecycle.json"
+}

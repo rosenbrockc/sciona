@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "source_code_cells_sha256": "ee289da71520cfa781723070f5face629c962e9430fd06bb4f2069a3b72a83b9",
+  "comparison_cases": 402,
+  "sha256": {
+    "sciona/vsb_threshold.py": "972523f96b4cbefe62b1b037e389700fe8c4a022b6452d15ff2c8f6598b952b9",
+    "tests/test_vsb_threshold.py": "147bf8fcc571f44e4c7bd9b9d9662f9d363005e8ae5af79dd2eb6e87f3eed611",
+    "scripts/validate_vsb_threshold_comparison.py": "1976188802c5bbc6b85e278debb0a183dd5db9148d43a7b5e4e56cad995c5179"
+  },
+  "limits": [
+    "Numerical threshold comparison only. Source optimizes >= while downstream decisions use strict >; no unbiased validation claim."
+  ]
+}

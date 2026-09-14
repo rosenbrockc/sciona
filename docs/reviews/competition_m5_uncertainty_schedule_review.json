@@ -1,0 +1,104 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_pin": "competition_m5_uncertainty_source_pins.json",
+  "quantiles": [
+    0.005,
+    0.025,
+    0.165,
+    0.25,
+    0.5,
+    0.75,
+    0.835,
+    0.975,
+    0.995
+  ],
+  "quantile_weights": [
+    0.1,
+    0.2,
+    0.6,
+    0.8,
+    1,
+    0.9,
+    0.7,
+    0.2,
+    0.1
+  ],
+  "level_parameters": {
+    "1": [
+      0.3,
+      0.7
+    ],
+    "2": [
+      0.1,
+      0.7
+    ],
+    "3": [
+      0.1,
+      0.5
+    ],
+    "4": [
+      0.3,
+      0.5
+    ],
+    "5": [
+      0.15,
+      1
+    ],
+    "6": [
+      0.2,
+      0.5
+    ],
+    "7": [
+      0.1,
+      1
+    ],
+    "8": [
+      0.2,
+      0.5
+    ],
+    "9": [
+      0.1,
+      0.5
+    ],
+    "10": [
+      0.05,
+      0.5
+    ],
+    "11": [
+      0.04,
+      1
+    ],
+    "13": [
+      0.12,
+      2
+    ],
+    "14": [
+      0.065,
+      2
+    ],
+    "15": [
+      0.03,
+      0.5
+    ]
+  },
+  "defaults": {
+    "bags": 1,
+    "single_fold": true,
+    "speed": false,
+    "super_speed": false,
+    "reduced_features": false,
+    "sample_multiplier": 0.8,
+    "sample_level_exponent": 0.6,
+    "bag_level_exponent": 0
+  },
+  "source_findings": [
+    "The documented execution batches are individual base-category partitions with controller levels 13, 14, 15 and a combined levels-through-11 batch with controller LEVEL=-1. Category identities must be supplied through private runtime configuration.",
+    "Quantile mask exponent reads global controller LEVEL, not the fitted level loop variable. The combined batch therefore uses exponent 0.25 even for fitted levels 10 and 11; separate base partitions use 0.35. Orchestration must preserve this distinction.",
+    "The actual training call supplies one prepared sample to runQBags. Supplied populations are reused across bags; the default bag count is one. Automatic fresh resampling is only the function fallback when data is None.",
+    "Training search iterations are int((2.2 if fitted level <=9 else 1.66)*(16-min(fitted level,12))*speed factor), where speed factor is 0.25 for super speed, 0.5 for speed, otherwise 1.",
+    "Forecast queries repeat after two weight-budget normalizations with clipping on each pass. Low levels use squared weights across all 28 horizons; high levels use power 1.5 separately per horizon. Perturbed query predictions are averaged per series and horizon.",
+    "Final median-total adjustment covers available levels 1 through 9 only, with strength 0.7 normally or 1 in speed modes. All levels then undo their hierarchy multiplier. CSV output rounds to three decimals; the independent component intentionally returns unrounded native units."
+  ],
+  "scope": "Inspected configuration findings, not yet a connected or qualified execution schedule."
+}

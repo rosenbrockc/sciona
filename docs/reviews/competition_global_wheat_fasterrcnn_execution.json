@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "input_shape": [
+    1,
+    3,
+    1024,
+    1024
+  ],
+  "internal_image_size": 800,
+  "training_updates": 1,
+  "losses": {
+    "loss_classifier": 0.7215086817741394,
+    "loss_box_reg": 0.028530176728963852,
+    "loss_objectness": 0.6910340189933777,
+    "loss_rpn_box_reg": 0.019366804510354996
+  },
+  "all_trainable_parameter_gradients_finite": true,
+  "trainable_parameter_tensors": 174,
+  "frozen_parameters_unchanged": true,
+  "predictor_updated": true,
+  "inference_detections": 100,
+  "implementation_sha256": {
+    "sciona/wheat_fasterrcnn.py": "7078eac9ed3c22b864805a975589004e9220d0ea510f5d5e449519bcbb1ad714",
+    "sciona/wheat_resnet_backbone.py": "f84f2061fdb3fa1bf231082cfaeabb44fa2dfaf91d16d961a96b9a27ecf0332d",
+    "sciona/wheat_legacy_weights.py": "b4a395ea0eb1a67c5c8521d0bd9e0b4977938af6448d72eb3a46bf4b78c8a68f",
+    "sciona/wheat_frozen_normalization.py": "a5b798bab7c4e3821e9a0989a684e0b8f612512190c5da18f421befef348cc4b",
+    "sciona/wheat_feature_pyramid.py": "5748931939bf9df3f48f3daedab8713fe43a8920584e78f4638346f53832d338",
+    "sciona/wheat_proposals.py": "0882c44f8d14361f705fd3f05b6eab6b1e780018fd15b0bcf769e8a6cb9752e2",
+    "sciona/wheat_anchors.py": "b0bc3215a42cdb3b9439b7fd29bfa037d909bea82aede5e8b12c8079d8fcb53d",
+    "sciona/wheat_detection_losses.py": "719384771526143c827e028700a2e92135b5f6fba4f47fcff15ce4c51122a062",
+    "sciona/wheat_image_transform.py": "7bc66b3939b5c02c37d85273c485ccadedd1434bb26cdb0d16d31d4673697e5f",
+    "scripts/validate_wheat_fasterrcnn_execution.py": "41ee389870cae1fda2c8a551038d5d282c5bbfe8821ad90071472a5b385874cc"
+  },
+  "limits": [
+    "One synthetic SGD step and inference; not a complete source training fit or accuracy claim.",
+    "Individual components have separate historical comparisons; full assembled historical-reference equivalence remains to be checked.",
+    "Installed native kernels; full base-fit inventory, ensemble and publication remain pending."
+  ]
+}

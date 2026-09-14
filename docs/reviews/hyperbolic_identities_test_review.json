@@ -1,0 +1,15 @@
+{
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest -q tests/physics_ingest/test_hyperbolic_identities.py tests/physics_ingest/test_hyperbolic_identities_proof.py",
+  "test_results": {
+    "tests": 40,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_hyperbolic_identities.py": "26c665e349cee89ec9f1e366598ecda59718059040b7c5e4593408ad838aa540",
+    "tests/physics_ingest/test_hyperbolic_identities_proof.py": "6dd770ccca9633af127670e953d049622f8ec517715329b4dbd6d3fef36c993d"
+  },
+  "provider_sha256": "0dd8e3c20d27413142c616184bd263629c5e56c2fa2df5879ca626685e8b1484"
+}

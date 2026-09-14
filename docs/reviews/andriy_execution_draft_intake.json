@@ -1,0 +1,14 @@
+{
+  "draft_intake_applied": true,
+  "state": {
+    "status": "draft",
+    "is_publishable": false,
+    "is_latest": false,
+    "trust_tier": 3,
+    "bindings": 4
+  },
+  "served_cdg_count": 24,
+  "catalog_roundtrip": "passed",
+  "idempotent_dry_run_created_rows": 0,
+  "promotion_applied": false
+}

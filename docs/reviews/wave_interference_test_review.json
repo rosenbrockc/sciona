@@ -1,0 +1,15 @@
+{
+  "test_results": {
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "synthetic_only": true,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_wave_interference.py tests/physics_ingest/test_wave_interference_proof.py -q",
+  "test_source_sha256": {
+    "tests/physics_ingest/test_wave_interference.py": "b8557e48019dbb4f8936b41b17337aad8e9c9539c4a713320bae517db572f09f",
+    "tests/physics_ingest/test_wave_interference_proof.py": "9fe3556d61a0c2c3e6022ed1954897f65f8eb3908eec769452879066cc1b1ae1"
+  },
+  "provider_sha256": "f63ad476115b8d90ffce04a6e938a86dce4548336a6c17dbfb1bc89401ccdee4"
+}

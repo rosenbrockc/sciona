@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "exact_cases": 256,
+  "pixels_targets_and_python_numpy_torch_rng_exact": true,
+  "warmup_boundary_exercised": true,
+  "inputs_unchanged": true,
+  "implementation_sha256": {
+    "sciona/wheat_mixup.py": "2339bd7008ae828e77541e94db6bc53fb90c3aa7585e58aee03a27bd46cdadcc",
+    "scripts/validate_wheat_mixup.py": "2925a9c970a20c4d9c4c41503a3c52f0676a18405c7348497d6df2a94baf7616"
+  },
+  "limits": [
+    "Source CUDA placement removed for CPU comparison; source arithmetic and random-call ordering retained.",
+    "Batch mixup only; image-level augmentation and full training remain pending."
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "status": "pending_source_reconstruction",
+  "approved": false,
+  "catalog_mutations": 0,
+  "source_version_id": "743c3225-058e-5a7e-ab18-ae5dd1c2b7d4",
+  "source_content_hash": "162915709dcde12f33a88f1d693b169aa8509dbd7e5b29755f89a728d388ee11",
+  "original_stage_count": 6,
+  "primary_writeup": "https://www.kaggle.com/competitions/santander-customer-transaction-prediction/writeups/wizardry-1-solution",
+  "primary_writeup_access": "Canonical page returned no body; indexed author discussion 89003 returned technical writeup.",
+  "findings": [
+    "Winner uses supervised uniqueness categories and mean substitution, beyond raw/count concatenation.",
+    "Winner combines LightGBM with a shared feature-group neural network and learned weighted pooling.",
+    "Both branches use augmentation and pseudo-labels; final blend weights neural/tree outputs 2.1 to 1.",
+    "Winner reports stratified ten-fold validation and multiple seeds. Intake omits this lifecycle.",
+    "Intake lacks augmented-target edge and explicit train/test partition contract."
+  ],
+  "row_filtering": {
+    "state": "Confirmed against author-linked detector source",
+    "supporting_primary_participant": "https://www.kaggle.com/competitions/santander-customer-transaction-prediction/writeups/belinda-trotta-29th-place-solution-with-code",
+    "finding": "Count uniqueness within test population alone; retain rows with at least one singleton value, exclude rows with none. Intake polarity and combined-population description are incorrect."
+  },
+  "linked_source": [
+    {
+      "url": "https://www.kaggle.com/fl2ooo/nn-wo-pseudo-1-fold-seed",
+      "scope": "author-linked neural branch without pseudo-labels, single fold/seed",
+      "access": "Public kernels/pull API succeeded; retained source code only in private temporary workspace; discarded output/metadata payloads.",
+      "license": "Not provided in public pull metadata; not established",
+      "kernel_version_number": 1,
+      "script_version_id": 12800499,
+      "code_sha256": "de07f1b6bef2c7d6af11e3e0ae769d8f7d94cc95e64d9e7c87879748083f43ae"
+    },
+    {
+      "url": "https://www.kaggle.com/yag320/list-of-fake-samples-and-public-private-lb-split",
+      "scope": "author-linked row detector",
+      "access": "Public kernels/pull API succeeded; retained source code only in private temporary workspace; discarded output/metadata payloads.",
+      "license": "Not provided in public pull metadata; not established",
+      "kernel_version_number": 14,
+      "script_version_id": 11948999,
+      "code_sha256": "1d132e5ba63d8da667f692b041f76523bf1abfa101d67fd183e2c366aeb7bca0"
+    },
+    {
+      "url": "https://www.kaggle.com/fl2ooo/create-data",
+      "scope": "Author-linked supervised preprocessing program",
+      "access": "Recovered via current discussion API rawMarkdown and public kernels/pull API",
+      "kernel_version_number": 3,
+      "code_sha256": "a56f4ad850741a1ab1cff84758ee1dd344ca7355a96bd941899df2ea88fa4e2e",
+      "license": "Not established"
+    }
+  ],
+  "next_requirements": [
+    "Establish original source licenses for any source copying; independent algorithm implementations currently used.",
+    "Independent test-only singleton detector implemented and 14 synthetic tests passed; full pipeline integration still required.",
+    "Supervised preprocessing recovered and independently implemented with nine synthetic tests. Preserve explicit global labeled-reference/self-exclusion semantics; original pre-CV encoding is not fold-isolated validation.",
+    "Recover neural architecture, tree settings, pseudo-label generation, paired-feature augmentation and fold/seed blend.",
+    "Implement full corrected source scope with synthetic lifecycle evidence before Tier 3 review; do not replace with a count-only tree benchmark."
+  ],
+  "limits": "No competition data or model weights fetched. API responses processed in memory; notebook outputs discarded, source-only temporary files retained privately. No third-party code added to repository; no accuracy claim.",
+  "preprocessing_access_followup": "Recovered author link from GetForumTopicById response writeUp.message.rawMarkdown; source pull succeeded."
+}

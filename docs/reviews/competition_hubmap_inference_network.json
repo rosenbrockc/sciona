@@ -1,0 +1,47 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "parameters": 134133707,
+  "cases": [
+    {
+      "case": "natural",
+      "decoder_calls": 0,
+      "exact_logits": true
+    },
+    {
+      "case": "all_below",
+      "decoder_calls": 0,
+      "exact_logits": true
+    },
+    {
+      "case": "exact_boundary",
+      "decoder_calls": 0,
+      "exact_logits": true
+    },
+    {
+      "case": "mixed",
+      "decoder_calls": 1,
+      "exact_logits": true
+    },
+    {
+      "case": "all_above",
+      "decoder_calls": 1,
+      "exact_logits": true
+    }
+  ],
+  "exact_initial_state_rng_final_buffers": true,
+  "implementation_sha256": {
+    "sciona/hubmap_inference_network.py": "9ca795aafd1da4661c8bb08075f4efd2a2262030bbe0ff7340dd095fbd333d2d",
+    "sciona/hubmap_network.py": "32a82b4af15101d4882909038a58c2708b5867b9cebc3f1295b5b1c8adda1e74",
+    "sciona/hubmap_encoder.py": "936d55db5a927992ec3d50eca2f9433d4e33610d8e810854b915fb4b2da46363",
+    "scripts/validate_hubmap_inference_network.py": "40f10a455b20187e310708130872af242d6808fff654a0df53e1822c7a403f48",
+    "scripts/validate_hubmap_network.py": "5b5fbabe728aaab21be9e720458eb0f5018289a0896ff3941d645b21c6c4df15",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Full original encoder/decoder with synthetic initialized weights and CPU float32 inputs.",
+    "Four prescribed classification outputs exercise branch boundaries; natural classifier also compared.",
+    "Plain-output inference only; source invalid auxiliary shortcut placeholders excluded.",
+    "Checkpoint adaptation, complete raw inference and pseudo-label/retraining graph gates remain."
+  ]
+}

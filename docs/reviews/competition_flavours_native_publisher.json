@@ -1,0 +1,14 @@
+{
+  "bottle_sha256": "de3509409e0c73f8f905e3c6cc898b5562f7a549437d2c1d2281c62de2b26a36",
+  "publisher_url": "https://ghcr.io/v2/homebrew/core/libomp/blobs/sha256:de3509409e0c73f8f905e3c6cc898b5562f7a549437d2c1d2281c62de2b26a36",
+  "bottle_hash_verified": true,
+  "library_payload_identical": false,
+  "bottle_library_sha256": "07e30ac939caec07bd6e13bbc901a873dddd2207a92321759605f94ff71fa4a9",
+  "installed_library_sha256": "f19aa166a98e16a5a6a58a01d356b7c96ec667b4239643dd1147428da1028ee7",
+  "scope": "Exact matching Homebrew23.1.1arm64_sequoia bottle; raw installed dylib comparison, no installation.",
+  "relocation_verified": true,
+  "signed_pages_verified_per_binary": 176,
+  "changes": "Exact Homebrew placeholder-to-prefix install name and SHA256signed page0hash only",
+  "codesign_strict_verification": "passed",
+  "relocation_verifier_sha256": "919d6c08ad8dfb3586c9731c86d997c11ba6f42b6d529b44b9b66b5c112562cb"
+}

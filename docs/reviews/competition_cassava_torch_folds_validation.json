@@ -1,0 +1,61 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "pretrained_weights_used": true,
+  "diagnostic_batch_size": 1,
+  "workers": 0,
+  "families": {
+    "resnext": {
+      "folds_executed": 5,
+      "epochs_per_fold": 15,
+      "training_images_per_fold": 20,
+      "validation_images_per_fold": 5,
+      "prediction_images": 3,
+      "best_epochs": [
+        0,
+        1,
+        0,
+        0,
+        5
+      ],
+      "all_checkpoint_predictions_replayed_exactly": true,
+      "fivefold_mean_matches_scalar_oracle": true,
+      "pretrained_sha256": "3f95526f236e9f14fbd84561989ccf00eb0190532dc30b4e4c36eae5e47111ec"
+    },
+    "vit": {
+      "folds_executed": 5,
+      "epochs_per_fold": 10,
+      "training_images_per_fold": 20,
+      "validation_images_per_fold": 5,
+      "prediction_images": 3,
+      "best_epochs": [
+        9,
+        9,
+        9,
+        9,
+        9
+      ],
+      "all_checkpoint_predictions_replayed_exactly": true,
+      "fivefold_mean_matches_scalar_oracle": true,
+      "pretrained_sha256": "0e964f9d962c84e526ac0697761e4e36066d2bca39fed8bd8de8c38cdb908811"
+    }
+  },
+  "scope": "Complete pretrained fivefold CPU reconstruction for two families with synthetic populations. Original budgets, TPU parity, physical identity ingestion, EfficientNet and full four-family ensemble remain unqualified.",
+  "sha256": {
+    "sciona/cassava_torch_folds.py": "9d58b5b0ada2b3c558f975bbc76dd391eeda305b44ed1fd110cfd5ce24650478",
+    "sciona/cassava_fold_contract.py": "4761d25e2787a0ffc04170af5e1868ef15b29c9b0967f6d6528638d69fe61a40",
+    "sciona/cassava_fold_dispatch.py": "ae1f7fde1ab5b02669ac16e610c6cec4d8f4a44e346c9ace891010c2d526a05f",
+    "sciona/cassava_pretrained.py": "f36039d9cfe94c0bd1d656e42e2430b63a017e5b06cf55fc9e0ae5a375f5140c",
+    "sciona/cassava_resnext.py": "345001e95bfd0ddfb47524c4dfaca65c04ed9758040f66746a8656e567718f05",
+    "sciona/cassava_resnext_fold.py": "d6055066c07958f79a783698be0c85504e2eae752c20faca7f96ee3b123feaa4",
+    "sciona/cassava_resnext_images.py": "c12e01fc43e07f6af5d039bac25e7f58fec9db0464ac862a4048b87301c3dd06",
+    "sciona/cassava_vit_model.py": "e5e7e91263d5a853f819fc409c9b8d5a38a6d1854867f7f96df593213f340c51",
+    "sciona/cassava_vit_fold.py": "c432927a53888afd0e83627ac1224b6088cedac40cef90e72dce1aeaa8458f5a",
+    "sciona/cassava_vit_images.py": "e61d4cfd1f622e5763cdb5074248e54ccd262b8240a6c7423a88f54b9c81668c",
+    "sciona/cassava_vit_ordered_loss.py": "c779eb220dab0c1f6a0dabda14b20ddd2f227932da2c0b32f2795e8eebf5787f",
+    "sciona/cassava_loss.py": "794fa22a473ecfe0f3fcbbc992aebfdc7b8abb51318998740272120f07421ab7",
+    "scripts/validate_cassava_torch_folds.py": "65dc3f84f4f23f9964a558c98bc8e44c0f80dc62c9065cc62846c70740b723a5",
+    "docs/reviews/competition_cassava_timm_pretrained_validation.json": "c2d4249892a063f46d51b28b99951bdca079aefa602fa16a7a41b9ce5d10465f"
+  }
+}

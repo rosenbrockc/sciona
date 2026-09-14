@@ -1,0 +1,60 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "declared_opencv_version": "4.13.0.92",
+  "overlapping_headless_version": "5.0.0.93",
+  "overwritten_files": [
+    {
+      "software_path": "cv2/LICENSE-3RD-PARTY.txt",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/__init__.py",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/__init__.pyi",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/aruco/__init__.pyi",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/barcode/__init__.pyi",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/cv2.abi3.so",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/detail/__init__.pyi",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/dnn/__init__.pyi",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/fisheye/__init__.pyi",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/typing/__init__.py",
+      "matches_headless_record": true
+    },
+    {
+      "software_path": "cv2/version.py",
+      "matches_headless_record": true
+    }
+  ],
+  "finding": "Two installed OpenCV distributions share the cv2 package. All11discrepancies match headless5.0.0.93 RECORD; declared opencv-python4.13.0.92 does not describe effective shared files.",
+  "next": "Resolve effective dependency/provider requirements and publisher provenance without changing frozen published environments. Installed dependency audit remains failed; do not treat own-RECORD matching as publisher authentication.",
+  "dependency_reason": "BioSPPy declares opencv-python. No OpenCV distribution appeared in observed startup/warmup imports; it is a transitive declared dependency.",
+  "qualification_plan": "Use an isolated exact opencv-python4.13.0.92 publisher wheel overlay for Flavours; preserve shared installed packages. Reaudit effective dependency origins/RECORD and full graph under overlay.",
+  "acquisition": "Session87885 completed with publisher SHA256 verified.",
+  "qualification_result": "Exact OpenCV4.13.0.92 isolated overlay installed;179publisher payload files matched and synthetic operation passed. Effective94package RECORD audit matched26650files with0discrepancies. Shared conflicting packages unchanged.",
+  "required_runtime": "Prepend /private/tmp/sciona_flavours_opencv_reference to PYTHONPATH for qualification commands; production provisioning must supply the equivalent reviewed overlay.",
+  "full_graph_validation": "Session24245 exited0 under isolated overlay; all115fits,checkpoint replay and source evaluation completed."
+}

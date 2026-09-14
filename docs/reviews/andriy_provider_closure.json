@@ -1,0 +1,1531 @@
+{
+  "read_only": true,
+  "approval_applied": false,
+  "graph_roots": [
+    "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities",
+    "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities",
+    "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities",
+    "sciona.atoms.riemannian_bci.signal_processing.andriy_populations.andriy_documented_populations"
+  ],
+  "providers": [
+    {
+      "runtime_fqdn": "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities",
+      "catalog_fqdn": "sciona.atoms.ml.glmnet.andriy_r_glm.andriy_r_glm_segment_probabilities",
+      "version_id": "97f1b48e-ec6b-55cb-9422-3b8edd2f1ddd",
+      "content_hash": "837ae05e3633ecd7ccea413ac985cb4bbbd0189539ab8db334cca1a5e980b9f5",
+      "provider_sha256": "7c3f6c431723e66b4b370a3183cf0ee13f22393771a130856a312626b5e2137d",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "training_labels",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction_features",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "valid_prediction_rows",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_glm_scores",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_glm_segment_model_probabilities",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "training_features",
+          "required": true
+        },
+        {
+          "name": "training_labels",
+          "required": true
+        },
+        {
+          "name": "prediction_features",
+          "required": true
+        },
+        {
+          "name": "valid_prediction_rows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities",
+      "catalog_fqdn": "sciona.atoms.ml.liblinear.andriy_r_svm.andriy_r_svm_segment_probabilities",
+      "version_id": "aa891771-5d46-5408-a5df-8a324b58119e",
+      "content_hash": "bcae6bd2438c6d040f432db7c80b67601003eccf3a278b22bf8a13ff91bfb4ea",
+      "provider_sha256": "bea11ef914d07371501e24123fc0c291cebc17b9d90c148e2da3456165ad951f",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "training_labels",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction_features",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "valid_prediction_rows",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_svm_scores",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_svm_unmasked_window_probabilities",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "training_features",
+          "required": true
+        },
+        {
+          "name": "training_labels",
+          "required": true
+        },
+        {
+          "name": "prediction_features",
+          "required": true
+        },
+        {
+          "name": "valid_prediction_rows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities",
+      "catalog_fqdn": "sciona.atoms.ml.xgboost.andriy_r_xgb.andriy_r_xgb_segment_probabilities",
+      "version_id": "fa9be2be-621f-5924-8784-c8b541c14986",
+      "content_hash": "33c30725c8fb8d3213eba69d77dfb79c7708929b66b164c50ff8df5e033c3c4a",
+      "provider_sha256": "5a885ca4a1164ce99bd833f608755d784a5e776a66429a8a9f73802999810e92",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "training_labels",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction_features",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "valid_prediction_rows",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_xgb_scores",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "andriy_xgb_segment_model_probabilities",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "training_features",
+          "required": true
+        },
+        {
+          "name": "training_labels",
+          "required": true
+        },
+        {
+          "name": "prediction_features",
+          "required": true
+        },
+        {
+          "name": "valid_prediction_rows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_ar_coefficients.andriy_ar_coefficients",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_ar_coefficients.andriy_ar_coefficients",
+      "version_id": "115015a1-0dcc-5e12-bdec-48474aa6b5fe",
+      "content_hash": "8d9a5d230b5ae10d705279392a7359c363fcdec8571c0616195dbd41bb180738",
+      "provider_sha256": "58a73dcdf184a4dd92ec2b4e1c4c1e476447a2260ba22916daa7278d853c8652",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "model_windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "model_windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_ar_features.andriy_documented_ar_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_ar_features.andriy_documented_ar_features",
+      "version_id": "6893d9ff-3dda-5aaa-90d9-b739633733be",
+      "content_hash": "3caf269e99b056a763e6819b0a59e0b4ae0a1057a9a1e8266b1c51400f5c55d7",
+      "provider_sha256": "3c34d4644c261f08f3ee9757d07e4c579b2cbdf426072f87fedeaa15e0333868",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_ar_coefficients.andriy_ar_coefficients"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_clip_features.andriy_documented_clip_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_clip_features.andriy_documented_clip_features",
+      "version_id": "73cbeb3c-438d-56fc-8a0d-aa386a1e35d4",
+      "content_hash": "d9a7c508db3253551101682297df408960a06d60f16bdee9ebdf14cc83fb2241",
+      "provider_sha256": "af6c5198359c383e6f0887c1ddef267ec7c8dfe41c69c43aa331fc3a443d6971",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_ar_features.andriy_documented_ar_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_connectivity_features.andriy_connectivity_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_feature_assembly.andriy_assemble_clip_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_mainstream_features.andriy_documented_mainstream_features"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "segment_256",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "csp_segment_128",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "features",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "valid_rows",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "segment_256",
+          "required": true
+        },
+        {
+          "name": "csp_segment_128",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_connectivity_features.andriy_connectivity_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_connectivity_features.andriy_connectivity_features",
+      "version_id": "2b098fb6-2840-571d-b85c-55acf4bcda3f",
+      "content_hash": "4ce952c8d2d75ec39084a51bc93626f48f8490856287a7e41973be648567bf13",
+      "provider_sha256": "378930629e9eb09fd4a9729fa8df726b6309d901007e47317e8fee7264d791d4",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_csp.andriy_csp_filters",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_csp.andriy_csp_filters",
+      "version_id": "7e2b4897-1adc-5f6e-87a2-217e519545cd",
+      "content_hash": "2591a2b30fb6840643ec91543a48c337393a3efc0e9eaac3b7f44c2edcb49d37",
+      "provider_sha256": "a80839e8c411a8e04f98437a48fc9d29325b099d74a13c68577bb746bdab8e58",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "preictal",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "interictal",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "preictal",
+          "required": true
+        },
+        {
+          "name": "interictal",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_csp.andriy_csp_project",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_csp.andriy_csp_project",
+      "version_id": "678d1b43-a9b5-57ff-8c15-1d42ff8b4b56",
+      "content_hash": "d491cce79faeec31f2428004aebf9c6cd775594e955b84dd78a1d98193299136",
+      "provider_sha256": "a80839e8c411a8e04f98437a48fc9d29325b099d74a13c68577bb746bdab8e58",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "segment",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "filters",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "segment",
+          "required": true
+        },
+        {
+          "name": "filters",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_distribution_features.andriy_distribution_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_distribution_features.andriy_distribution_features",
+      "version_id": "6e297288-9af8-5254-ba41-8a71363e6205",
+      "content_hash": "50a8029358a40cf8628f67f6b1b3dd1eade39f7490db5771b4380727aa2cc5c5",
+      "provider_sha256": "b71fd4ad138aba960aee21de3329660db5064cc94be41757b4695b6e118f2973",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_feature_assembly.andriy_assemble_clip_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_feature_assembly.andriy_assemble_clip_features",
+      "version_id": "b2b28e38-e629-5873-99b8-5a95fcafa45b",
+      "content_hash": "3a678dbfe24d212e00ac32e28aab14b251bc6e83ae5d366e5ba959258eb48e7c",
+      "provider_sha256": "db83a360acb7ab82a572df0bb3b2f922402deaed714148af1014fd1c6cd619bb",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "mainstream",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "autoregressive",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "csp_autoregressive",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "connectivity",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "features",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "valid_rows",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "mainstream",
+          "required": true
+        },
+        {
+          "name": "autoregressive",
+          "required": true
+        },
+        {
+          "name": "csp_autoregressive",
+          "required": true
+        },
+        {
+          "name": "connectivity",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_filter.andriy_filter_trim",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_filter.andriy_filter_trim",
+      "version_id": "54e9ff7f-2a34-573d-b7ab-887aae52fc86",
+      "content_hash": "64507a82e1710ed4176fb17868276be4987b182305635ff18e7b248c74408ff7",
+      "provider_sha256": "2a44ae93d51d644e7428ea3f11a6bcb1449aea9470a3dd08025caaced22769e9",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "segment",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "sampling_frequency",
+          "ordinal": 1,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "segment",
+          "required": true
+        },
+        {
+          "name": "sampling_frequency",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_mainstream_features.andriy_documented_mainstream_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_mainstream_features.andriy_documented_mainstream_features",
+      "version_id": "b84d2b38-2f7f-5e3d-95f2-de5e4864424b",
+      "content_hash": "b3b290778c9bd6fbf11ee198aa6855f69c8a6df3998a69acbdc2c8832e2b7319",
+      "provider_sha256": "cf92c2bb34c381c478541d2c98b8c596ed68d163af896a26a40cd4e33a345038",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_distribution_features.andriy_distribution_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_nonlinear_features.andriy_nonlinear_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_spectral_features.andriy_spectral_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_time_features.andriy_time_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_wavelet_features.andriy_wavelet_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_welch_features.andriy_documented_welch_features"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_nonlinear_features.andriy_nonlinear_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_nonlinear_features.andriy_nonlinear_features",
+      "version_id": "80f10623-a8ee-5bae-ae95-efe8b417b8e0",
+      "content_hash": "e98b8c5b14a35266b44b188954a4d4513734c867aab71b2961ceaaefb14a9541",
+      "provider_sha256": "f714c09f46d2b0f81c21b15bae0eb24b4cc18625254bd1eeb73ed113f7743159",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_normalization.andriy_joint_normalization",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_normalization.andriy_joint_normalization",
+      "version_id": "38508677-c6c5-5ce7-a577-5f409045be6c",
+      "content_hash": "bfb4903505d0590371057fccb57b37a87486eff49ccd85a9a54c61662f95d135",
+      "provider_sha256": "46162c77f957ef78bb06e7ded04bec2d6475998dd4792ed09d52c335429a36d2",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction_features",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "valid_prediction_rows",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "normalized_training",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "normalized_prediction",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "training_features",
+          "required": true
+        },
+        {
+          "name": "prediction_features",
+          "required": true
+        },
+        {
+          "name": "valid_prediction_rows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population.andriy_documented_population",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population.andriy_documented_population",
+      "version_id": "3ce1c6a6-f7b4-5ba4-b49a-cf8f0762dd45",
+      "content_hash": "776455b95569009ab58359d048d7feec5400d923b9bf96c3251f73188f7ce1d0",
+      "provider_sha256": "29707735b0a30c90af0eb974d76bd441b59d01bcd9ec7e8306de031c5bfd8fa3",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_clip_features.andriy_documented_clip_features",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_csp.andriy_csp_filters",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_csp.andriy_csp_project",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_population_inputs.andriy_population_inputs",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_preprocessing.andriy_csp_training_classes",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_preprocessing.andriy_documented_preprocess_clip"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "csp_candidates",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "candidate_sequences",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "primary_positive",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "auxiliary_positive",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "negative",
+          "ordinal": 4,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction",
+          "ordinal": 5,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "sampling_frequency",
+          "ordinal": 6,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "training_labels",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "prediction_features",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "valid_prediction_rows",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "csp_candidates",
+          "required": true
+        },
+        {
+          "name": "candidate_sequences",
+          "required": true
+        },
+        {
+          "name": "primary_positive",
+          "required": true
+        },
+        {
+          "name": "auxiliary_positive",
+          "required": true
+        },
+        {
+          "name": "negative",
+          "required": true
+        },
+        {
+          "name": "prediction",
+          "required": true
+        },
+        {
+          "name": "sampling_frequency",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population_inputs.andriy_population_inputs",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_population_inputs.andriy_population_inputs",
+      "version_id": "c99525e8-280d-5307-b77c-8308eedd4211",
+      "content_hash": "f4c25983c40e22426408898bb80df12fd74020d11ae6cda3471d2962f726595c",
+      "provider_sha256": "916722a1f917f78e69ef870205df25eb8e65e6852cf8577098e8fb3b432d35f8",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_normalization.andriy_joint_normalization"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "primary_positive",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "auxiliary_positive",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "negative",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "training_labels",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "prediction_features",
+          "ordinal": 2,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "valid_prediction_rows",
+          "ordinal": 3,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "primary_positive",
+          "required": true
+        },
+        {
+          "name": "auxiliary_positive",
+          "required": true
+        },
+        {
+          "name": "negative",
+          "required": true
+        },
+        {
+          "name": "prediction",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_populations.andriy_documented_populations",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_populations.andriy_documented_populations",
+      "version_id": "cf2fbcd8-a117-5b24-831c-ee4d75adb10d",
+      "content_hash": "9d698aeb926bb32e13b1a695f5333f89a371741e28a7100ce71ed56cd46f6dbb",
+      "provider_sha256": "78cf80aebfaa401e48b6758f7d26dc7ccd52ab90dd684b48201cfdc3561199a8",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_population.andriy_documented_population"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "csp_candidates",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "candidate_sequences",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "primary_positive",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "auxiliary_positive",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "negative",
+          "ordinal": 4,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "prediction",
+          "ordinal": 5,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "sampling_frequencies",
+          "ordinal": 6,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "training_features",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "training_labels",
+          "ordinal": 1,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "prediction_features",
+          "ordinal": 2,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "valid_prediction_rows",
+          "ordinal": 3,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "csp_candidates",
+          "required": true
+        },
+        {
+          "name": "candidate_sequences",
+          "required": true
+        },
+        {
+          "name": "primary_positive",
+          "required": true
+        },
+        {
+          "name": "auxiliary_positive",
+          "required": true
+        },
+        {
+          "name": "negative",
+          "required": true
+        },
+        {
+          "name": "prediction",
+          "required": true
+        },
+        {
+          "name": "sampling_frequencies",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_preprocessing.andriy_csp_training_classes",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_preprocessing.andriy_csp_training_classes",
+      "version_id": "ec867dfc-9ac5-534a-a1f7-91c3472b9652",
+      "content_hash": "a23b0f7b0a7d01eb88a37633f19a533462b096b2dd6be58b35edfdb13a0d9fb7",
+      "provider_sha256": "39531346d870a61ad8b8341b2e9355d587ba93fd24ff3b7a92f180e498e5078d",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "positive_candidates",
+          "ordinal": 0,
+          "type_desc": "list",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "sequences",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "sequence6_samples",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "sequence1_samples",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "positive_candidates",
+          "required": true
+        },
+        {
+          "name": "sequences",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_preprocessing.andriy_documented_preprocess_clip",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_preprocessing.andriy_documented_preprocess_clip",
+      "version_id": "1e413882-b6fc-5559-a034-002bed17488d",
+      "content_hash": "71b9cb4fa702cf9f80b4e4774dfd959351fa3164d0df8bb5f14b3f1128f677a0",
+      "provider_sha256": "39531346d870a61ad8b8341b2e9355d587ba93fd24ff3b7a92f180e498e5078d",
+      "dependencies": [
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_filter.andriy_filter_trim",
+        "sciona.atoms.riemannian_bci.signal_processing.andriy_resampling.andriy_documented_resample"
+      ],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "segment",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "sampling_frequency",
+          "ordinal": 1,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "signal256",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        },
+        {
+          "direction": "output",
+          "name": "signal128",
+          "ordinal": 1,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "segment",
+          "required": true
+        },
+        {
+          "name": "sampling_frequency",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_resampling.andriy_documented_resample",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_resampling.andriy_documented_resample",
+      "version_id": "dccaa3ef-6712-55d3-82b4-ecf87411c493",
+      "content_hash": "7d41d2f98e39c6644816709c4a202734266979c900cdd14968aec01ca651e681",
+      "provider_sha256": "bc3fc43d9b59b026a64811d051650aca376a17f72bdec033400d9329dd965993",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "filtered_segment",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "sampling_frequency",
+          "ordinal": 1,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "input",
+          "name": "target_frequency",
+          "ordinal": 2,
+          "type_desc": "int",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "filtered_segment",
+          "required": true
+        },
+        {
+          "name": "sampling_frequency",
+          "required": true
+        },
+        {
+          "name": "target_frequency",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_spectral_features.andriy_spectral_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_spectral_features.andriy_spectral_features",
+      "version_id": "b4e72074-c5a0-5612-a864-c0ff316a2c0a",
+      "content_hash": "7bcb8620258319233726cc930bc6d29451aa39f7305de4b696469fbb9bfd1706",
+      "provider_sha256": "857213d37a55929f66dca7e23752072ef291f1d5fb6f0c5c0d6fab8c8e4ef090",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_time_features.andriy_time_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_time_features.andriy_time_features",
+      "version_id": "7c1885d9-042a-5f4a-a1e3-d36fb9f8bcce",
+      "content_hash": "22b4045ae67f6c7d0db35cae957839fde8a6b05ce9032b41ddf710ecba84edd1",
+      "provider_sha256": "f831b77e6f0d96eb83d6a0eddbb50502446a7798ca113c318209aba52aa04008",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_wavelet_features.andriy_wavelet_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_wavelet_features.andriy_wavelet_features",
+      "version_id": "1862a03e-e547-589b-8031-1c54f796b5a4",
+      "content_hash": "ae53c3d7843bc22ddef7da0a071b79a71bf46033cbe39e6c0148ffacfd49db61",
+      "provider_sha256": "c0272d9d3db4a195c46e320f6fa3f43ea1e4e334a26c7adee3600705b64db53b",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    },
+    {
+      "runtime_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_welch_features.andriy_documented_welch_features",
+      "catalog_fqdn": "sciona.atoms.riemannian_bci.signal_processing.andriy_welch_features.andriy_documented_welch_features",
+      "version_id": "2dfe06e8-b79c-5e67-97ea-785cc21418a7",
+      "content_hash": "a0a93f094a2089d17235edded7b035fdf8ce1b2bc7c9d72d7eceb111bdaaf52e",
+      "provider_sha256": "38851928dd9384fd39bbc3e8bece8c6486181ffb35f1b57730de23c42fa8b80d",
+      "dependencies": [],
+      "interfaces": [
+        {
+          "direction": "input",
+          "name": "windows",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "See exact provider description for numerical and shape requirements."
+        },
+        {
+          "direction": "output",
+          "name": "result",
+          "ordinal": 0,
+          "type_desc": "numpy.ndarray",
+          "required": true,
+          "default_value_repr": "",
+          "constraints": "Tuple ordinal and shape follow exact provider contract."
+        }
+      ],
+      "input_parameters": [
+        {
+          "name": "windows",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "provider_count": 25,
+  "dependency_count": 21,
+  "limitations": [
+    "Static global-function dependency inventory, including nested code objects and local helpers.",
+    "Does not infer dynamic attribute calls, external libraries or embedded R dependencies; those require separate review.",
+    "Exact identities are intake candidates, not approved versions or verified catalog bindings."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "exact_trajectories": 48,
+  "exact_epoch_decisions": 1488,
+  "implementation_sha256": {
+    "sciona/hubmap_checkpoint_policy.py": "9034386695a1c0369f441f6a674d0474eb97784ea25653f1307397428e1e1b39",
+    "scripts/validate_hubmap_checkpoint_policy.py": "2614f70bb3eee5e17f6a80aa1b484d2652aa087bb29b7b0c30cab9ab7af5c27d",
+    "tests/test_hubmap_validation.py": "1b077f3c836449f8d5e5c6dcf7eb28fb5b70c832e30d6fdd0b66f33b56b774b5",
+    "docs/reviews/competition_hubmap_source_pins.json": "604ac6413b3fe8cc9c446c39521b4368d17b9d8d7532c7ab51b7853b1fdfdced"
+  },
+  "limitations": [
+    "Only scalar checkpoint/early-stop/scheduler-order decisions; model serialization is intercepted.",
+    "Cosine scheduler configuration only; snapshot divisors use fixed configured period.",
+    "Complete training graph and catalog approval remain."
+  ]
+}

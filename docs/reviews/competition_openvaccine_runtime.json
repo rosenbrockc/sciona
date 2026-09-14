@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "families": [
+    {
+      "family": "autoencoder",
+      "direct_source_output_exact": true,
+      "parameters": 9658496,
+      "optimizer_steps": 1
+    },
+    {
+      "family": "gru",
+      "direct_source_output_exact": true,
+      "parameters": 10686542,
+      "optimizer_steps": 1
+    },
+    {
+      "family": "lstm",
+      "direct_source_output_exact": true,
+      "parameters": 10947662,
+      "optimizer_steps": 1
+    },
+    {
+      "family": "forward",
+      "direct_source_output_exact": true,
+      "parameters": 13558606,
+      "optimizer_steps": 1
+    },
+    {
+      "family": "wave",
+      "direct_source_output_exact": true,
+      "parameters": 11187246,
+      "optimizer_steps": 1
+    }
+  ],
+  "invalid_training_cases": 20,
+  "invalid_inputs_leave_model_unchanged": true,
+  "modified_source_rejected": true,
+  "runtime_sha256": "0c46952c9246ebb9a2ab06e6ca74f39ed37c230c7a525b9d3322925ab0acc456",
+  "validator_sha256": "bcc291eb45e5d6510d4fcaca4510239a466f04ec9bfd97928aacbe0c9e6b757d",
+  "scope": "Reusable source model factory, input boundaries and one training step per full topology; complete lifecycle still pending."
+}

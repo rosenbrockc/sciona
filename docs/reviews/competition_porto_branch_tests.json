@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "tests_passed": 8,
+  "sha256": {
+    "sciona/porto_neural_branch.py": "80fc09cbb950c338d37c44a5fbfe8f13dd95017bc00a3219591dbc724d7c6c4f",
+    "sciona/porto_tree_blend.py": "425616ae321a1e282ef12770c3103f61d29aa726059c63f9bcc17f84f49e5d2c",
+    "tests/test_porto_neural_branch.py": "97b6acd6faf1145226e79a8439252c0e64fb23a39d85fdd45ec34a52e55a7d63",
+    "tests/test_porto_tree_blend.py": "0e86423b484b75d565c7902086ae4546c2dba0024c05c162cc89e7f1c7490a9c"
+  },
+  "checks": [
+    "Actual DAE-to-classifier latent-only inputs captured",
+    "Unlabeled joint reference/query DAE population verified",
+    "Binary branch learning and invalid-label preflight",
+    "Actual raw-feature LightGBM fitting",
+    "Six-model equal probability mean oracle",
+    "Missing models/misaligned or invalid probabilities rejected"
+  ],
+  "limits": [
+    "Complete five-neural/one-tree orchestration and historical remaining configurations unresolved.",
+    "Recovered-width branch executed separately with explicit optimizer/dropout choices; modest classifier loss change is not competitive accuracy evidence."
+  ],
+  "validation_followup": "All eight original branch/tree/blend tests re-passed alongside five ensemble checks after float64 summation correction."
+}

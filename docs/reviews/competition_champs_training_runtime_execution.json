@@ -1,0 +1,121 @@
+{
+  "source_commit": "4a42e18b5b88043fb40ec15289216a1d88789698",
+  "results": [
+    {
+      "optimizer": "SGD",
+      "scheduler": "constant",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "SGD",
+      "scheduler": "cosine",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "SGD",
+      "scheduler": "inv_sqrt",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "SGD",
+      "scheduler": "dev_perf",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adam",
+      "scheduler": "constant",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adam",
+      "scheduler": "cosine",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adam",
+      "scheduler": "inv_sqrt",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adam",
+      "scheduler": "dev_perf",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adagrad",
+      "scheduler": "constant",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adagrad",
+      "scheduler": "cosine",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adagrad",
+      "scheduler": "inv_sqrt",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "Adagrad",
+      "scheduler": "dev_perf",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "RAdam",
+      "scheduler": "constant",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "RAdam",
+      "scheduler": "cosine",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "RAdam",
+      "scheduler": "inv_sqrt",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    },
+    {
+      "optimizer": "RAdam",
+      "scheduler": "dev_perf",
+      "exact_resume": true,
+      "cutout_and_dropout_enabled": true,
+      "caller_rng_and_inputs_preserved": true
+    }
+  ],
+  "scope": "Sixteen optimizer/scheduler controllers on synthetic analytic model, original cutout and stochastic dropout, structured weights-only state resume. Full graph-transformer epoch integration remains separate.",
+  "source_behavior": "Inverse-square-root scheduler is initialized but original epoch does not step it after warmup; preserved, not silently repaired.",
+  "runtime_sha256": "f540f139558869e577fc7af40b73e717895a254da91025ff7f812104304399f0",
+  "validator_sha256": "e86036d11c535d0924e79c5c9b1938e2d0c80fa9a05768288f024d2862e5552d"
+}

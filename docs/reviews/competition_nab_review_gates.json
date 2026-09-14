@@ -1,0 +1,25 @@
+{
+  "format": "nab-review-negative-gates.v1",
+  "result": "passed",
+  "checks": {
+    "injected_failures_rejected": 10,
+    "unaltered_audit_passes": true
+  },
+  "rejected_scenarios": [
+    "wrong_commit",
+    "wrong_license",
+    "missing_source_bug",
+    "wrong_score",
+    "wrong_counts",
+    "future_leakage",
+    "label_leakage",
+    "reduced_models",
+    "wrong_provider",
+    "wrong_dependency"
+  ],
+  "sha256": {
+    "scripts/review_nab_execution.py": "6fa8efdcaf589dfd58332339c02e63caf3c1751f8e7007d91ef14c6bbdb27987",
+    "scripts/validate_nab_review_gates.py": "7c2791360d3d52bb7053367d7bb8cf0ae96c8c21a0824c78ae3aa2d10f705330"
+  },
+  "limits": "Read-only review injections; no catalog mutations."
+}

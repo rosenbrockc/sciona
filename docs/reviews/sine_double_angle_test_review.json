@@ -1,0 +1,13 @@
+{
+  "test_results": {
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_source_sha256": {
+    "tests/physics_ingest/test_sine_double_angle.py": "21597b76762bdf538676f531e947cf1d4df713c38fe151d9015c076f490d7369"
+  },
+  "provider_sha256": "5a0e0ff0b5c14074e0f2926ad987c520db4ac6888a76fe1b6544dc406befddd5",
+  "synthetic_only": true
+}

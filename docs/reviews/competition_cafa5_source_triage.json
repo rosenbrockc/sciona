@@ -1,0 +1,100 @@
+{
+  "intake_version_id": "f20e2af6-479d-59cb-8ac4-801e0e22b9b6",
+  "intake_content_hash": "dd7e19ad6fcef77a9c3fb02e9b57a76c67b15fe79a32637a3dd480353e6aa749",
+  "status": "deferred_complete_cafa5_source_unresolved",
+  "target_tier": 3,
+  "primary_writeup": "https://www.kaggle.com/competitions/cafa-5-protein-function-prediction/writeups/gocurator-1st-place-solution-for-the-cafa5",
+  "intake_corrections": [
+    "Parallel component methods extend NetGO 3.0; the four additions are not the complete ensemble.",
+    "LR-MEM concatenates representations then trains logistic-regression classifiers; it is not vector concatenation alone.",
+    "Learning-to-rank input includes a 20-dimensional species encoding.",
+    "Net-KNN predictions are filtered to 15 species.",
+    "InterProScan produces domain/family/motif features; ESM-1b produces sequence embeddings.",
+    "The primary writeup does not establish the precise pairwise objective or LambdaMART implementation claimed by the intake."
+  ],
+  "retrieval_primary_link": {
+    "url": "https://academic.oup.com/bioinformatics/article/40/Supplement_2/ii53/7749084",
+    "finding": "Authors identify GORetriever as a CAFA5 winning component and link their repository; not the full ensemble."
+  },
+  "source_findings": [
+    "GORetriever repository is inference-oriented; its complete tree has no license-named file and API license is null.",
+    "GOAlpha is MIT-licensed but explicitly a CAFA6 successor.",
+    "GOAlpha active orchestration uses ESM2/SVM, not the CAFA5 ESM-1b/LR choice.",
+    "GOAlpha orchestration loads precomputed retrieval and GOXML scores; it does not execute both components end to end.",
+    "GOAlpha ltr.py loads an external XGBoost model; it does not establish CAFA5 ranker training.",
+    "GOAlpha GOXML documentation specifies a later BioLinkBERT configuration. No equivalence to CAFA5 is established."
+  ],
+  "sources": [
+    {
+      "repository": "ZhuLab-Fudan/GORetriever",
+      "commit": "eb2b36343ffffc9d92933d68e82e7eaa5f03bd36",
+      "license": null,
+      "pins": [
+        {
+          "software_path": "README.md",
+          "git_blob_sha1": "f6bd58c5cf516ab0b8ed3fb6a9b7676b45a446b8",
+          "sha256": "3e4f9c57a92b3d0e46da39be24b0177a280a054f1dea43393f9670859ae52be8"
+        }
+      ]
+    },
+    {
+      "repository": "ZhuLab-Fudan/GOAlpha",
+      "commit": "5d4f035d5033522095bab9f1f7f0794a45b4d9b0",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "pins": [
+        {
+          "software_path": "LICENSE",
+          "git_blob_sha1": "216c409c955c80c54165328362adbaac51742289",
+          "sha256": "9a6b3bf36fa4a4139cce12b5b8b3b95a187c492323ff841cc7f2096926cdd429"
+        },
+        {
+          "software_path": "ReadME.md",
+          "git_blob_sha1": "7807599c61084ce4059aa7507a86090852cc97c5",
+          "sha256": "9ddcf1eb402b8f558b21c8592bccc024c5e0a337179ff0f6ea4aa414c119b5e8"
+        },
+        {
+          "software_path": "ltr.py",
+          "git_blob_sha1": "46dd9ea660a3434c1464783526d7a066912778fa",
+          "sha256": "b823733edc496abd924f8cab6469a14012e879c225ad99184f716606f9a38a05"
+        },
+        {
+          "software_path": "flat/flat.py",
+          "git_blob_sha1": "d5d6589eccaf48aa77d345d51cff29ed958f0fb2",
+          "sha256": "bfb224e05efa253ca5c5cf3deea15e896c63f505f10ac3a7c7aa26ebf6e9b05a"
+        },
+        {
+          "software_path": "run_goalpha.py",
+          "git_blob_sha1": "5dc78f2ca815eea90542bc4dfdc172e862a3765f",
+          "sha256": "4fe7216eb0eb47afc60765f6368a49dbb3ff65820a86d0e9ea1ed31e7fa88011"
+        },
+        {
+          "software_path": "knn/foldseek_knn.py",
+          "git_blob_sha1": "cc28bb2a5ca9cefd0d97ef3ac26ed7a691be734b",
+          "sha256": "9c61232236a921784eccffd1953c39d53350f984f8f3ee79b6d85f7db597f9a1"
+        },
+        {
+          "software_path": "goretrieval/README.md",
+          "git_blob_sha1": "850a4c34be52d7b469c1e68042b1edca7d44fa58",
+          "sha256": "977ca4bfeaedcab52b0a8612cfe0fd865882d048f8022e0326579c0e26152d61"
+        },
+        {
+          "software_path": "goxml/README.md",
+          "git_blob_sha1": "23dbe657820f11625b1ac382d23f59de4316a8f9",
+          "sha256": "97115fa41de7b30da154b50f4040c8e3634dbe18464d8eaefa73d7bbccb59031"
+        }
+      ]
+    }
+  ],
+  "next_steps": [
+    "Resolve original CAFA5 ensemble training/configuration and component reuse licenses.",
+    "The MIT successor may support separately scoped component work after full review, but cannot substitute for complete CAFA5 coverage."
+  ],
+  "catalog_mutations": 0,
+  "confidentiality": "Only public software/docs/license files inspected and pinned. No sequence records, literature corpora, structures, model weights, task data or archives downloaded."
+}

@@ -1,0 +1,57 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "source_commit": "0ac3eb9f383bf0127c587e0502c59ac84d9ba6a2",
+  "cases": [
+    {
+      "kind": "voxel",
+      "flip": false,
+      "empty_annotations": false,
+      "exact": true
+    },
+    {
+      "kind": "voxel",
+      "flip": false,
+      "empty_annotations": true,
+      "exact": true
+    },
+    {
+      "kind": "world",
+      "flip": false,
+      "empty_annotations": false,
+      "exact": true
+    },
+    {
+      "kind": "world",
+      "flip": false,
+      "empty_annotations": true,
+      "exact": true
+    },
+    {
+      "kind": "world",
+      "flip": true,
+      "empty_annotations": false,
+      "exact": true
+    },
+    {
+      "kind": "world",
+      "flip": true,
+      "empty_annotations": true,
+      "exact": true
+    }
+  ],
+  "adaptations": [
+    "Synthetic array IO and opaque row lookup replace files.",
+    "Explicit requested resolution parameterizes the source fixed resolution for synthetic geometry.",
+    "Python 2 segmentation divisions and Boolean subtraction adapted as documented."
+  ],
+  "implementation_sha256": {
+    "sciona/dsb_raw_inputs.py": "24438f3ca85ace987462cff8f660675042060ec37ae2db1c6540f4c0cada4a3d",
+    "sciona/dsb_training_preprocessing.py": "186e1d86a4424185bc44cc2255a6e06c55bbed096b636473feac0c4fe7699788",
+    "sciona/dsb_world_preprocessing.py": "b9c68fe689635ba21c74317030da018b7130369a450aca9908d653e2334ced21",
+    "sciona/dsb_segmentation.py": "39794cf24f370fe1e62dfcfdd814b4436d3f24a795d30e7ffadcea715c59e8f9",
+    "sciona/dsb_components.py": "0fd1509064a803e71c479821065946799c1485a8aaff0cd304797afb21d3e89c",
+    "scripts/dsb_source_preparation.py": "5445c8d8f2a5255feeffa770343bac7304b8f12c5754ebc77dd2eaafea21eb0d",
+    "scripts/validate_dsb_source_preparation.py": "358a00a02672a662cc1361273259c9ec80fb045d132c9a1cbed240614d1d6a05"
+  }
+}

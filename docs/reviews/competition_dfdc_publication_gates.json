@@ -1,0 +1,15 @@
+{
+  "format": "dfdc-publication-gates.v1",
+  "result": "passed",
+  "rejected_gates": [
+    "semantic_review:proposed_tier",
+    "semantic_review:verdict",
+    "semantic_review:review_source",
+    "graph:serialized_graph_sha256",
+    "evidence_hash",
+    "installed_dependency"
+  ],
+  "publisher_sha256": "30b466e39d0f452753aeaf7cd63f4af1834ba6c8b55df7510844689aa6f0f930",
+  "validator_sha256": "ab8d243596ff807d1f3bbf14cb51626bfc0b10272fb82dedf2a3cb96fa145641",
+  "limits": "Six injected incompatible inputs rejected by read-only review; no catalog mutations."
+}

@@ -1,0 +1,16 @@
+{
+  "format": "dfdc-codec-validation.v1",
+  "result": "passed",
+  "checks": {
+    "array_roundtrips": 40,
+    "independent_little_endian_bytes": true,
+    "scalar_signed_zero_preserved": true,
+    "state_json_roundtrip_and_isolation": true,
+    "malformed_input_rejections": 19
+  },
+  "limits": "Synthetic arrays and small state tensors only. This validates numerical JSON transport, not the full DFDC runtime schema or end-to-end serialized graph.",
+  "sha256": {
+    "sciona/dfdc_codec.py": "4256101fe8c78ad8df1eec4ff6db08ae53a7291a4506e73784ffad25ad39b15a",
+    "scripts/validate_dfdc_codec.py": "1b377777a7b7efd9d9082de81e9861b3e75f81bbce7f006aad755bbd9959b5e2"
+  }
+}

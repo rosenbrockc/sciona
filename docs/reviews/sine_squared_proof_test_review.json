@@ -1,0 +1,11 @@
+{
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_sine_squared_proof.py -q",
+  "passed": 19,
+  "failed": 0,
+  "synthetic_only": true,
+  "implementation_sha256": {
+    "sciona/physics_ingest/sine_squared_proof.py": "ca9458a0ed973f4b53a5afac60c371eae0d92a6b130eb8eefdf924db63ea8f0e",
+    "tests/physics_ingest/test_sine_squared_proof.py": "aa5bb03fb6f45f6a18267fdc2eac5b84d161f4f9cfcc583101e85a1db691099a",
+    "sciona/physics_ingest/euler_formula_proof.py": "319547df92a46b9d272d4e6aceafc5387324aeb064f741c23455b05ba68fa509"
+  }
+}

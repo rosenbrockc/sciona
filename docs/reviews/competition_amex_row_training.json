@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "models": 5,
+  "configured_rounds": 4500,
+  "evaluated_rounds": [
+    4500,
+    4500,
+    4500,
+    4500,
+    4500
+  ],
+  "native_iterations": [
+    4476,
+    4500,
+    4482,
+    4495,
+    4439
+  ],
+  "source_component": "Grouped row DART with recovered hyperparameters and default seed42",
+  "sha256": {
+    "sciona/amex_row_model.py": "70a20aa92a82e8b510b03b0b4472a496f1de6d05008033bb21af736d25381519",
+    "sciona/amex_numeric.py": "aeefcd3e3aa1ccd52e904c79b99b52f348a4727fce78e73ecd03acb9cb0afa73",
+    "tests/test_amex_row_model.py": "6babda8fba8ab2fe5947d58f9613b3107685158ae2e1a30b66d083b1e140d5f9",
+    "scripts/validate_amex_row_training.py": "88b19e313c7b5bcb0959a352027778190c85d57c5422e128af69972ac3d32419"
+  },
+  "limits": [
+    "Synthetic four-feature row population; historical row volume, precision and winning performance unqualified.",
+    "Current deterministic single-thread LightGBM and in-memory booster reload independently replace historical runtime and file transport.",
+    "Full downstream neural/tree ensemble and served graph remain pending."
+  ]
+}

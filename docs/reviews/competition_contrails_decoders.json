@@ -1,0 +1,23 @@
+{
+  "approved": false,
+  "source_commit": "08a15beb36f9cbed4c3990e74c625c1332b61fe8",
+  "checks": {
+    "forward_cases": 8,
+    "input_gradient_cases": 40,
+    "parameter_gradient_cases": 240,
+    "checkpoint_and_batchnorm_cases": 8,
+    "single_branch_skipped_block_cases": 4
+  },
+  "versions": {
+    "torch": "2.11.0",
+    "torchvision": "0.26.0",
+    "timm": "0.9.2",
+    "segmentation-models-pytorch": "0.3.3"
+  },
+  "hashes": {
+    "sciona/contrails_single_decoder.py": "861949465a280904b30e4e3598e1566ec8a35c777974e830c19f362c640eef2c",
+    "sciona/contrails_temporal_decoder.py": "fcc0934ba3ba4f1fb797b2a0fb9adfa61822040abfb3bce70873efbe0aa502a1",
+    "scripts/validate_contrails_decoders.py": "8a54056a1c38ba80c1ea2bc7cb65bd2ec553324b23bfc354cdf9c25ffdfb650b"
+  },
+  "scope": "Full source decoder widths; synthetic spatial pyramid. Encoder image execution and full training lifecycle not covered."
+}

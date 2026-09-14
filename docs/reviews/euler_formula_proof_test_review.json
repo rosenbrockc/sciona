@@ -1,0 +1,10 @@
+{
+  "approved": false,
+  "synthetic_only": true,
+  "passed": 13,
+  "command": ".venv/bin/python -m pytest tests/physics_ingest/test_euler_formula_proof.py -q",
+  "implementation_sha256": {
+    "tests/physics_ingest/test_euler_formula_proof.py": "1543f6686227f1dfe8db4f653e3b8048143271495d2863f3619acb3a1c735001",
+    "sciona/physics_ingest/euler_formula_proof.py": "319547df92a46b9d272d4e6aceafc5387324aeb064f741c23455b05ba68fa509"
+  }
+}

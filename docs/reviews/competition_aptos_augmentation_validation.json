@@ -1,0 +1,33 @@
+{
+  "approved": false,
+  "catalog_mutations": 0,
+  "synthetic_only": true,
+  "passed": true,
+  "tests": 9,
+  "source_ranges": {
+    "contrast": 0.2,
+    "brightness": 20.0,
+    "hue": 10.0,
+    "saturation": 20.0,
+    "blur_and_sharpen": true,
+    "rotate": 180.0,
+    "scale": 0.2,
+    "shear": 0.2,
+    "shift": 0.2,
+    "mirror": true
+  },
+  "reference_choices": [
+    "Independent uniform draws from explicit caller-owned numpy Generator",
+    "Contrast multiplier; additive brightness and saturation in byte units; hue in degrees",
+    "Horizontal shear slope converted to degrees; shifts relative to image width/height and rounded to pixels",
+    "Independent horizontal and vertical mirror draws",
+    "Equal probability Pillow GaussianBlur radius 1 or SHARPEN",
+    "Photometric then filter then bilinear affine with black fill then mirrors",
+    "Uint8 rounding and clipping at documented photometric steps; hue wraps"
+  ],
+  "scope": "Replayable reference augmentation with published ranges. Exact original library, units, distributions and operation order are unproven. These choices require conditional Tier 3 review with the complete workflow. No complete training qualification.",
+  "sha256": {
+    "sciona/aptos_augmentation.py": "1df7db83aab5c8866602a1ebfdf78391e81827b5313ab9894b754993c65eb1d0",
+    "tests/test_aptos_augmentation.py": "5973183f45440a2b953e29cbc76691a044de086b162924b21ba18cdb2d5de27a"
+  }
+}

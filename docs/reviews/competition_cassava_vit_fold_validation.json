@@ -1,0 +1,25 @@
+{
+  "approved": false,
+  "passed": true,
+  "synthetic_only": true,
+  "epochs_executed": 10,
+  "accumulated_optimizer_steps": 10,
+  "diagnostic_batch_size": 1,
+  "workers": 0,
+  "pretrained_weights_used": false,
+  "latest_best_epoch": 9,
+  "checkpoint_weights_verified": true,
+  "scheduler_history_replayed": true,
+  "explicit_correction": "Validation is not concatenated into training; pinned notebook does concatenate it.",
+  "scope": "Full-resolution CPU lifecycle diagnostic; real fold provenance, original batch/workers, pretrained and TPU parity unqualified.",
+  "sha256": {
+    "sciona/cassava_pretrained.py": "f36039d9cfe94c0bd1d656e42e2430b63a017e5b06cf55fc9e0ae5a375f5140c",
+    "sciona/cassava_vit_fold.py": "c432927a53888afd0e83627ac1224b6088cedac40cef90e72dce1aeaa8458f5a",
+    "sciona/cassava_vit_model.py": "e5e7e91263d5a853f819fc409c9b8d5a38a6d1854867f7f96df593213f340c51",
+    "sciona/cassava_vit_images.py": "e61d4cfd1f622e5763cdb5074248e54ccd262b8240a6c7423a88f54b9c81668c",
+    "sciona/cassava_vit_ordered_loss.py": "c779eb220dab0c1f6a0dabda14b20ddd2f227932da2c0b32f2795e8eebf5787f",
+    "sciona/cassava_resnext_fold.py": "d6055066c07958f79a783698be0c85504e2eae752c20faca7f96ee3b123feaa4",
+    "sciona/cassava_resnext_images.py": "c12e01fc43e07f6af5d039bac25e7f58fec9db0464ac862a4048b87301c3dd06",
+    "scripts/validate_cassava_vit_fold.py": "1a9575da15c99958531b6147219fb8ba0a57c9c452fb3485c18d962c1d35aa1f"
+  }
+}

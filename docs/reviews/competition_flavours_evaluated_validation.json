@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "synthetic_only": true,
+  "catalog_mutations": 0,
+  "model_fits": 115,
+  "tree_boosting_rounds": 111458,
+  "neural_epochs": 150000,
+  "neural_optimizer_updates": 600000,
+  "source_sha256": {
+    "sciona/flavours_blend.py": "2d6952916c21f1121e8c5e0e261276594d44bc0f87f3fbdcb79c4afddf5ae49e",
+    "sciona/flavours_classifiers.py": "b46e73cd2e1c396b60b96e81be960da2a75223953ac2685ffc5140e759bf9800",
+    "sciona/flavours_evaluated_execution.py": "b8b978a50bd009fdcfaeae616478ad6fd9c1bdba101f9b67590b4726416e918c",
+    "sciona/flavours_evaluation.py": "05c133af6a13d2852c985b4917922815fe33e21842733c5f2af9b7454fa26177",
+    "sciona/flavours_features.py": "cca33c8464249abcc34ac877d60d00066f0e13e8c0e967e93d811670bcb6d160",
+    "sciona/flavours_kinematics.py": "37d037cffbd758de93880e4a8b3dc5d3cf9f9e1017affe7787c3f9aab714f9cd",
+    "sciona/flavours_mass_correction.py": "99a7af81af8b03e33049acc670552b69030184778bfe85d2a9c4371f63981737",
+    "sciona/flavours_neural.py": "47e91432fca725a7da057f66e8b718b8571636d00d2311b5d3cb5b90f6b983ff",
+    "sciona/flavours_pipeline.py": "4397878e8212f04f0d92e89c0b7f6fc60c4cbc596a8ffcb839d171099efc9a5c"
+  },
+  "neural_checkpoint_replays_exact": true,
+  "evaluation": {
+    "ks_agreement": 0.0,
+    "cvm_mass": 0.007556012500000001,
+    "truncated_weighted_auc": 0.9999999999999999,
+    "agreement_passed": true,
+    "correlation_passed": false,
+    "oof_scope": "Diagnostic only; upstream mass features are not nested within classifier folds"
+  },
+  "verifier_sha256": "6daaff604ccb46e568cda28566d254c515df341ec130072ad319a2b332139547",
+  "scope": "Integrated physical features, mass regression, five classifiers, neural ensemble, final nonlinear scores and all source metrics. Identical agreement inputs intentionally test the zero-KS oracle. Catalog graph execution pending; no historical execution or competition accuracy claim."
+}
